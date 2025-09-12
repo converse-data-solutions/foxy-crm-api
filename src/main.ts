@@ -11,37 +11,7 @@ import { ClassSerializerInterceptor } from '@nestjs/common';
 import { LoggerService } from './common/logger/logger.service';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { logger: new LoggerService() });
-
-  app.setGlobalPrefix('api/v1');
-  app.use('/api/v1/stripe/webhook', express.raw({ type: 'application/json' }));
-
-  app.use(cookieParser());
-  app.use(helmet());
-
-  app.enableCors({
-    origin: 'http://localhost:3000',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: true,
-  });
-
-  const config = new DocumentBuilder()
-    .setTitle('CRM API Documentation')
-    .setDescription('API description')
-    .setVersion('1.0')
-    .addCookieAuth('access_token')
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('swagger', app, document);
-
-  const dataSource = app.get(DataSource);
-  await dataSource.runMigrations();
-  const seederService = app.get(SeedService);
-  await seederService.subscriptionSeed();
-
-  app.useGlobalPipes(new CustomValidationPipe());
-  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
-
+  const app = await NestFactory.create(AppModule);
   await app.listen(8000);
 }
 bootstrap();
