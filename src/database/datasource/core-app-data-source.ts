@@ -1,0 +1,9 @@
+import { config } from 'dotenv';
+import { dataSource } from './base-app-data-source';
+import { DataSource } from 'typeorm';
+config();
+export const coreDataSource = new DataSource({
+  ...dataSource.options,
+  entities: [__dirname + '/../entity/core-app/*.entity.js'],
+  migrations: ['dist/migration/core-app/*.js'],
+});
