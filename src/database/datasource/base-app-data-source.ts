@@ -8,7 +8,12 @@ export const dataSource = new DataSource({
   password: process.env.DB_PASS,
   port: Number(process.env.DB_PORT),
   database: process.env.DB_NAME,
-  entities: [__dirname + '/../entity/*.entity{.js, .ts}'],
-  synchronize: true,
+  entities: [__dirname + '/../entity/base-app/*.entity.js'],
+  synchronize: false,
+  logging: true,
+  migrations: ['dist/migration/base-app/*.js'],
+  extra: {
+    idleTimeoutMillis: 10000,
+    max: 50,
+  },
 });
-console.log(dataSource.options.entities);
