@@ -8,7 +8,7 @@ import {
 } from 'typeorm';
 import { Contact } from './contact.entity';
 import { User } from './user.entity';
-import { TicketStatus } from 'src/enum/core-app.enum';
+import { TicketStatus } from 'src/enum/status.enum';
 
 @Entity()
 export class Ticket {

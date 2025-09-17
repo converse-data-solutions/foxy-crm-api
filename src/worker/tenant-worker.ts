@@ -6,19 +6,18 @@ import { basicSetupTemplate } from 'src/template/basic-setup.template';
 import * as nodemailer from 'nodemailer';
 import { HttpStatus } from '@nestjs/common';
 import { getConnection } from 'src/shared/database-connection/get-connection';
+import { Role } from 'src/enum/core-app.enum';
 
 @Processor('tenant-setup')
 export class TenantWorker extends WorkerHost {
-
   async process(job: Job) {
     await this.tenantSetup(job.data);
   }
 
   async tenantSetup(tenantData: Tenant) {
     const schema = tenantData.schemaName;
-    const dataSource =  getConnection(schema);
+    const dataSource = await getConnection(schema);
     try {
-      await dataSource.initialize();
       await dataSource.query(`CREATE SCHEMA IF NOT EXISTS "${schema}"`);
       await dataSource.query(`SET search_path TO "${schema}"`);
       await dataSource.runMigrations();
@@ -26,14 +25,13 @@ export class TenantWorker extends WorkerHost {
       const user = userRepo.create({
         name: tenantData.userName,
         password: tenantData.password,
+        role: Role.Admin,
         email: tenantData.email,
       });
       await userRepo.save(user);
       this.sendOtpEmail(user);
     } catch (error) {
       console.log(error);
-    } finally {
-      await dataSource.destroy();
     }
   }
 
@@ -44,7 +42,7 @@ export class TenantWorker extends WorkerHost {
       secure: false,
       auth: {
         user: process.env.CLIENT_MAIL,
-        pass: process.env.CLIENT_SECRETE_MAIL,
+        pass: process.env.CLIENT_SECRET_MAIL,
       },
       tls: {
         rejectUnauthorized: false,
