@@ -8,12 +8,8 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from './user.entity';
-import {
-  EntityName,
-  TaskPriority,
-  TaskStatus,
-  TaskType,
-} from 'src/enum/core-app.enum';
+import { EntityName, TaskPriority, TaskType } from 'src/enum/core-app.enum';
+import { TaskStatus } from 'src/enum/status.enum';
 
 @Entity()
 export class Task {
@@ -30,13 +26,18 @@ export class Task {
   @Column({ name: 'entity_id', type: 'varchar', length: 40 })
   entityId: string;
 
-  @Column({ name: 'type', type: 'enum', enum: TaskType, })
+  @Column({ name: 'type', type: 'enum', enum: TaskType })
   type: TaskType;
 
-  @Column({ name: 'status', type: 'enum', enum: TaskStatus, default: TaskStatus.Pending })
+  @Column({
+    name: 'status',
+    type: 'enum',
+    enum: TaskStatus,
+    default: TaskStatus.Pending,
+  })
   status: TaskStatus;
 
-  @Column({ name: 'priority', type: 'enum', enum: TaskPriority, })
+  @Column({ name: 'priority', type: 'enum', enum: TaskPriority })
   priority: TaskPriority;
 
   @CreateDateColumn({ name: 'created_at' })

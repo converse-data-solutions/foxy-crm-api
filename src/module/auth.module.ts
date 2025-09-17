@@ -6,15 +6,19 @@ import { Tenant } from 'src/database/entity/base-app/tenant.entity';
 import { TenantSubscription } from 'src/database/entity/base-app/tenant-subscription.entity';
 import { BullModule } from '@nestjs/bullmq';
 import { TenantWorker } from 'src/worker/tenant-worker';
+import { JwtModule } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
+import { JwtStrategy } from 'src/common/strategy/jwt.startegy';
+import { FileWorker } from 'src/worker/file-worker';
 
 @Module({
   imports: [
+    PassportModule.register({ defaultStrategy: 'jwt' }),
     TypeOrmModule.forFeature([Tenant, TenantSubscription]),
-    BullModule.registerQueue({
-      name: 'tenant-setup',
-    }),
+    BullModule.registerQueue({ name: 'tenant-setup' }),
+    JwtModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, TenantWorker],
+  providers: [AuthService, TenantWorker, JwtStrategy],
 })
 export class AuthModule {}
