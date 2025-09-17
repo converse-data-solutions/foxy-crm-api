@@ -1,40 +1,41 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { JwtPayload } from 'src/common/dtos/jwt-payload.dto';
+import { JwtPayload } from 'src/dto/jwt-payload.dto';
 import { Request } from 'express';
-import { UserService } from 'src/services/user.service';
-import { JWT_CONFIG } from '../../shared/utils/config.util';
-import { validate, version } from 'uuid';
+import { AuthService } from 'src/service/auth.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private userService: UserService) {
+  constructor(private authService: AuthService) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         (request: Request) => request?.cookies?.access_token || null,
       ]),
       ignoreExpiration: false,
-      secretOrKey: JWT_CONFIG.ACCESS_SECRET_KEY,
+      secretOrKey: process.env.SECRET_KEY!,
       passReqToCallback: true,
     });
   }
 
   async validate(req: Request, payload: JwtPayload) {
-    const tenantHeaders = req?.headers['x-tenant-id'];
-    const tenantId = Array.isArray(tenantHeaders) ? tenantHeaders[0] : tenantHeaders;
-    if (!tenantId) {
-      throw new BadRequestException('x-tenant-id header is missing');
-    }
 
-    if (!validate(tenantId) || version(tenantId) !== 4) {
-      throw new BadRequestException('Invalid tenant-id.');
+    const tenantId = req?.headers['x-tenant-id'];
+    if (!tenantId) {
+      throw new BadRequestException({
+        message: 'x-tenant-id header is missing',
+      });
     }
-    const user = await this.userService.validateUser(
+    const user = await this.authService.validateUser(
       payload,
       Array.isArray(tenantId) ? tenantId[0] : tenantId,
     );
-    if (!user) throw new UnauthorizedException('Unauthorized Access invalid token');
+    if (!user)
+      throw new UnauthorizedException({ message: 'Unauthorized Access' });
     return user; // attached to req.user
   }
 }
