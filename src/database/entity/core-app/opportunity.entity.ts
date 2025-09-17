@@ -8,7 +8,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Contact } from './contact.entity';
-import { OpportunityStage } from 'src/enum/core-app.enum';
+import { OpportunityStatus } from 'src/enum/status.enum';
 
 @Entity()
 export class Opportunity {
@@ -21,8 +21,8 @@ export class Opportunity {
   @Column({ name: 'value', type: 'integer' })
   value: number;
 
-  @Column({ name: 'stage', type: 'enum', enum: OpportunityStage, default: OpportunityStage.Qualified })
-  stage: OpportunityStage;
+  @Column({ name: 'stage', type: 'enum', enum: OpportunityStatus, default: OpportunityStatus.Qualified })
+  stage: OpportunityStatus;
 
   @ManyToOne(() => Contact)
   @JoinColumn({ name: 'contact_id' })

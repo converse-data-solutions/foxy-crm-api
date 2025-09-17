@@ -8,7 +8,8 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from './user.entity';
-import { LeadStatus } from 'src/enum/core-app.enum';
+import { LeadStatus } from 'src/enum/status.enum';
+import { LeadSource } from 'src/enum/core-app.enum';
 
 @Entity()
 export class Lead {
@@ -27,14 +28,29 @@ export class Lead {
     enum: LeadStatus,
     default: LeadStatus.New,
   })
-  status: string;
+  status: LeadStatus;
 
   @Column({ name: 'phone', type: 'varchar', length: 20, unique: true })
   phone: string;
 
+  @Column({ name: 'company', type: 'varchar', length: 100, nullable: true })
+  company: string;
+
+  @Column({
+    name: 'source',
+    type: 'enum',
+    enum: LeadSource,
+    nullable: true,
+  })
+  source: LeadSource;
+
   @ManyToOne(() => User, (user) => user.leads, { nullable: true })
   @JoinColumn({ name: 'assigned_to' })
   assignedTo?: User;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'created_by' })
+  createdBy?: User;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
