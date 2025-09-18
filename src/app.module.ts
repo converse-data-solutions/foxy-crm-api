@@ -125,6 +125,10 @@ import { LoggerModule } from './modules/logger.module';
       provide: APP_FILTER,
       useClass: CustomExceptionFilter,
     },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
   ],
   controllers: [StripePaymentController],
 })
