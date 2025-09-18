@@ -10,6 +10,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LeadModule } from './module/lead.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './guard/jwt-auth.guard';
+import { RolesGuard } from './guard/role.guard';
 
 @Module({
   imports: [
@@ -38,6 +39,10 @@ import { JwtAuthGuard } from './guard/jwt-auth.guard';
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
     },
   ],
 })

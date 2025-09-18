@@ -3,13 +3,13 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
-  Delete,
   Headers,
   UseInterceptors,
   UploadedFile,
   ParseFilePipeBuilder,
+  Query,
+  Put,
 } from '@nestjs/common';
 import { LeadService } from '../service/lead.service';
 import { CreateLeadDto } from '../dto/create-lead.dto';
@@ -24,6 +24,9 @@ import {
 } from '@nestjs/swagger';
 import { Express } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { LeadQueryDto } from 'src/dto/lead-query.dto';
+import { Roles } from 'src/common/decorator/role.decorator';
+import { Role } from 'src/enum/core-app.enum';
 
 @Controller('lead')
 export class LeadController {
@@ -73,22 +76,26 @@ export class LeadController {
   }
 
   @Get()
-  async findAll() {
-    return this.leadService.findAll();
+  @Roles(Role.Admin, Role.Manager)
+  @ApiOperation({ summary: 'Retrive lead based on query' })
+  @ApiResponse({ status: 200, description: 'Lead fetched successfully' })
+  async findAll(
+    @Query() leadQuery: LeadQueryDto,
+    @Headers('x-tenant-id') tenantId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.leadService.findAll(leadQuery, tenantId, user);
   }
 
-  @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.leadService.findOne(+id);
+  @Put(':id')
+  @Roles(Role.Admin, Role.Manager)
+  async update(
+    @Param('id') id: string,
+    @Body() updateLeadDto: UpdateLeadDto,
+    @Headers('x-tenant-id') tenantId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.leadService.update(id, updateLeadDto, tenantId, user);
   }
 
-  @Patch(':id')
-  async update(@Param('id') id: string, @Body() updateLeadDto: UpdateLeadDto) {
-    return this.leadService.update(+id, updateLeadDto);
-  }
-
-  @Delete(':id')
-  async remove(@Param('id') id: string) {
-    return this.leadService.remove(+id);
-  }
 }

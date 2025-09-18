@@ -4,9 +4,13 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Account } from './account.entity';
+import { Lead } from './lead.entity';
+import { Note } from './note.entity';
 
 @Entity()
 export class Contact {
@@ -25,6 +29,12 @@ export class Contact {
 
   @Column({ name: 'phone', type: 'varchar', length: 20, unique: true })
   phone: string;
+
+  @OneToOne(() => Lead, (lead) => lead.contact)
+  lead: Lead;
+
+  @OneToMany(()=>Note,note =>note.contact )
+  note: Note[]
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
