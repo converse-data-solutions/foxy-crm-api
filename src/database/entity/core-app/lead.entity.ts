@@ -4,12 +4,14 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from './user.entity';
 import { LeadStatus } from 'src/enum/status.enum';
 import { LeadSource } from 'src/enum/core-app.enum';
+import { Contact } from './contact.entity';
 
 @Entity()
 export class Lead {
@@ -47,6 +49,10 @@ export class Lead {
   @ManyToOne(() => User, (user) => user.leads, { nullable: true })
   @JoinColumn({ name: 'assigned_to' })
   assignedTo?: User;
+
+  @OneToOne(() => Contact, (contact) => contact.lead, { nullable: true })
+  @JoinColumn({ name: 'contact_id' })
+  contact?: Contact;
 
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'created_by' })

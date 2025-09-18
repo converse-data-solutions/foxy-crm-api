@@ -9,16 +9,17 @@ import { TenantWorker } from 'src/worker/tenant-worker';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from 'src/common/strategy/jwt.startegy';
-import { FileWorker } from 'src/worker/file-worker';
+import { SeedService } from 'src/service/seed.service';
+import { Country } from 'src/database/entity/common-entity/country.entity';
 
 @Module({
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),
-    TypeOrmModule.forFeature([Tenant, TenantSubscription]),
+    TypeOrmModule.forFeature([Tenant, TenantSubscription, Country]),
     BullModule.registerQueue({ name: 'tenant-setup' }),
     JwtModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, TenantWorker, JwtStrategy],
+  providers: [AuthService, TenantWorker, JwtStrategy, SeedService],
 })
 export class AuthModule {}
