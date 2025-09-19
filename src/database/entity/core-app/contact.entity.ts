@@ -11,15 +11,16 @@ import {
 import { Account } from './account.entity';
 import { Lead } from './lead.entity';
 import { Note } from './note.entity';
+import { User } from './user.entity';
 
-@Entity()
+@Entity({name:'contacts'})
 export class Contact {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @ManyToOne(() => Account)
-  @JoinColumn({name: 'account_id'})
-  accountId: Account;
+  @JoinColumn({ name: 'account_id' })
+  accountId?: Account;
 
   @Column({ name: 'name', type: 'varchar', length: 30 })
   name: string;
@@ -33,9 +34,17 @@ export class Contact {
   @OneToOne(() => Lead, (lead) => lead.contact)
   lead: Lead;
 
-  @OneToMany(()=>Note,note =>note.contact )
-  note: Note[]
+  @OneToMany(() => Note, (note) => note.contact)
+  notes: Note[];
+
+  @ManyToOne(() => User, (user) => user.leads, { nullable: true })
+  @JoinColumn({ name: 'assigned_to' })
+  assignedTo?: User;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'created_by' })
+  createdBy?: User;
 }

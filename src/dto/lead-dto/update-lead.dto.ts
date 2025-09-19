@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsEnum, IsOptional, IsString, IsUUID, Length } from 'class-validator';
 import { LeadSource } from 'src/enum/core-app.enum';
 import { LeadStatus } from 'src/enum/status.enum';
 
@@ -16,6 +16,7 @@ export class UpdateLeadDto {
   })
   @IsOptional()
   @IsString({ message: 'Company name must be a string' })
+  @Length(5, 100, { message: 'Company must be between 5 and 100 characters' })
   company?: string;
 
   @ApiPropertyOptional({

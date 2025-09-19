@@ -1,7 +1,5 @@
-import { config } from 'dotenv';
 import { dataSource } from './base-app-data-source';
 import { DataSource } from 'typeorm';
-config();
 export const coreDataSource = new DataSource({
   ...dataSource.options,
   entities: [

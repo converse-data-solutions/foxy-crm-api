@@ -11,12 +11,14 @@ import { LeadModule } from './module/lead.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './guard/jwt-auth.guard';
 import { RolesGuard } from './guard/role.guard';
+import { ContactModule } from './module/contact.module';
+import { AccountModule } from './module/account.module';
 
 @Module({
   imports: [
     AuthModule,
     UserModule,
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env ' }),
     ScheduleModule.forRoot(),
     TypeOrmModule.forRootAsync({ useFactory: async () => dataSource.options }),
     BullModule.forRoot({
@@ -34,6 +36,8 @@ import { RolesGuard } from './guard/role.guard';
       }),
     }),
     LeadModule,
+    ContactModule,
+    AccountModule,
   ],
   providers: [
     {
