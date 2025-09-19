@@ -1,16 +1,8 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  OneToOne,
-  JoinColumn,
-  ManyToOne,
-  Column,
-  IsNull,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, OneToOne, JoinColumn, ManyToOne, Column } from 'typeorm';
 import { Tenant } from './tenant.entity';
 import { Subscription } from './subscription.entity';
 
-@Entity()
+@Entity({ name: 'tenant_subscriptions' })
 export class TenantSubscription {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -19,11 +11,9 @@ export class TenantSubscription {
   @JoinColumn({ name: 'tenant_id' })
   tenant: Tenant;
 
-  @ManyToOne(
-    () => Subscription,
-    (subscription) => subscription.tenantsSubscription,
-    { nullable: true },
-  )
+  @ManyToOne(() => Subscription, (subscription) => subscription.tenantsSubscription, {
+    nullable: true,
+  })
   @JoinColumn({ name: 'subscription_id' })
   subscription: Subscription;
 

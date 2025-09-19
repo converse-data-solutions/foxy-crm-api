@@ -9,7 +9,7 @@ import {
 import { Contact } from './contact.entity';
 import { User } from './user.entity';
 
-@Entity()
+@Entity({name:'notes'})
 export class Note {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -17,7 +17,7 @@ export class Note {
   @Column({ type: 'text' })
   content: string;
 
-  @ManyToOne(() => Contact, (contact) => contact.note, { nullable: true })
+  @ManyToOne(() => Contact, (contact) => contact.notes, { nullable: true })
   @JoinColumn({ name: 'contact_id' })
   contact?: Contact;
 

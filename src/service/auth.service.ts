@@ -10,14 +10,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Queue } from 'bullmq';
 import { TenantSubscription } from 'src/database/entity/base-app/tenant-subscription.entity';
 import { Tenant } from 'src/database/entity/base-app/tenant.entity';
-import { TenantSignupDto } from 'src/dto/tenant-signup.dto';
+import { TenantSignupDto } from 'src/dto/tenant-dto/tenant-signup.dto';
 import { ILike, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { Signin, UserSignupDto } from 'src/dto/user-signup.dto';
+import { Signin, UserSignupDto } from 'src/dto/user-dto/user-signup.dto';
 import { getRepo } from 'src/shared/database-connection/get-connection';
 import { User } from 'src/database/entity/core-app/user.entity';
 import { JwtService } from '@nestjs/jwt';
-import { JwtPayload } from 'src/dto/jwt-payload.dto';
+import { JwtPayload } from 'src/common/dto/jwt-payload.dto';
 import { plainToInstance } from 'class-transformer';
 import { Country } from 'src/database/entity/common-entity/country.entity';
 
@@ -66,7 +66,7 @@ export class AuthService {
       });
       await this.tenantSubcriptionRepo.save(tenantSubscription);
 
-      await this.tenantQueue.add('tenant-setup', {tenant: newTenant, country});
+      await this.tenantQueue.add('tenant-setup', { tenant: newTenant, country });
 
       return {
         success: true,
@@ -79,10 +79,12 @@ export class AuthService {
   async userSignup(user: UserSignupDto, tenantId: string) {
     const userRepo = await getRepo<User>(User, tenantId);
     const countryRepo = await getRepo<Country>(Country, tenantId);
-    const isUser = await userRepo.findOne({ where: { email: user.email } });
+    const isUser = await userRepo.findOne({
+      where: [{ email: user.email }, { phone: user.phone }],
+    });
     if (isUser) {
       throw new ConflictException({
-        message: 'User with this email is already registered',
+        message: 'User with this email or phone number is already registered',
       });
     } else {
       let country: Country | null = null;
@@ -140,6 +142,6 @@ export class AuthService {
   async validateUser(payload: JwtPayload, schema: string) {
     const userRepo = await getRepo(User, schema);
     const user = await userRepo.findOne({ where: { id: payload.id } });
-    return user ? payload : null;
+    return user ? user : null;
   }
 }
