@@ -11,7 +11,7 @@ import { User } from './user.entity';
 import { EntityName, TaskPriority, TaskType } from 'src/enum/core-app.enum';
 import { TaskStatus } from 'src/enum/status.enum';
 
-@Entity()
+@Entity({ name: 'tasks' })
 export class Task {
   @PrimaryGeneratedColumn('uuid')
   id: string;

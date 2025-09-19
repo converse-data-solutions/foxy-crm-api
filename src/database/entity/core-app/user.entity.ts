@@ -11,7 +11,7 @@ import { Lead } from './lead.entity';
 import { Role } from 'src/enum/core-app.enum';
 import { Country } from '../common-entity/country.entity';
 
-@Entity()
+@Entity({ name: 'users' })
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;

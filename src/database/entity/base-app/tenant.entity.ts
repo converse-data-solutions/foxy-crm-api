@@ -11,7 +11,7 @@ import {
 import { TenantSubscription } from './tenant-subscription.entity';
 import { Country } from '../common-entity/country.entity';
 
-@Entity()
+@Entity({name:'tenants'})
 export class Tenant {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -33,7 +33,7 @@ export class Tenant {
   @Column({ name: 'url', type: 'text', nullable: true })
   url?: string;
 
-  @Column({ name: 'email', type: 'varchar', length: 40, unique: true })
+  @Column({ name: 'email', type: 'varchar', length: 50, unique: true })
   email: string;
 
   @Column({ name: 'phone', type: 'varchar', length: 20, unique: true })

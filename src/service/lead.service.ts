@@ -2,27 +2,32 @@ import {
   BadRequestException,
   HttpStatus,
   Injectable,
+  NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
-import { CreateLeadDto } from '../dto/create-lead.dto';
-import { UpdateLeadDto } from '../dto/update-lead.dto';
+import { CreateLeadDto } from '../dto/lead-dto/create-lead.dto';
+import { UpdateLeadDto } from '../dto/lead-dto/update-lead.dto';
 import { getRepo } from 'src/shared/database-connection/get-connection';
 import { Lead } from 'src/database/entity/core-app/lead.entity';
 import { User } from 'src/database/entity/core-app/user.entity';
-import { JwtPayload } from 'src/dto/jwt-payload.dto';
 import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
-import { LeadQueryDto } from 'src/dto/lead-query.dto';
-import { APIResponse } from 'src/dto/response.dto';
+import { LeadQueryDto } from 'src/dto/lead-dto/lead-query.dto';
+import { APIResponse } from 'src/common/dto/response.dto';
+import { Contact } from 'src/database/entity/core-app/contact.entity';
+import { Account } from 'src/database/entity/core-app/account.entity';
+import { LeadPreview } from 'src/dto/lead-dto/lead-preview.dto';
+import { ILike } from 'typeorm';
+import { LeadToContactDto } from 'src/dto/lead-dto/lead-to-contact.dto';
+import { Country } from 'src/database/entity/common-entity/country.entity';
+import { Role } from 'src/enum/core-app.enum';
+import { LeadStatus } from 'src/enum/status.enum';
 
 @Injectable()
 export class LeadService {
   constructor(@InjectQueue('file-import') private readonly fileQueue: Queue) {}
 
-  async create(
-    createLeadDto: CreateLeadDto,
-    tenantId: string,
-    user: JwtPayload,
-  ) {
+  async create(createLeadDto: CreateLeadDto, tenantId: string, user: User) {
     const leadRepo = await getRepo(Lead, tenantId);
     const userRepo = await getRepo(User, tenantId);
     const leadExist = await leadRepo.findOne({
@@ -34,10 +39,9 @@ export class LeadService {
         message: 'The lead is already present',
       });
     } else {
-      const createdBy = await userRepo.findOne({ where: { id: user.id } });
       const newLead: Lead = leadRepo.create({
         ...createLeadDto,
-        createdBy: createdBy ? createdBy : undefined,
+        createdBy: user
       });
 
       await leadRepo.save(newLead);
@@ -49,11 +53,7 @@ export class LeadService {
     }
   }
 
-  async importLeads(
-    file: Express.Multer.File,
-    tenant: string,
-    user: JwtPayload,
-  ) {
+  async importLeads(file: Express.Multer.File, tenant: string, user: User) {
     const leadData = { file, tenant, user };
     await this.fileQueue.add('file-import', leadData);
     return {
@@ -63,10 +63,112 @@ export class LeadService {
     };
   }
 
+  async leadPreview(tenantId: string, id: string): Promise<APIResponse<LeadPreview>> {
+    const leadRepo = await getRepo<Lead>(Lead, tenantId);
+    const lead = await leadRepo.findOne({ where: { id } });
+    const contactRepo = await getRepo<Contact>(Contact, tenantId);
+    const accountRepo = await getRepo<Account>(Account, tenantId);
+    if (!lead) {
+      throw new NotFoundException({ message: 'Lead not found or invalid lead id' });
+    } else {
+      const account = await accountRepo.findOne({ where: { name: ILike(`%${lead.company}%`) } });
+      const contact = await contactRepo.findOne({
+        where: [{ email: lead.email }, { phone: lead.phone }],
+      });
+      const leadPreview: LeadPreview = {
+        createAccount: account ? false : true,
+        createContact: contact ? false : true,
+        accountName: account ? undefined : lead.company,
+        contactName: contact ? undefined : lead.name,
+      };
+      return {
+        success: true,
+        statusCode: HttpStatus.OK,
+        message: 'Lead preview fetched successfully',
+        data: leadPreview,
+      };
+    }
+  }
+
+  async convertLead(
+    tenantId: string,
+    id: string,
+    user: User,
+    leadToContact?: LeadToContactDto,
+  ): Promise<APIResponse<unknown>> {
+    const leadRepo = await getRepo<Lead>(Lead, tenantId);
+    const lead = await leadRepo.findOne({ where: { id }, relations: { assignedTo: true } });
+    const contactRepo = await getRepo<Contact>(Contact, tenantId);
+    const accountRepo = await getRepo<Account>(Account, tenantId);
+    const countryRepo = await getRepo<Country>(Country, tenantId);
+
+    
+    if (!lead) {
+      throw new BadRequestException({ message: 'Invalid lead id or lead not found' });
+    }
+    if (!lead.assignedTo && user.role == Role.SalesRep) {
+      throw new UnauthorizedException({
+        message: 'Not authorized to convert others lead to contact',
+      });
+    } else if (lead.assignedTo && lead.assignedTo.id != user.id && user.role == Role.SalesRep) {
+      throw new UnauthorizedException({
+        message: 'Not authorized to convert others lead to contact',
+      });
+    }
+
+    const isContact = await contactRepo.findOne({
+      where: [{ email: lead.email }, { phone: lead.phone }],
+    });
+    if (isContact) {
+      throw new BadRequestException({ message: 'This lead is already converted into contact' });
+    }
+    const isAccount = await accountRepo.findOne({ where: { name: ILike(`%${lead.company}%`) } });
+    let newAccount: Account | null = await accountRepo.findOne({
+      where: { name: leadToContact?.account?.name },
+    });
+
+    if (!isAccount && leadToContact && leadToContact.account) {
+      const { country, ...accountData } = leadToContact.account;
+      let accountCountry: Country | null = null;
+
+      if (country) {
+        accountCountry = await countryRepo.findOne({
+          where: { name: ILike(`%${country}%`) },
+        });
+        if (!accountCountry) {
+          throw new NotFoundException({ message: 'Country not found for account' });
+        }
+      }
+
+      if (!newAccount) {
+        newAccount = await accountRepo.save({
+          ...accountData,
+          createdBy: user,
+          country: accountCountry ? accountCountry : undefined,
+        });
+      }
+    }
+    const newContact = await contactRepo.save({
+      name: lead.name,
+      email: lead.email,
+      phone: lead.phone,
+      createdBy: user,
+      accountId: isAccount ? isAccount : newAccount ? newAccount : undefined,
+    });
+    lead.contact = newContact;
+    lead.status = LeadStatus.Converted;
+    lead.convertedBy = user;
+    await leadRepo.save(lead);
+    return {
+      success: true,
+      statusCode: HttpStatus.OK,
+      message: 'Lead is successfully converted into contact',
+    };
+  }
+
   async findAll(
     leadQuery: LeadQueryDto,
     tenant: string,
-    user: JwtPayload,
   ): Promise<APIResponse<Lead[]>> {
     const leadRepo = await getRepo(Lead, tenant);
     const qb = leadRepo.createQueryBuilder('lead');
@@ -91,7 +193,7 @@ export class LeadService {
     return {
       success: true,
       statusCode: HttpStatus.OK,
-      message: 'Lead data fetched based on filter',
+      message: 'Lead details fetched based on filter',
       data,
       pageInfo: {
         total,
@@ -102,16 +204,7 @@ export class LeadService {
     };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} lead`;
-  }
-
-  async update(
-    id: string,
-    updateLeadDto: UpdateLeadDto,
-    tenant: string,
-    user: JwtPayload,
-  ) {
+  async update(id: string, updateLeadDto: UpdateLeadDto, tenant: string) {
     const leadRepo = await getRepo(Lead, tenant);
     const userRepo = await getRepo(User, tenant);
     let assignedUser: User | null = null;
@@ -141,9 +234,5 @@ export class LeadService {
         message: 'Lead updated successfully',
       };
     }
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} lead`;
   }
 }
