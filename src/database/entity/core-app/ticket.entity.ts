@@ -10,7 +10,7 @@ import { Contact } from './contact.entity';
 import { User } from './user.entity';
 import { TicketStatus } from 'src/enum/status.enum';
 
-@Entity()
+@Entity({ name: 'tickets' })
 export class Ticket {
   @PrimaryGeneratedColumn('uuid')
   id: string;

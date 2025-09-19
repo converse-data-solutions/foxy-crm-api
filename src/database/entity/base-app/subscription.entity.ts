@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { TenantSubscription } from './tenant-subscription.entity';
 
-@Entity()
+@Entity({ name: 'subscriptions' })
 export class Subscription {
   @PrimaryGeneratedColumn('uuid')
   id: string;

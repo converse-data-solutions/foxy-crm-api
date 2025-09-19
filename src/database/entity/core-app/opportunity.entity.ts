@@ -10,7 +10,7 @@ import {
 import { Contact } from './contact.entity';
 import { OpportunityStatus } from 'src/enum/status.enum';
 
-@Entity()
+@Entity({ name: 'oppurtunities' })
 export class Opportunity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -21,7 +21,12 @@ export class Opportunity {
   @Column({ name: 'value', type: 'integer' })
   value: number;
 
-  @Column({ name: 'stage', type: 'enum', enum: OpportunityStatus, default: OpportunityStatus.Qualified })
+  @Column({
+    name: 'stage',
+    type: 'enum',
+    enum: OpportunityStatus,
+    default: OpportunityStatus.Qualified,
+  })
   stage: OpportunityStatus;
 
   @ManyToOne(() => Contact)

@@ -1,11 +1,7 @@
-import {
-  BadRequestException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { JwtPayload } from 'src/dto/jwt-payload.dto';
+import { JwtPayload } from 'src/common/dto/jwt-payload.dto';
 import { Request } from 'express';
 import { AuthService } from 'src/service/auth.service';
 
@@ -23,7 +19,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(req: Request, payload: JwtPayload) {
-
     const tenantId = req?.headers['x-tenant-id'];
     if (!tenantId) {
       throw new BadRequestException({
@@ -34,8 +29,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       payload,
       Array.isArray(tenantId) ? tenantId[0] : tenantId,
     );
-    if (!user)
-      throw new UnauthorizedException({ message: 'Unauthorized Access' });
+    if (!user) throw new UnauthorizedException({ message: 'Unauthorized Access' });
     return user; // attached to req.user
   }
 }

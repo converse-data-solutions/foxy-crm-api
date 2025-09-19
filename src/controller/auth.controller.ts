@@ -1,16 +1,9 @@
-import {
-  Body,
-  Controller,
-  Headers,
-  HttpStatus,
-  Post,
-  Res,
-} from '@nestjs/common';
+import { Body, Controller, Headers, HttpStatus, Post, Res } from '@nestjs/common';
 import { AuthService } from '../service/auth.service';
-import { TenantSignupDto } from 'src/dto/tenant-signup.dto';
+import { TenantSignupDto } from 'src/dto/tenant-dto/tenant-signup.dto';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Response } from 'express';
-import { Signin, UserSignupDto } from 'src/dto/user-signup.dto';
+import { Signin, UserSignupDto } from 'src/dto/user-dto/user-signup.dto';
 import { Public } from 'src/common/decorator/public.decorator';
 
 @Controller('auth')
@@ -29,10 +22,7 @@ export class AuthController {
   @Post('user-signup')
   @ApiOperation({ summary: 'Signup or create a new account' })
   @ApiResponse({ status: 201, description: 'Signup process completed' })
-  async userSignup(
-    @Body() user: UserSignupDto,
-    @Headers('x-tenant-id') tenantId: string,
-  ) {
+  async userSignup(@Body() user: UserSignupDto, @Headers('x-tenant-id') tenantId: string) {
     return await this.authService.userSignup(user, tenantId);
   }
 

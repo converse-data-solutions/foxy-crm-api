@@ -13,7 +13,7 @@ import { LeadStatus } from 'src/enum/status.enum';
 import { LeadSource } from 'src/enum/core-app.enum';
 import { Contact } from './contact.entity';
 
-@Entity()
+@Entity({name:'leads'})
 export class Lead {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -57,6 +57,10 @@ export class Lead {
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'created_by' })
   createdBy?: User;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'converted_by' })
+  convertedBy?: User;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

@@ -1,7 +1,15 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { Country } from '../common-entity/country.entity';
+import { User } from './user.entity';
 
-@Entity()
+@Entity({ name: 'accounts' })
 export class Account {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -23,8 +31,12 @@ export class Account {
 
   @ManyToOne(() => Country)
   @JoinColumn({ name: 'country_id' })
-  country: Country;
+  country?: Country;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'created_by' })
+  createdBy?: User;
 }
