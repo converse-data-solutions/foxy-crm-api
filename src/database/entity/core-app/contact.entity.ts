@@ -13,7 +13,7 @@ import { Lead } from './lead.entity';
 import { Note } from './note.entity';
 import { User } from './user.entity';
 
-@Entity({name:'contacts'})
+@Entity({ name: 'contacts' })
 export class Contact {
   @PrimaryGeneratedColumn('uuid')
   id: string;

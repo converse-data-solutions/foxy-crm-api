@@ -13,6 +13,9 @@ import { JwtAuthGuard } from './guard/jwt-auth.guard';
 import { RolesGuard } from './guard/role.guard';
 import { ContactModule } from './module/contact.module';
 import { AccountModule } from './module/account.module';
+import { DealModule } from './module/deal.module';
+import { StripeModule } from './module/stripe.module';
+import { SubscriptionModule } from './module/subscription.module';
 
 @Module({
   imports: [
@@ -38,6 +41,9 @@ import { AccountModule } from './module/account.module';
     LeadModule,
     ContactModule,
     AccountModule,
+    DealModule,
+    StripeModule,
+    SubscriptionModule,
   ],
   providers: [
     {

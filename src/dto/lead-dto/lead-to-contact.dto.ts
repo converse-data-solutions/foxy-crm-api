@@ -5,18 +5,18 @@ export class AccountField {
   @ApiProperty({ example: 'Acme Corporation' })
   @IsDefined({ message: 'Name field is required' })
   @IsString({ message: 'Name must be string' })
-  @Length(2, 30, { message: 'Name must be between 2 and 30 characters' })
+  @Length(3, 40, { message: 'Name must be between 3 and 40 characters' })
   name: string;
 
   @ApiProperty({ example: 'Technology' })
   @IsDefined({ message: 'Industry field is required' })
   @IsString({ message: 'Industry must be string' })
-  @Length(2, 20, { message: 'Industry must be between 2 and 20 characters' })
+  @Length(2, 40, { message: 'Industry must be between 2 and 40 characters' })
   industry: string;
 
   @ApiProperty({ example: 'https://acme.com' })
   @IsDefined({ message: 'Website field is required' })
-  @IsUrl({},{ message: 'Please give valid website url' })
+  @IsUrl({}, { message: 'Please give valid website url' })
   website: string;
 
   @ApiPropertyOptional({ example: '123 Main St' })
@@ -28,7 +28,7 @@ export class AccountField {
   @ApiPropertyOptional({ example: 'New York' })
   @IsOptional()
   @IsString({ message: 'City must be string' })
-  @Length(3, 20, { message: 'City must be between 3 and 20 characters' })
+  @Length(3, 40, { message: 'City must be between 3 and 40 characters' })
   city?: string;
 
   @ApiPropertyOptional({ example: 'USA' })

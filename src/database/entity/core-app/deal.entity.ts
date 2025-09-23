@@ -1,4 +1,5 @@
 import {
+  Check,
   Column,
   CreateDateColumn,
   Entity,
@@ -8,10 +9,12 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Contact } from './contact.entity';
-import { OpportunityStatus } from 'src/enum/status.enum';
+import { DealStatus } from 'src/enum/status.enum';
+import { User } from './user.entity';
 
-@Entity({ name: 'oppurtunities' })
-export class Opportunity {
+@Entity({ name: 'deals' })
+@Check(`"expected_close_date" > CURRENT_DATE`)
+export class Deal {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -24,10 +27,13 @@ export class Opportunity {
   @Column({
     name: 'stage',
     type: 'enum',
-    enum: OpportunityStatus,
-    default: OpportunityStatus.Qualified,
+    enum: DealStatus,
+    default: DealStatus.Qualified,
   })
-  stage: OpportunityStatus;
+  stage: DealStatus;
+
+  @Column({ name: 'expected_close_date', type: 'date', nullable: true })
+  expectedCloseDate: Date;
 
   @ManyToOne(() => Contact)
   @JoinColumn({ name: 'contact_id' })
@@ -38,4 +44,8 @@ export class Opportunity {
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'created_by' })
+  createdBy?: User;
 }

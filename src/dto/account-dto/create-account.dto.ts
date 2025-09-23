@@ -7,7 +7,7 @@ export class CreateAccountDto {
   })
   @IsDefined({ message: 'Name field is required' })
   @IsString({ message: 'Name must be string' })
-  @Length(3, 30, { message: 'Name must be between 3 and 30 characters' })
+  @Length(3, 40, { message: 'Name must be between 3 and 40 characters' })
   name: string;
 
   @ApiProperty({
@@ -15,7 +15,7 @@ export class CreateAccountDto {
   })
   @IsDefined({ message: 'Industry field is required' })
   @IsString({ message: 'Industry must be string type' })
-  @Length(5, 20, { message: 'Industry must be between 5 and 20 characters' })
+  @Length(5, 40, { message: 'Industry must be between 5 and 40 characters' })
   industry: string;
 
   @ApiProperty({
@@ -38,7 +38,7 @@ export class CreateAccountDto {
   })
   @IsOptional()
   @IsString({ message: 'City must be a string' })
-  @Length(3, 20, { message: 'City must be between 3 and 20 characters' })
+  @Length(3, 40, { message: 'City must be between 3 and 40 characters' })
   city?: string;
 
   @ApiPropertyOptional({

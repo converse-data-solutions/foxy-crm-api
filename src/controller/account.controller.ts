@@ -18,7 +18,7 @@ export class AccountController {
   @ApiOperation({ summary: 'Create new account' })
   @ApiResponse({ status: 201, description: 'Account created successfully' })
   async create(
-    @Headers() tenantId: string,
+    @Headers('x-tenant-id') tenantId: string,
     @CurrentUser() user: User,
     @Body() createAccountDto: CreateAccountDto,
   ) {
@@ -26,14 +26,17 @@ export class AccountController {
   }
 
   @Get()
-  async findAll(@Headers() tenantId: string, @Query() accountQuery: GetAccountDto) {
+  @Roles(Role.Admin, Role.Manager)
+  @ApiOperation({ summary: 'Get Account details' })
+  @ApiResponse({ status: 200, description: 'Account details fetched successfully' })
+  async findAll(@Headers('x-tenant-id') tenantId: string, @Query() accountQuery: GetAccountDto) {
     return await this.accountService.findAll(tenantId, accountQuery);
   }
 
   @Put(':id')
   @Roles(Role.Admin, Role.Manager, Role.SalesRep)
   async update(
-    @Headers() tenantId: string,
+    @Headers('x-tenant-id') tenantId: string,
     @Param('id') id: string,
     @Body() updateAccountDto: UpdateAccountDto,
   ) {

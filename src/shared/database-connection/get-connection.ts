@@ -1,11 +1,5 @@
 import { coreDataSource } from 'src/database/datasource/core-app-data-source';
-import {
-  DataSource,
-  DataSourceOptions,
-  EntityTarget,
-  ObjectLiteral,
-  Repository,
-} from 'typeorm';
+import { DataSource, DataSourceOptions, EntityTarget, ObjectLiteral, Repository } from 'typeorm';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
 
 interface CachedDataSource {
@@ -43,10 +37,7 @@ export async function getConnection(schemaName: string): Promise<DataSource> {
 setInterval(async () => {
   const now = Date.now();
   for (const [schema, cached] of Object.entries(connections)) {
-    if (
-      cached.dataSource.isInitialized &&
-      now - cached.lastAccess > IDLE_TIMEOUT_MS
-    ) {
+    if (cached.dataSource.isInitialized && now - cached.lastAccess > IDLE_TIMEOUT_MS) {
       await cached.dataSource.destroy();
       delete connections[schema];
     }
