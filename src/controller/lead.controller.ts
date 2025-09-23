@@ -95,22 +95,20 @@ export class LeadController {
   @Roles(Role.Admin, Role.Manager)
   @ApiOperation({ summary: 'Retrive lead based on query' })
   @ApiResponse({ status: 200, description: 'Lead fetched successfully' })
-  async findAll(
-    @Query() leadQuery: LeadQueryDto,
-    @Headers('x-tenant-id') tenantId: string,
-  ) {
+  async findAll(@Query() leadQuery: LeadQueryDto, @Headers('x-tenant-id') tenantId: string) {
     return this.leadService.findAll(leadQuery, tenantId);
   }
 
   @Put(':id')
-  @Roles(Role.Admin, Role.Manager)
+  @Roles(Role.Admin, Role.Manager, Role.SalesRep)
   @ApiOperation({ summary: 'Update lead data' })
   @ApiResponse({ status: 200, description: 'Lead updated successfully' })
   async update(
     @Param('id') id: string,
+    @CurrentUser() user: User,
     @Body() updateLeadDto: UpdateLeadDto,
     @Headers('x-tenant-id') tenantId: string,
   ) {
-    return this.leadService.update(id, updateLeadDto, tenantId);
+    return this.leadService.update(id, user, updateLeadDto, tenantId);
   }
 }

@@ -14,10 +14,10 @@ export class Account {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'name', type: 'varchar', length: 30, unique: true })
+  @Column({ name: 'name', type: 'varchar', length: 40, unique: true })
   name: string;
 
-  @Column({ name: 'industry', type: 'varchar', length: 20 })
+  @Column({ name: 'industry', type: 'varchar', length: 40 })
   industry: string;
 
   @Column({ name: 'website', type: 'text' })
@@ -26,7 +26,7 @@ export class Account {
   @Column({ name: 'address', type: 'varchar', length: 50, nullable: true })
   address?: string;
 
-  @Column({ name: 'city', type: 'varchar', length: 20, nullable: true })
+  @Column({ name: 'city', type: 'varchar', length: 40, nullable: true })
   city?: string;
 
   @ManyToOne(() => Country)

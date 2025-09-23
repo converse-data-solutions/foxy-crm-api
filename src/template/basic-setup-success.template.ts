@@ -1,4 +1,4 @@
-export function basicSetupTemplate(userName: string): string {
+export function basicSetupSuccessTemplate(userName: string): string {
   return `
 <div style="font-family: Arial, sans-serif; border: 1px solid #ddd; padding: 20px; max-width: 500px; margin: auto;">
   <p>Dear ${userName},</p>

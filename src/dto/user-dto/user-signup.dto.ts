@@ -13,7 +13,7 @@ export class Signin {
   @IsDefined({ message: 'Password must be required' })
   @IsString({ message: 'Please give password in correct format' })
   @Length(7, 15, { message: 'Password must be between 7 and 15 characters' })
-  @ApiProperty({ example: 'pa$$w0rd' })
+  @ApiProperty({ example: 'pa$w0rd$' })
   password: string;
 }
 

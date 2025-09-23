@@ -11,7 +11,7 @@ import {
 import { TenantSubscription } from './tenant-subscription.entity';
 import { Country } from '../common-entity/country.entity';
 
-@Entity({name:'tenants'})
+@Entity({ name: 'tenants' })
 export class Tenant {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -48,6 +48,12 @@ export class Tenant {
     default: () => 'uuid_generate_v4()',
   })
   schemaName: string;
+
+  @Column({ name: 'address', type: 'varchar', length: 50, nullable: true })
+  address?: string;
+
+  @Column({ name: 'city', type: 'varchar', length: 40, nullable: true })
+  city?: string;
 
   @ManyToOne(() => Country)
   @JoinColumn({ name: 'country_id' })

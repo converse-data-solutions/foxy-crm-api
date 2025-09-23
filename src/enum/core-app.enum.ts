@@ -11,7 +11,7 @@ export enum TaskPriority {
 }
 
 export enum EntityName {
-  Opportunity = 'opportunity',
+  Deal = 'deal',
   Ticket = 'ticket',
 }
 
@@ -25,5 +25,5 @@ export enum LeadSource {
   Website = 'website',
   Referral = 'refferral',
   SocialMedia = 'social media',
-  Other = 'other'
+  Other = 'other',
 }
