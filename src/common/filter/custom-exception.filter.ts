@@ -23,12 +23,11 @@ export class CustomExceptionFilter implements ExceptionFilter {
   private handleHttpException(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
-    console.log(exception);
-    
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'Internal server error';
     let errors: string[] | null = null;
+    console.log(exception);
 
     console.log(exception);
     if (exception instanceof HttpException) {

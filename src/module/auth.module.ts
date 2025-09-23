@@ -11,11 +11,12 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from 'src/common/strategy/jwt.startegy';
 import { SeedService } from 'src/service/seed.service';
 import { Country } from 'src/database/entity/common-entity/country.entity';
+import { Subscription } from 'src/database/entity/base-app/subscription.entity';
 
 @Module({
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),
-    TypeOrmModule.forFeature([Tenant, TenantSubscription, Country]),
+    TypeOrmModule.forFeature([Tenant, TenantSubscription, Country, Subscription]),
     BullModule.registerQueue({ name: 'tenant-setup' }),
     JwtModule,
   ],

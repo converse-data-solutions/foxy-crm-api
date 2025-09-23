@@ -43,7 +43,7 @@ export class AuthService {
         message: 'The Organization or email is already registered',
       });
     } else {
-      const hashPassword = await bcrypt.hash(tenant.password, Number(process.env.SALT)!);
+      const hashPassword = await bcrypt.hash(tenant.password, Number(process.env.SALT));
       const { country, ...tenantData } = tenant;
       let tenantCountry: Country | null = null;
       if (country) {
@@ -108,9 +108,11 @@ export class AuthService {
     }
   }
 
-  async userSignin(user: Signin, tenantId: string) {
-    const userRepo = await getRepo(User, tenantId);
-    const userExist = await userRepo.findOne({ where: { email: user.email } });
+  async userSignin(user: Signin, tenantId?: string) {
+    const repo: Repository<User | Tenant> = tenantId
+      ? await getRepo(User, tenantId)
+      : this.tenantRepo;
+    const userExist = await repo.findOne({ where: { email: user.email } });
     if (!userExist) {
       throw new NotFoundException({
         message: 'User email not found please signup',
@@ -125,13 +127,10 @@ export class AuthService {
         const payload = plainToInstance(JwtPayload, userExist, {
           excludeExtraneousValues: true,
         });
-        console.log('payload----------', payload);
 
         return this.jwtService.sign(
           {
-            id: userExist.id,
-            role: userExist.role,
-            email: userExist.email,
+            ...payload,
           },
           { secret: process.env.SECRET_KEY },
         );

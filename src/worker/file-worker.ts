@@ -42,7 +42,7 @@ export class FileWorker extends WorkerHost {
             phone: row['phone'],
             company: row['company'] || undefined,
             source: row['source'] || undefined,
-            createdBy: user
+            createdBy: user,
           });
         })
         .on('end', async () => {

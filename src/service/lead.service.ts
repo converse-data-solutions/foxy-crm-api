@@ -29,7 +29,6 @@ export class LeadService {
 
   async create(createLeadDto: CreateLeadDto, tenantId: string, user: User) {
     const leadRepo = await getRepo(Lead, tenantId);
-    const userRepo = await getRepo(User, tenantId);
     const leadExist = await leadRepo.findOne({
       where: [{ email: createLeadDto.email }, { phone: createLeadDto.phone }],
     });
@@ -41,7 +40,7 @@ export class LeadService {
     } else {
       const newLead: Lead = leadRepo.create({
         ...createLeadDto,
-        createdBy: user
+        createdBy: user,
       });
 
       await leadRepo.save(newLead);
@@ -102,7 +101,6 @@ export class LeadService {
     const accountRepo = await getRepo<Account>(Account, tenantId);
     const countryRepo = await getRepo<Country>(Country, tenantId);
 
-    
     if (!lead) {
       throw new BadRequestException({ message: 'Invalid lead id or lead not found' });
     }
@@ -115,6 +113,11 @@ export class LeadService {
         message: 'Not authorized to convert others lead to contact',
       });
     }
+    if (lead.status === LeadStatus.Disqualified) {
+      throw new BadRequestException({
+        message: 'Cannot convert disqualified lead first update status',
+      });
+    }
 
     const isContact = await contactRepo.findOne({
       where: [{ email: lead.email }, { phone: lead.phone }],
@@ -123,9 +126,11 @@ export class LeadService {
       throw new BadRequestException({ message: 'This lead is already converted into contact' });
     }
     const isAccount = await accountRepo.findOne({ where: { name: ILike(`%${lead.company}%`) } });
-    let newAccount: Account | null = await accountRepo.findOne({
-      where: { name: leadToContact?.account?.name },
-    });
+    let newAccount = leadToContact?.account
+      ? await accountRepo.findOne({
+          where: { name: leadToContact?.account?.name },
+        })
+      : null;
 
     if (!isAccount && leadToContact && leadToContact.account) {
       const { country, ...accountData } = leadToContact.account;
@@ -166,10 +171,7 @@ export class LeadService {
     };
   }
 
-  async findAll(
-    leadQuery: LeadQueryDto,
-    tenant: string,
-  ): Promise<APIResponse<Lead[]>> {
+  async findAll(leadQuery: LeadQueryDto, tenant: string): Promise<APIResponse<Lead[]>> {
     const leadRepo = await getRepo(Lead, tenant);
     const qb = leadRepo.createQueryBuilder('lead');
     for (const [key, value] of Object.entries(leadQuery)) {
@@ -204,26 +206,31 @@ export class LeadService {
     };
   }
 
-  async update(id: string, updateLeadDto: UpdateLeadDto, tenant: string) {
+  async update(id: string, user: User, updateLeadDto: UpdateLeadDto, tenant: string) {
     const leadRepo = await getRepo(Lead, tenant);
     const userRepo = await getRepo(User, tenant);
     let assignedUser: User | null = null;
-    if (updateLeadDto.assignedTo) {
-      assignedUser = await userRepo.findOne({
-        where: { id: updateLeadDto.assignedTo },
+    if (updateLeadDto.assignedTo && user.role == Role.SalesRep) {
+      throw new UnauthorizedException({
+        message: 'Not have enough authorization to assign a lead',
       });
+    } else {
+      assignedUser = await userRepo.findOne({ where: { id: updateLeadDto.assignedTo } });
       if (!assignedUser) {
-        throw new BadRequestException({
-          message: 'Lead is not assigned to invalid user id',
-        });
+        throw new BadRequestException({ message: 'Lead is not assigned to invalid id' });
       }
     }
+
     const lead = await leadRepo.findOne({ where: { id } });
     if (!lead) {
       throw new BadRequestException({
         message: 'Lead not found or invalid lead id',
       });
     } else {
+      if (lead.status == LeadStatus.Converted) {
+        throw new BadRequestException({ message: 'Lead is already converted cannot update' });
+      }
+
       const { assignedTo, ...other } = updateLeadDto;
       leadRepo.merge(lead, other);
       lead.assignedTo = assignedUser ? assignedUser : undefined;

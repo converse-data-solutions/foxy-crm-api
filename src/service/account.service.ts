@@ -40,8 +40,36 @@ export class AccountService {
     };
   }
 
-  async findAll(tenantId: string, accountQuery: GetAccountDto) {
-    return `This action returns all account`;
+  async findAll(tenantId: string, accountQuery: GetAccountDto): Promise<APIResponse<Account[]>> {
+    const accountRepo = await getRepo<Account>(Account, tenantId);
+    const qb = accountRepo.createQueryBuilder('account').leftJoin('account.country', 'country');
+
+    for (const [key, value] of Object.entries(accountQuery)) {
+      if (value == null || key === 'page' || key === 'limit') {
+        continue;
+      } else if (['name', 'industry', 'city'].includes(key)) {
+        qb.andWhere(`account.${key} ILIKE :${key}`, { [key]: `%${value}%` });
+      } else {
+        qb.andWhere('country.name ILIKE :country', { country: `%${value}%` });
+      }
+    }
+    const page = accountQuery.page ?? 1;
+    const limit = accountQuery.limit ?? 10;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
+    return {
+      success: true,
+      statusCode: HttpStatus.OK,
+      message: 'Account details fetched based on filter',
+      data,
+      pageInfo: {
+        total,
+        limit,
+        page,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async update(
@@ -64,9 +92,8 @@ export class AccountService {
         throw new NotFoundException({ message: 'Country not found' });
       }
     }
-    accountRepo.merge(account, updateAccount);
     account.country = accountCountry ? accountCountry : undefined;
-    await countryRepo.save(account);
+    await accountRepo.save({ ...account, ...updateAccount });
     return {
       success: true,
       statusCode: HttpStatus.OK,

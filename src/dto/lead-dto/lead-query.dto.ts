@@ -1,13 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import {
-  IsOptional,
-  IsString,
-  IsEnum,
-  IsInt,
-  Min,
-  Matches,
-} from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsInt, Min, Matches } from 'class-validator';
 import { LeadSource } from 'src/enum/core-app.enum';
 
 export class LeadQueryDto {
@@ -51,14 +44,14 @@ export class LeadQueryDto {
   })
   @IsOptional()
   @Type(() => Number)
-  @IsInt({message: 'Page number must be an numeric value'})
+  @IsInt({ message: 'Page number must be an numeric value' })
   @Min(1)
   page?: number = 1;
 
   @ApiPropertyOptional({ description: 'Items per page', default: 10 })
   @IsOptional()
   @Type(() => Number)
-  @IsInt({message: 'Limit must be an numeric value'})
+  @IsInt({ message: 'Limit must be an numeric value' })
   @Min(1)
   limit?: number = 10;
 }

@@ -1,9 +1,10 @@
-export class APIResponse<T=unknown> {
+export class APIResponse<T = unknown> {
   success: boolean;
   statusCode: number;
   message: string;
   data?: T;
   pageInfo?: Pageination;
+  paymentUrl?: string | null;
 }
 
 export class Pageination {
