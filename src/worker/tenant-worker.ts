@@ -2,7 +2,6 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { Tenant } from 'src/database/entity/base-app/tenant.entity';
 import { User } from 'src/database/entity/core-app/user.entity';
-import * as nodemailer from 'nodemailer';
 import { HttpStatus } from '@nestjs/common';
 import { getConnection, getRepo } from 'src/shared/database-connection/get-connection';
 import { Role } from 'src/enum/core-app.enum';
@@ -13,9 +12,13 @@ import { Country } from 'src/database/entity/common-entity/country.entity';
 import { ILike } from 'typeorm';
 import { basicSetupSuccessTemplate } from 'src/template/basic-setup-success.template';
 import { basicSetupFailureTemplate } from 'src/template/basic-setup-failure.template';
+import { MailerService } from '@nestjs-modules/mailer';
 
 @Processor('tenant-setup')
 export class TenantWorker extends WorkerHost {
+  constructor(private readonly mailService: MailerService) {
+    super();
+  }
   private countries: CountryInterface[] = [];
   async process(job: Job) {
     await this.tenantSetup(job.data);
@@ -52,28 +55,15 @@ export class TenantWorker extends WorkerHost {
   }
 
   private async sendOtpEmail(name: string, email: string, flag: boolean) {
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
-      auth: {
-        user: process.env.CLIENT_MAIL,
-        pass: process.env.CLIENT_SECRET_MAIL,
-      },
-      tls: {
-        rejectUnauthorized: false,
-      },
-    });
     const htmlContent = flag ? basicSetupSuccessTemplate(name) : basicSetupFailureTemplate(name);
     const mailOptions = {
-      from: process.env.CLIENT_MAIL,
       to: email,
       subject: flag ? 'Basic setup completed' : 'Basic setup failed',
       html: htmlContent,
     };
 
     try {
-      await transporter.sendMail(mailOptions);
+      await this.mailService.sendMail(mailOptions);
     } catch (error) {
       console.log({
         success: false,

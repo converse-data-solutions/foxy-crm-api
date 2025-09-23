@@ -14,8 +14,8 @@ import { RolesGuard } from './guard/role.guard';
 import { ContactModule } from './module/contact.module';
 import { AccountModule } from './module/account.module';
 import { DealModule } from './module/deal.module';
-import { StripeModule } from './module/stripe.module';
 import { SubscriptionModule } from './module/subscription.module';
+import { MailerModule } from '@nestjs-modules/mailer';
 
 @Module({
   imports: [
@@ -38,11 +38,28 @@ import { SubscriptionModule } from './module/subscription.module';
         signOptions: { expiresIn: config.get<string>('JWT_EXPIRES_IN') },
       }),
     }),
+    MailerModule.forRoot({
+      transport: {
+        host: process.env.SMTP_HOST,
+        port: Number(process.env.SMTP_PORT),
+        secure: false,
+        auth: {
+          user: process.env.CLIENT_MAIL,
+          pass: process.env.CLIENT_SECRET_MAIL,
+        },
+        tls: {
+          rejectUnauthorized: false,
+        },
+        logger: false,
+      },
+      defaults: {
+        from: 'Converse Data Solutions',
+      },
+    }),
     LeadModule,
     ContactModule,
     AccountModule,
     DealModule,
-    StripeModule,
     SubscriptionModule,
   ],
   providers: [

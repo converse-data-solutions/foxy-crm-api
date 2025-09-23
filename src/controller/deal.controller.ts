@@ -1,6 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Headers } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Headers } from '@nestjs/common';
 import { DealService } from '../service/deal.service';
-import { UpdateDealDto } from 'src/dto/deal-dto/update-deal.dto';
 import { CreateDealDto } from 'src/dto/deal-dto/create-deal.dto';
 import { CurrentUser } from 'src/common/decorator/current-user.decorator';
 import { User } from 'src/database/entity/core-app/user.entity';
@@ -26,10 +25,5 @@ export class DealController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.dealService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateDealDto: UpdateDealDto) {
-    return this.dealService.update(+id, updateDealDto);
   }
 }

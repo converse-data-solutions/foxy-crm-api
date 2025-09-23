@@ -30,6 +30,7 @@
     "lint-staged": "lint-staged"
   },
   "dependencies": {
+    "@nestjs-modules/mailer": "^2.0.2",
     "@nestjs/bullmq": "^11.0.3",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",

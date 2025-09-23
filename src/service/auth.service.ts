@@ -66,7 +66,10 @@ export class AuthService {
       });
       await this.tenantSubcriptionRepo.save(tenantSubscription);
 
-      await this.tenantQueue.add('tenant-setup', { tenant: newTenant, country });
+      await this.tenantQueue.add('tenant-setup', {
+        tenant: newTenant,
+        country,
+      });
 
       return {
         success: true,
