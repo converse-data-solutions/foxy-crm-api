@@ -19,7 +19,7 @@ export enum LeadStatus {
   Converted = 'converted',
 }
 
-export enum OpportunityStatus {
+export enum DealStatus {
   Qualified = 'qualified',
   Proposal = 'proposal',
   Negotiation = 'negotiation',

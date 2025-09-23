@@ -1,7 +1,7 @@
 import { Body, Controller, Headers, HttpStatus, Post, Res } from '@nestjs/common';
 import { AuthService } from '../service/auth.service';
 import { TenantSignupDto } from 'src/dto/tenant-dto/tenant-signup.dto';
-import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiHeader, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Response } from 'express';
 import { Signin, UserSignupDto } from 'src/dto/user-dto/user-signup.dto';
 import { Public } from 'src/common/decorator/public.decorator';
@@ -27,16 +27,22 @@ export class AuthController {
   }
 
   @Public()
-  @Post('user-signin')
+  @Post('signin')
+  @ApiHeader({
+    name: 'x-tenant-id',
+    description: 'Tenant identifier',
+    required: false,
+  })
   @ApiOperation({ summary: 'Signin user and access token is generated' })
   @ApiResponse({ status: 200, description: 'Signin successfully' })
   async userSignin(
     @Body() user: Signin,
-    @Headers('x-tenant-id') tenantId: string,
     @Res() response: Response,
+    @Headers('x-tenant-id') tenantId?: string,
   ) {
     const token = await this.authService.userSignin(user, tenantId);
-    response.cookie('access_token', token);
+    const cookieName = tenantId ? 'access_token' : 'tenant_access_token';
+    response.cookie(cookieName, token);
     response.status(HttpStatus.OK);
     response.json({
       success: true,

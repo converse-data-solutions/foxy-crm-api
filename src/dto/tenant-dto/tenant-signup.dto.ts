@@ -32,7 +32,7 @@ export class TenantSignupDto {
 
   @IsDefined({ message: 'Password is required' })
   @IsString({ message: 'Password must be a string' })
-  @ApiProperty({ example: 'pa$$w0rd' })
+  @ApiProperty({ example: 'pa$w0rd$' })
   @Length(7, 15, { message: 'Password must be between 7 and 15 characters' })
   password: string;
 

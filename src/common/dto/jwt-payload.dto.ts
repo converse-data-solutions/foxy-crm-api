@@ -9,5 +9,7 @@ export class JwtPayload {
   email: string;
 
   @Expose()
-  role: Role;
+  role?: Role;
+
+  tenantAccessToken: boolean;
 }

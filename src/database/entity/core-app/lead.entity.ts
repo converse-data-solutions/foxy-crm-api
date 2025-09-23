@@ -13,7 +13,7 @@ import { LeadStatus } from 'src/enum/status.enum';
 import { LeadSource } from 'src/enum/core-app.enum';
 import { Contact } from './contact.entity';
 
-@Entity({name:'leads'})
+@Entity({ name: 'leads' })
 export class Lead {
   @PrimaryGeneratedColumn('uuid')
   id: string;

@@ -9,23 +9,24 @@ import { SeedService } from './service/seed.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
   app.use(cookieParser());
   app.setGlobalPrefix('api/v1');
+
   const config = new DocumentBuilder()
     .setTitle('CRM API Documentation')
     .setDescription('API description')
     .setVersion('1.0')
     .addCookieAuth('access_token')
     .build();
-
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('swagger', app, document);
 
   const dataSource = app.get(DataSource);
   await dataSource.runMigrations();
-
-  const countrySeeder = app.get(SeedService);
-  await countrySeeder.countrySeed();
+  const seederService = app.get(SeedService);
+  await seederService.countrySeed();
+  await seederService.subscriptionSeed();
 
   app.useGlobalPipes(new CustomValidationPipe());
   app.useGlobalFilters(new CustomExceptionFilter());

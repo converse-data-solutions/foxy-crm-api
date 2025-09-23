@@ -1,15 +1,8 @@
-import {
-  Injectable,
-  BadRequestException,
-  ValidationPipe,
-  ValidationError,
-} from '@nestjs/common';
+import { Injectable, BadRequestException, ValidationPipe, ValidationError } from '@nestjs/common';
 
 @Injectable()
 export class CustomValidationPipe extends ValidationPipe {
-  private readonly myExceptionFactory: (
-    errors: ValidationError[],
-  ) => BadRequestException;
+  private readonly myExceptionFactory: (errors: ValidationError[]) => BadRequestException;
 
   constructor() {
     const formatErrors = (errors: ValidationError[]): Record<string, any> => {

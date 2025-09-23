@@ -31,6 +31,12 @@ export class User {
   @Column({ name: 'role', type: 'enum', enum: Role, default: Role.SalesRep })
   role: Role;
 
+  @Column({ name: 'address', type: 'varchar', length: 50, nullable: true })
+  address?: string;
+
+  @Column({ name: 'city', type: 'varchar', length: 40, nullable: true })
+  city?: string;
+
   @ManyToOne(() => Country)
   @JoinColumn({ name: 'country_id' })
   country: Country;

@@ -108,11 +108,11 @@ export class ContactService {
     }
     if (updateContactDto.assignedTo && user.role == Role.SalesRep) {
       throw new UnauthorizedException({
-        message: 'Not have enough authorixation to assign a contact',
+        message: 'Not have enough authorization to assign a contact',
       });
     } else {
       assignedUser = await userRepo.findOne({ where: { id: updateContactDto.assignedTo } });
-      if (!assignedTo) {
+      if (!assignedUser) {
         throw new BadRequestException({ message: 'Contact is not assigned to invalid id' });
       }
     }

@@ -12,11 +12,11 @@ export class Subscription {
   @Column({ type: 'int' })
   price: number;
 
-  @Column({ type: 'int', name: 'user_count' })
-  userCount: number;
+  @Column({ type: 'varchar', name: 'price_id', length: 50 })
+  priceId: string;
 
-  @Column({ type: 'int', name: 'valid_upto' })
-  validUpto: number;
+  @Column({ type: 'varchar', name: 'valid_upto', length: 20 })
+  validUpto: string;
 
   @OneToMany(() => TenantSubscription, (ts) => ts.subscription)
   tenantsSubscription: TenantSubscription[];
