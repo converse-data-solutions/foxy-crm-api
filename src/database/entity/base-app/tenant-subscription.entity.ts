@@ -7,16 +7,6 @@ export class TenantSubscription {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @OneToOne(() => Tenant, (tenant) => tenant.tenantSubscription)
-  @JoinColumn({ name: 'tenant_id' })
-  tenant: Tenant;
-
-  @ManyToOne(() => Subscription, (subscription) => subscription.tenantsSubscription, {
-    nullable: true,
-  })
-  @JoinColumn({ name: 'subscription_id' })
-  subscription: Subscription;
-
   @Column({ type: 'boolean', default: false })
   status: boolean;
 
@@ -34,4 +24,14 @@ export class TenantSubscription {
 
   @Column({ name: 'stripe_customer_id', type: 'varchar', nullable: true, length: 50 })
   stripeCustomerId?: string;
+
+  @OneToOne(() => Tenant, (tenant) => tenant.tenantSubscription, { cascade: true })
+  @JoinColumn({ name: 'tenant_id' })
+  tenant: Tenant;
+
+  @ManyToOne(() => Subscription, (subscription) => subscription.tenantsSubscription, {
+    nullable: true,
+  })
+  @JoinColumn({ name: 'subscription_id' })
+  subscription: Subscription;
 }

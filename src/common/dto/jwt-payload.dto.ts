@@ -10,6 +10,4 @@ export class JwtPayload {
 
   @Expose()
   role?: Role;
-
-  tenantAccessToken: boolean;
 }

@@ -22,12 +22,19 @@ import { LeadToContactDto } from 'src/dto/lead-dto/lead-to-contact.dto';
 import { Country } from 'src/database/entity/common-entity/country.entity';
 import { Role } from 'src/enum/core-app.enum';
 import { LeadStatus } from 'src/enum/status.enum';
+import { Readable } from 'stream';
+import * as csv from 'csv-parser';
+
+interface SerializedBuffer {
+  type: 'Buffer';
+  data: number[];
+}
 
 @Injectable()
 export class LeadService {
   constructor(@InjectQueue('file-import') private readonly fileQueue: Queue) {}
 
-  async create(createLeadDto: CreateLeadDto, tenantId: string, user: User) {
+  async createLead(createLeadDto: CreateLeadDto, tenantId: string, user: User) {
     const leadRepo = await getRepo(Lead, tenantId);
     const leadExist = await leadRepo.findOne({
       where: [{ email: createLeadDto.email }, { phone: createLeadDto.phone }],
@@ -171,7 +178,7 @@ export class LeadService {
     };
   }
 
-  async findAll(leadQuery: LeadQueryDto, tenant: string): Promise<APIResponse<Lead[]>> {
+  async findAllLeads(leadQuery: LeadQueryDto, tenant: string): Promise<APIResponse<Lead[]>> {
     const leadRepo = await getRepo(Lead, tenant);
     const qb = leadRepo.createQueryBuilder('lead');
     for (const [key, value] of Object.entries(leadQuery)) {
@@ -206,7 +213,7 @@ export class LeadService {
     };
   }
 
-  async update(id: string, user: User, updateLeadDto: UpdateLeadDto, tenant: string) {
+  async updateLead(id: string, user: User, updateLeadDto: UpdateLeadDto, tenant: string) {
     const leadRepo = await getRepo(Lead, tenant);
     const userRepo = await getRepo(User, tenant);
     let assignedUser: User | null = null;
@@ -241,5 +248,46 @@ export class LeadService {
         message: 'Lead updated successfully',
       };
     }
+  }
+
+  async bulkLeadsSave(file: Express.Multer.File, tenant: string, user: User) {
+    const results: Partial<Lead>[] = [];
+    const leadRepo = await getRepo(Lead, tenant);
+    const leads = await leadRepo.find({ select: { email: true, phone: true } });
+
+    await new Promise((resolve, reject) => {
+      const serializedBuffer = file.buffer as unknown as SerializedBuffer;
+
+      const buffer = Buffer.from(serializedBuffer.data);
+      const stream = new Readable();
+
+      stream.push(buffer);
+      stream.push(null);
+
+      stream
+        .pipe(csv())
+        .on('data', (row: CreateLeadDto) => {
+          results.push({
+            name: row['name'],
+            email: row['email'],
+            phone: row['phone'],
+            company: row['company'] || undefined,
+            source: row['source'] || undefined,
+            createdBy: user,
+          });
+        })
+        .on('end', async () => {
+          const finalLead = results.filter(
+            (result) =>
+              !leads.some((lead) => lead.email === result.email || lead.phone === result.phone),
+          );
+          if (finalLead.length > 0) {
+            const newLeads = leadRepo.create(finalLead);
+            await leadRepo.save(newLeads);
+          }
+          resolve(results as Lead[]);
+        })
+        .on('error', (err: unknown) => reject(err));
+    });
   }
 }

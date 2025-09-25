@@ -1,0 +1,35 @@
+import { Injectable } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { Between, Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { TenantSubscription } from 'src/database/entity/base-app/tenant-subscription.entity';
+import { Queue } from 'bullmq';
+import { InjectQueue } from '@nestjs/bullmq';
+
+@Injectable()
+export class SubscriptionScheduler {
+  constructor(
+    @InjectRepository(TenantSubscription)
+    private readonly tenantSubscriptionRepo: Repository<TenantSubscription>,
+    @InjectQueue('subscription') private readonly subscriptionQueue: Queue,
+  ) {}
+
+  @Cron(CronExpression.EVERY_DAY_AT_NOON)
+  async expireSubscriptions() {
+    const now = new Date();
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const subscriptions = await this.tenantSubscriptionRepo.find({
+      where: {
+        status: true,
+        endDate: Between(now, tomorrow),
+      },
+    });
+    for (const sub of subscriptions) {
+      if (sub.endDate) {
+        const delay = sub.endDate.getTime() - now.getTime();
+        await this.subscriptionQueue.add('expire-subscription', { id: sub.id }, { delay });
+        await this.subscriptionQueue.add('reminder-mail', { subscriptionId: sub.id });
+      }
+    }
+  }
+}

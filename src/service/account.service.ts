@@ -48,7 +48,7 @@ export class AccountService {
       if (value == null || key === 'page' || key === 'limit') {
         continue;
       } else if (['name', 'industry', 'city'].includes(key)) {
-        qb.andWhere(`account.${key} ILIKE :${key}`, { [key]: `%${value}%` });
+        qb.andWhere(`account.${key} LIKE :${key}`, { [key]: `%${value}%` });
       } else {
         qb.andWhere('country.name ILIKE :country', { country: `%${value}%` });
       }

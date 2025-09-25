@@ -29,9 +29,4 @@ export class SubscriptionController {
   async getSession(@Query('id') id: string, @Query('key') token: string) {
     return this.subscriptionService.getSession(id, token);
   }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.subscriptionService.findOne(+id);
-  }
 }
