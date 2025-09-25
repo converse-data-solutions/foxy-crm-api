@@ -22,8 +22,9 @@ export class Note {
   contact?: Contact;
 
   @ManyToOne(() => User)
+  @JoinColumn({ name: 'created_by' })
   createdBy: User;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 }

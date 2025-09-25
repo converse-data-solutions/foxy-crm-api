@@ -2,11 +2,11 @@ import { Module } from '@nestjs/common';
 import { LeadService } from '../service/lead.service';
 import { LeadController } from '../controller/lead.controller';
 import { BullModule } from '@nestjs/bullmq';
-import { FileWorker } from 'src/worker/file-worker';
+import { FileProcessor } from 'src/processor/file-processor';
 
 @Module({
   imports: [BullModule.registerQueue({ name: 'file-import' })],
   controllers: [LeadController],
-  providers: [LeadService, FileWorker],
+  providers: [LeadService, FileProcessor],
 })
 export class LeadModule {}

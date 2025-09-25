@@ -19,10 +19,11 @@ export enum LeadStatus {
   Converted = 'converted',
 }
 
-export enum DealStatus {
+export enum DealStage {
   Qualified = 'qualified',
   Proposal = 'proposal',
   Negotiation = 'negotiation',
   Accepted = 'accepted',
   Declined = 'declined',
+  Completed = 'completed',
 }

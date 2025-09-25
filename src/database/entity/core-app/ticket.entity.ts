@@ -9,19 +9,12 @@ import {
 import { Contact } from './contact.entity';
 import { User } from './user.entity';
 import { TicketStatus } from 'src/enum/status.enum';
+import { Deal } from './deal.entity';
 
 @Entity({ name: 'tickets' })
 export class Ticket {
   @PrimaryGeneratedColumn('uuid')
   id: string;
-
-  @ManyToOne(() => Contact)
-  @JoinColumn({ name: 'contact_id' })
-  contactId: Contact;
-
-  @ManyToOne(() => User)
-  @JoinColumn({ name: 'assigned_to' })
-  assignedTo: User;
 
   @Column({ name: 'title', type: 'varchar', length: 30, nullable: false })
   title: string;
@@ -36,6 +29,18 @@ export class Ticket {
     default: TicketStatus.Open,
   })
   status: TicketStatus;
+
+  @ManyToOne(() => Contact)
+  @JoinColumn({ name: 'contact_id' })
+  contactId: Contact;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'assigned_to' })
+  assignedTo: User;
+
+  @ManyToOne(() => Deal)
+  @JoinColumn({ name: 'deal_id' })
+  dealId: Deal;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

@@ -16,10 +16,6 @@ export class Task {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => User)
-  @JoinColumn({ name: 'assigned_to' })
-  assignedTo: User;
-
   @Column({ name: 'entity_name', type: 'enum', enum: EntityName })
   entityName: EntityName;
 
@@ -39,6 +35,10 @@ export class Task {
 
   @Column({ name: 'priority', type: 'enum', enum: TaskPriority })
   priority: TaskPriority;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'assigned_to' })
+  assignedTo: User;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

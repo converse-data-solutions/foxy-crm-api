@@ -9,15 +9,21 @@ import { Country } from 'src/database/entity/common-entity/country.entity';
 import { Subscription } from 'src/database/entity/base-app/subscription.entity';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
+import { SubscriptionScheduler } from 'src/scheduler/subscription.scheduler';
+import { BullModule } from '@nestjs/bullmq';
+import { SubscriptionProcessor } from 'src/processor/subscription.processor';
 
 @Module({
   imports: [
     JwtModule,
     TypeOrmModule.forFeature([Tenant, TenantSubscription, Country, Subscription]),
+    BullModule.registerQueue({ name: 'subscription' }),
   ],
   controllers: [SubscriptionController],
   providers: [
     SubscriptionService,
+    SubscriptionProcessor,
+    SubscriptionScheduler,
     {
       provide: 'STRIPE_CLIENT',
       inject: [ConfigService],

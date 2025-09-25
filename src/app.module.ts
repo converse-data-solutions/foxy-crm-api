@@ -16,11 +16,11 @@ import { AccountModule } from './module/account.module';
 import { DealModule } from './module/deal.module';
 import { SubscriptionModule } from './module/subscription.module';
 import { MailerModule } from '@nestjs-modules/mailer';
+import { SeedModule } from './module/seed.module';
+import { TenantModule } from './module/tenant.module';
 
 @Module({
   imports: [
-    AuthModule,
-    UserModule,
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env ' }),
     ScheduleModule.forRoot(),
     TypeOrmModule.forRootAsync({ useFactory: async () => dataSource.options }),
@@ -56,11 +56,15 @@ import { MailerModule } from '@nestjs-modules/mailer';
         from: 'Converse Data Solutions',
       },
     }),
+    AuthModule,
+    UserModule,
     LeadModule,
     ContactModule,
     AccountModule,
     DealModule,
     SubscriptionModule,
+    SeedModule,
+    TenantModule,
   ],
   providers: [
     {
