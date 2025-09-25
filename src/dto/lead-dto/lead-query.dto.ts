@@ -4,19 +4,19 @@ import { IsOptional, IsString, IsEnum, IsInt, Min, Matches } from 'class-validat
 import { LeadSource } from 'src/enum/core-app.enum';
 
 export class LeadQueryDto {
-  @ApiPropertyOptional({ description: 'Filter by name' })
+  @ApiPropertyOptional()
   @IsOptional()
   @IsString({ message: 'Name must be a string' })
   name?: string;
 
-  @ApiPropertyOptional({ description: 'Filter by email' })
+  @ApiPropertyOptional()
   @IsOptional()
   @Matches(/^[^\s@]+@[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/, {
     message: 'Email must be a valid email address',
   })
   email?: string;
 
-  @ApiPropertyOptional({ description: 'Filter by phone number' })
+  @ApiPropertyOptional()
   @IsOptional()
   @Matches(/^\+?[0-9\- ]{7,20}$/, {
     message: 'Phone must be a valid number and may include country code',
@@ -24,7 +24,6 @@ export class LeadQueryDto {
   phone?: string;
 
   @ApiPropertyOptional({
-    description: 'Filter by lead source',
     enum: LeadSource,
   })
   @IsOptional()
@@ -33,13 +32,12 @@ export class LeadQueryDto {
   })
   source?: LeadSource;
 
-  @ApiPropertyOptional({ description: 'Filter by company' })
+  @ApiPropertyOptional()
   @IsOptional()
   @IsString({ message: 'Company name must be a string' })
   company?: string;
 
   @ApiPropertyOptional({
-    description: 'Page number for pagination',
     default: 1,
   })
   @IsOptional()
@@ -48,7 +46,7 @@ export class LeadQueryDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ description: 'Items per page', default: 10 })
+  @ApiPropertyOptional({ default: 10 })
   @IsOptional()
   @Type(() => Number)
   @IsInt({ message: 'Limit must be an numeric value' })

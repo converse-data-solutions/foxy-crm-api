@@ -18,10 +18,6 @@ export class Contact {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Account)
-  @JoinColumn({ name: 'account_id' })
-  accountId?: Account;
-
   @Column({ name: 'name', type: 'varchar', length: 30 })
   name: string;
 
@@ -30,6 +26,10 @@ export class Contact {
 
   @Column({ name: 'phone', type: 'varchar', length: 20, unique: true })
   phone: string;
+
+  @ManyToOne(() => Account, (account) => account.contacts)
+  @JoinColumn({ name: 'account_id' })
+  accountId?: Account;
 
   @OneToOne(() => Lead, (lead) => lead.contact)
   lead: Lead;

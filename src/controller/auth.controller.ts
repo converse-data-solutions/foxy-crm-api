@@ -42,7 +42,11 @@ export class AuthController {
   ) {
     const token = await this.authService.userSignin(user, tenantId);
     const cookieName = tenantId ? 'access_token' : 'tenant_access_token';
-    response.cookie(cookieName, token);
+    response.cookie(cookieName, token, {
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000,
+    });
     response.status(HttpStatus.OK);
     response.json({
       success: true,

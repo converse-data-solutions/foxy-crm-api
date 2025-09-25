@@ -1,6 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
-  IsNumber,
   IsOptional,
   IsString,
   IsUUID,
@@ -8,6 +7,7 @@ import {
   IsDefined,
   Length,
   Min,
+  IsDecimal,
 } from 'class-validator';
 
 export class CreateDealDto {
@@ -22,20 +22,22 @@ export class CreateDealDto {
 
   @ApiProperty({
     description: 'Opportunity value or deal size',
-    example: 5000,
+    example: '5000',
     required: false,
   })
-  @IsNumber()
-  @Min(1, { message: 'Amount should be positive value' })
-  @IsOptional()
-  value?: number;
+  @IsDefined({ message: 'Amount should be required' })
+  @IsDecimal(
+    { decimal_digits: '0,2' },
+    { message: 'Amount should contain maximum 2 decimal points' },
+  )
+  value: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Expected closing date of the opportunity',
     example: '2025-12-01',
     required: false,
   })
-  @IsDateString()
+  @IsDateString({}, { message: 'Expected close date must be a date' })
   @IsOptional()
   expectedCloseDate?: string;
 
@@ -44,7 +46,7 @@ export class CreateDealDto {
     example: 'f6a2b5c1-9d7e-4a8b-8f31-1a3d9d9e8f22',
     required: false,
   })
+  @IsDefined({ message: 'Contact id is required' })
   @IsUUID()
-  @IsOptional()
-  contactId?: string;
+  contactId: string;
 }

@@ -16,6 +16,7 @@ import { TenantSubscription } from 'src/database/entity/base-app/tenant-subscrip
 import { Tenant } from 'src/database/entity/base-app/tenant.entity';
 import { SubscribeDto } from 'src/dto/subscribe-dto/subscribe.dto';
 import { invoiceTemplate, InvoiceTemplateOptions } from 'src/template/invoice-template';
+import { subscriptionReminderTemplate } from 'src/template/subscription-remainder.template';
 import Stripe from 'stripe';
 import { Repository } from 'typeorm';
 
@@ -45,10 +46,10 @@ export class SubscriptionService {
       where: { tenant: { id: payload.id } },
     });
 
-    if (!tenantSubscription) {
+    if (!tenantSubscription && tenant) {
       await this.tenantSubRepo.save({
         subscription: subscription,
-        tenant: tenant ? tenant : undefined,
+        tenant: tenant,
       });
     }
 
@@ -75,10 +76,6 @@ export class SubscriptionService {
       message: 'Fetched subscription plans',
       data: subscriptions,
     };
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} subscription`;
   }
 
   private async validateToken(token: string) {
@@ -159,5 +156,32 @@ export class SubscriptionService {
       success_url: `http://localhost:8000/api/v1/subscription/session?id={CHECKOUT_SESSION_ID}&key=${token}`, //front end success url
       cancel_url: 'http://localhost:8000/cancel', //front end cancel url
     });
+  }
+
+  async expireSubscription(id: string) {
+    const tenantSubscription = await this.tenantSubRepo.findOne({
+      where: { id },
+    });
+    if (tenantSubscription && tenantSubscription.endDate) {
+      tenantSubscription.status = false;
+      await this.tenantSubRepo.save(tenantSubscription);
+    }
+  }
+  async subscriptionRemainder(id: string) {
+    const tenantSubscription = await this.tenantSubRepo.findOne({
+      where: { id },
+      relations: { tenant: true },
+    });
+    if (tenantSubscription && tenantSubscription.endDate) {
+      const html = subscriptionReminderTemplate(
+        tenantSubscription.tenant.userName,
+        tenantSubscription.endDate,
+      );
+      await this.mailService.sendMail({
+        to: tenantSubscription.tenant.email,
+        html,
+        subject: `Reminder: Subscription Expiry on ${tenantSubscription.endDate.getDate()}`,
+      });
+    }
   }
 }

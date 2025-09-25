@@ -59,7 +59,8 @@ export class Tenant {
   @JoinColumn({ name: 'country_id' })
   country: Country;
 
-  @OneToOne(() => TenantSubscription, (ts) => ts.tenant, { cascade: true })
+  @OneToOne(() => TenantSubscription, (ts) => ts.tenant)
+  @JoinColumn({ name: 'tenant_subscription_id' })
   tenantSubscription: TenantSubscription;
 
   @CreateDateColumn({ name: 'created_at' })
