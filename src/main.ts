@@ -25,6 +25,12 @@ async function bootstrap() {
     credentials: true,
   });
 
+  app.enableCors({
+    origin: 'http://localhost:3000',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+  });
+
   const config = new DocumentBuilder()
     .setTitle('CRM API Documentation')
     .setDescription('API description')

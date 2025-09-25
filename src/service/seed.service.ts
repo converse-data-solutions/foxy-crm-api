@@ -7,6 +7,7 @@ import { Country } from 'src/database/entity/common-entity/country.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SubscriptionInterface } from 'src/interface/subscription.interface';
 import { Subscription } from 'src/database/entity/base-app/subscription.entity';
+import { getRepo } from 'src/shared/database-connection/get-connection';
 
 @Injectable()
 export class SeedService {
@@ -17,7 +18,13 @@ export class SeedService {
     @InjectRepository(Subscription) private readonly subscriptionRepo: Repository<Subscription>,
   ) {}
 
-  async countrySeed() {
+  async countrySeed(schema?: string) {
+    let countryRepository: Repository<Country>;
+    if (schema) {
+      countryRepository = await getRepo<Country>(Country, schema);
+    } else {
+      countryRepository = this.countryRepo;
+    }
     const filePath = join(process.cwd(), 'src/asset/country-mock-data.json');
     if (!fs.existsSync(filePath)) {
       throw new Error(`File not found at path: ${filePath}`);
@@ -25,10 +32,10 @@ export class SeedService {
     const rawData = fs.readFileSync(filePath, 'utf-8');
     this.countries = JSON.parse(rawData);
 
-    const existingCountries = await this.countryRepo.find();
+    const existingCountries = await countryRepository.find();
     if (existingCountries.length == 0) {
       for (const country of this.countries) {
-        const newCountries = this.countryRepo.create({
+        const newCountries = countryRepository.create({
           name: country.name,
           isoCode2: country.iso_code_2,
           isoCode3: country.iso_code_3,
@@ -36,7 +43,7 @@ export class SeedService {
           flagImage: country.country_flag,
           isActive: country.is_active ?? true,
         });
-        await this.countryRepo.save(newCountries);
+        await countryRepository.save(newCountries);
       }
     }
   }

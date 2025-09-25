@@ -43,6 +43,6 @@ export class TenantSignupDto {
 
   @IsOptional()
   @IsString({ message: 'Country should be string' })
-  @ApiProperty({ example: 'India' })
+  @ApiPropertyOptional({ example: 'India' })
   country?: string;
 }

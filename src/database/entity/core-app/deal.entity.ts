@@ -9,11 +9,11 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Contact } from './contact.entity';
-import { DealStatus } from 'src/enum/status.enum';
+import { DealStage } from 'src/enum/status.enum';
 import { User } from './user.entity';
 
 @Entity({ name: 'deals' })
-@Check(`"expected_close_date" > CURRENT_DATE`)
+@Check(`"expected_close_date" IS NULL OR "expected_close_date" > CURRENT_DATE`)
 export class Deal {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -21,19 +21,19 @@ export class Deal {
   @Column({ name: 'name', type: 'varchar', length: 30 })
   name: string;
 
-  @Column({ name: 'value', type: 'integer' })
+  @Column({ name: 'value', type: 'decimal', precision: 8, scale: 2 })
   value: number;
 
   @Column({
     name: 'stage',
     type: 'enum',
-    enum: DealStatus,
-    default: DealStatus.Qualified,
+    enum: DealStage,
+    default: DealStage.Qualified,
   })
-  stage: DealStatus;
+  stage: DealStage;
 
   @Column({ name: 'expected_close_date', type: 'date', nullable: true })
-  expectedCloseDate: Date;
+  expectedCloseDate?: Date;
 
   @ManyToOne(() => Contact)
   @JoinColumn({ name: 'contact_id' })

@@ -23,6 +23,7 @@ import { Roles } from 'src/common/decorator/role.decorator';
 import { Role } from 'src/enum/core-app.enum';
 import { LeadToContactDto } from 'src/dto/lead-dto/lead-to-contact.dto';
 import { User } from 'src/database/entity/core-app/user.entity';
+import { FileValidationPipe } from 'src/common/pipe/file-validation.pipe';
 
 @Controller('lead')
 export class LeadController {
@@ -31,12 +32,12 @@ export class LeadController {
   @Post()
   @ApiOperation({ summary: 'Insert lead or create lead' })
   @ApiResponse({ status: 201, description: 'Lead created successfully' })
-  async create(
+  async createLead(
     @Body() createLeadDto: CreateLeadDto,
     @Headers('x-tenant-id') tenantId: string,
     @CurrentUser() user: User,
   ) {
-    return await this.leadService.create(createLeadDto, tenantId, user);
+    return await this.leadService.createLead(createLeadDto, tenantId, user);
   }
 
   @Post('upload')
@@ -58,10 +59,13 @@ export class LeadController {
   @UseInterceptors(FileInterceptor('file'))
   async importLeads(
     @UploadedFile(
-      new ParseFilePipeBuilder().addMaxSizeValidator({ maxSize: 200 * 1024 }).build({
-        fileIsRequired: true,
-        errorHttpStatusCode: 422,
-      }),
+      new ParseFilePipeBuilder()
+        .addMaxSizeValidator({ maxSize: 200 * 1024 })
+        .addValidator(new FileValidationPipe())
+        .build({
+          fileIsRequired: true,
+          errorHttpStatusCode: 422,
+        }),
     )
     file: Express.Multer.File,
     @Headers('x-tenant-id') tenantId: string,
@@ -95,20 +99,20 @@ export class LeadController {
   @Roles(Role.Admin, Role.Manager)
   @ApiOperation({ summary: 'Retrive lead based on query' })
   @ApiResponse({ status: 200, description: 'Lead fetched successfully' })
-  async findAll(@Query() leadQuery: LeadQueryDto, @Headers('x-tenant-id') tenantId: string) {
-    return this.leadService.findAll(leadQuery, tenantId);
+  async findAllLeads(@Query() leadQuery: LeadQueryDto, @Headers('x-tenant-id') tenantId: string) {
+    return this.leadService.findAllLeads(leadQuery, tenantId);
   }
 
   @Put(':id')
   @Roles(Role.Admin, Role.Manager, Role.SalesRep)
   @ApiOperation({ summary: 'Update lead data' })
   @ApiResponse({ status: 200, description: 'Lead updated successfully' })
-  async update(
+  async updateLead(
     @Param('id') id: string,
     @CurrentUser() user: User,
     @Body() updateLeadDto: UpdateLeadDto,
     @Headers('x-tenant-id') tenantId: string,
   ) {
-    return this.leadService.update(id, user, updateLeadDto, tenantId);
+    return this.leadService.updateLead(id, user, updateLeadDto, tenantId);
   }
 }
