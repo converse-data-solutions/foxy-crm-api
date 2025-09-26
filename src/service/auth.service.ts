@@ -75,6 +75,7 @@ export class AuthService {
         success: true,
         statusCode: HttpStatus.CREATED,
         message: 'Account created and once basic setup is completed you get a mail',
+        tenantId: newTenant.schemaName,
       };
     }
   }
