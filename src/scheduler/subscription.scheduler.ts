@@ -28,7 +28,7 @@ export class SubscriptionScheduler {
       if (sub.endDate) {
         const delay = sub.endDate.getTime() - now.getTime();
         await this.subscriptionQueue.add('expire-subscription', { id: sub.id }, { delay });
-        await this.subscriptionQueue.add('reminder-mail', { subscriptionId: sub.id });
+        await this.subscriptionQueue.add('subscription-reminder-mail', { subscriptionId: sub.id });
       }
     }
   }
