@@ -1,5 +1,9 @@
+import { MailerService } from '@nestjs-modules/mailer';
 import { BadRequestException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
+import { InjectRepository } from '@nestjs/typeorm';
 import { APIResponse } from 'src/common/dto/response.dto';
+import { TenantSubscription } from 'src/database/entity/base-app/tenant-subscription.entity';
 import { Deal } from 'src/database/entity/core-app/deal.entity';
 import { Task } from 'src/database/entity/core-app/task.entity';
 import { Ticket } from 'src/database/entity/core-app/ticket.entity';
@@ -7,12 +11,20 @@ import { User } from 'src/database/entity/core-app/user.entity';
 import { CreateTaskDto } from 'src/dto/task-dto/create-task.dto';
 import { GetTaskDto } from 'src/dto/task-dto/get-task.dto';
 import { UpdateTaskDto } from 'src/dto/task-dto/update-task.dto';
-import { EntityName, Role } from 'src/enum/core-app.enum';
+import { EntityName, Role, TaskPriority } from 'src/enum/core-app.enum';
 import { DealStage, TicketStatus } from 'src/enum/status.enum';
 import { getRepo } from 'src/shared/database-connection/get-connection';
+import { taskAssignmentTemplate } from 'src/template/task-assignment.template';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class TaskService {
+  constructor(
+    private readonly eventEmitter: EventEmitter2,
+    @InjectRepository(TenantSubscription)
+    private readonly tenantSubRepo: Repository<TenantSubscription>,
+    private readonly mailService: MailerService,
+  ) {}
   async createTask(
     tenantId: string,
     user: User,
@@ -47,12 +59,13 @@ export class TaskService {
         throw new BadRequestException({ message: 'Cannot create task on closed ticket' });
       }
     }
-    await taskRepo.save({
+    const newTask: Task = await taskRepo.save({
       assignedTo: userExist,
       entityId,
       ...createTask,
       createdBy: user,
     });
+    await this.eventEmitter.emitAsync('task-created', { tenantId, task: newTask });
     return {
       success: true,
       statusCode: HttpStatus.CREATED,
@@ -133,11 +146,40 @@ export class TaskService {
       }
       taskExist.assignedTo = existUser;
     }
-    await taskRepo.save(taskExist);
+    const updatedTask = await taskRepo.save(taskExist);
+    await this.eventEmitter.emitAsync('task-updated', { tenantId, task: updatedTask });
     return {
       success: true,
       statusCode: HttpStatus.OK,
       message: 'Task details updated successfully',
     };
+  }
+
+  async taskMailer(tenantId: string, task: Task) {
+    const userRepo = await getRepo(User, tenantId);
+    const tenantDetails = await this.tenantSubRepo.findOne({
+      where: { tenant: { schemaName: tenantId } },
+      relations: { tenant: true, subscription: true },
+    });
+    const user = await userRepo.findOne({ where: { id: task.assignedTo.id } });
+    let html: null | string = null;
+    if (tenantDetails && user) {
+      if (tenantDetails.subscription.planName === 'Platinum') {
+        if (user) {
+          html = taskAssignmentTemplate(user.name, task.name, task.entityName, task.priority);
+        }
+      } else {
+        if (task.priority == TaskPriority.High) {
+          html = taskAssignmentTemplate(user.name, task.name, task.entityName, task.priority);
+        }
+      }
+      if (html) {
+        await this.mailService.sendMail({
+          to: user.email,
+          html,
+          subject: `New Task "${task.name}" Assigned to You`,
+        });
+      }
+    }
   }
 }

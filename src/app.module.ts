@@ -20,6 +20,7 @@ import { SeedModule } from './module/seed.module';
 import { TenantModule } from './module/tenant.module';
 import { TicketModule } from './module/ticket.module';
 import { TaskModule } from './module/task.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { TaskModule } from './module/task.module';
         from: 'Converse Data Solutions',
       },
     }),
+    EventEmitterModule.forRoot(),
     AuthModule,
     UserModule,
     LeadModule,
