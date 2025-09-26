@@ -16,6 +16,9 @@ export class Task {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column({ name: 'name', type: 'varchar', length: 100 })
+  name: string;
+
   @Column({ name: 'entity_name', type: 'enum', enum: EntityName })
   entityName: EntityName;
 
@@ -33,7 +36,7 @@ export class Task {
   })
   status: TaskStatus;
 
-  @Column({ name: 'priority', type: 'enum', enum: TaskPriority })
+  @Column({ name: 'priority', type: 'enum', enum: TaskPriority, default: TaskPriority.Medium })
   priority: TaskPriority;
 
   @ManyToOne(() => User)
@@ -45,4 +48,8 @@ export class Task {
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'created_by' })
+  createdBy: User;
 }

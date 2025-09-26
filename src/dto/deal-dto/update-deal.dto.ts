@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsEnum, Min, IsDecimal } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsDecimal } from 'class-validator';
 import { DealStage } from 'src/enum/status.enum';
 
 export class UpdateDealDto {
@@ -8,7 +8,7 @@ export class UpdateDealDto {
   @IsString({ message: 'Name must be a string' })
   name?: string;
 
-  @ApiPropertyOptional({ description: 'Deal value', type: Number, minimum: 0 })
+  @ApiPropertyOptional({ description: 'Deal value' })
   @IsOptional()
   @IsDecimal(
     { decimal_digits: '0,2' },

@@ -9,12 +9,12 @@ import { Roles } from 'src/common/decorator/role.decorator';
 import { Role } from 'src/enum/core-app.enum';
 import { GetAccountDto } from 'src/dto/account-dto/get-account.dto';
 
+@Roles(Role.Admin, Role.Manager)
 @Controller('account')
 export class AccountController {
   constructor(private readonly accountService: AccountService) {}
 
   @Post()
-  @Roles(Role.Admin, Role.Manager)
   @ApiOperation({ summary: 'Create new account' })
   @ApiResponse({ status: 201, description: 'Account created successfully' })
   async create(
@@ -26,7 +26,6 @@ export class AccountController {
   }
 
   @Get()
-  @Roles(Role.Admin, Role.Manager)
   @ApiOperation({ summary: 'Get Account details' })
   @ApiResponse({ status: 200, description: 'Account details fetched successfully' })
   async findAll(@Headers('x-tenant-id') tenantId: string, @Query() accountQuery: GetAccountDto) {

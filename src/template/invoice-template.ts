@@ -13,12 +13,12 @@ export function invoiceTemplate(options: InvoiceTemplateOptions): string {
     options;
 
   return `
-<div style="font-family: Arial, sans-serif; border: 1px solid #c3e6cb; padding: 20px; max-width: 600px; margin: auto; background-color: #ffffff; color: #000000; border-radius: 8px;">
+<div style="font-family: Arial, sans-serif; border: 1px solid #ddd; padding: 20px; max-width: 600px; margin: auto; background-color: #ffffff; color: #000000; border-radius: 8px;">
   <p>Dear ${userName},</p>
   
   <p>We are pleased to inform you that your <strong>invoice has been generated successfully</strong>.</p>
 
-  <div style="background: #f9f9f9; border: 1px solid #c3e6cb; padding: 15px; margin: 15px 0; border-radius: 6px;">
+  <div style="background: #ffffff; border: 1px solid #ddd; padding: 15px; margin: 15px 0; border-radius: 6px;">
     ${invoiceNumber ? `<p><strong>Invoice Number:</strong> ${invoiceNumber}</p>` : ''}
     <p><strong>Amount:</strong> ${(amount / 100).toFixed(2)} ${currency.toUpperCase()}</p>
     ${dueDate ? `<p><strong>Due Date:</strong> ${dueDate}</p>` : ''}
@@ -28,13 +28,13 @@ export function invoiceTemplate(options: InvoiceTemplateOptions): string {
     hostedInvoiceUrl || invoicePdf
       ? `<p>You can access your invoice using the following links:</p>
          <ul>
-           ${hostedInvoiceUrl ? `<li><a href="${hostedInvoiceUrl}" style="color: #000000;">View Invoice Online</a></li>` : ''}
-           ${invoicePdf ? `<li><a href="${invoicePdf}" style="color: #000000;">Download PDF</a></li>` : ''}
+           ${hostedInvoiceUrl ? `<li><a href="${hostedInvoiceUrl}" style="color: #000000; text-decoration: underline;">View Invoice Online</a></li>` : ''}
+           ${invoicePdf ? `<li><a href="${invoicePdf}" style="color: #000000; text-decoration: underline;">Download PDF</a></li>` : ''}
          </ul>`
       : ''
   }
 
-  <hr style="border: none; border-top: 1px solid #b1dfbb; margin: 20px 0;">
+  <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
   
   <p><strong>Best regards,</strong></p>
   <p>Converse Data Solutions</p>

@@ -18,6 +18,8 @@ import { SubscriptionModule } from './module/subscription.module';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { SeedModule } from './module/seed.module';
 import { TenantModule } from './module/tenant.module';
+import { TicketModule } from './module/ticket.module';
+import { TaskModule } from './module/task.module';
 
 @Module({
   imports: [
@@ -65,6 +67,8 @@ import { TenantModule } from './module/tenant.module';
     SubscriptionModule,
     SeedModule,
     TenantModule,
+    TicketModule,
+    TaskModule,
   ],
   providers: [
     {
