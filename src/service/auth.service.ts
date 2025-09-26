@@ -112,9 +112,15 @@ export class AuthService {
   }
 
   async userSignin(user: Signin, tenantId?: string) {
-    const repo: Repository<User | Tenant> = tenantId
-      ? await getRepo(User, tenantId)
-      : this.tenantRepo;
+    let repo: Repository<User | Tenant> = this.tenantRepo;
+    if (tenantId) {
+      const tenantExist = await this.tenantRepo.findOne({ where: { schemaName: tenantId } });
+      if (!tenantExist) {
+        throw new NotFoundException({ message: 'Tenant id not found or invalid tenant id' });
+      }
+      repo = await getRepo(User, tenantId);
+    }
+
     const userExist = await repo.findOne({ where: { email: user.email } });
     if (!userExist) {
       throw new NotFoundException({
@@ -142,10 +148,17 @@ export class AuthService {
   }
 
   async validateUser(payload: JwtPayload, schema: string) {
-    const schemaExist = await this.tenantRepo.findOne({ where: { schemaName: schema } });
-    if (!schemaExist) {
+    const subscriptionExist = await this.tenantSubcriptionRepo.findOne({
+      where: { tenant: { schemaName: schema } },
+      relations: { tenant: true },
+    });
+    if (!subscriptionExist) {
       throw new BadRequestException({ message: 'Invalid schema name' });
     }
+    if (subscriptionExist.status === false && process.env.DEVELOPMENT == 'prod') {
+      throw new BadRequestException({ message: 'Subscription got expired please subscribe' });
+    }
+
     const userRepo = await getRepo(User, schema);
     const user = await userRepo.findOne({ where: { id: payload.id } });
     return user ? user : null;

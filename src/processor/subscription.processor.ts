@@ -12,7 +12,7 @@ export class SubscriptionProcessor extends WorkerHost {
       case 'expire-subscription':
         await this.subscriptionService.expireSubscription(job.data.id as string);
         break;
-      case 'reminder-mail':
+      case 'subscription-reminder-mail':
         await this.subscriptionService.subscriptionRemainder(job.data.id as string);
         break;
     }

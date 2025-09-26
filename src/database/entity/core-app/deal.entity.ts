@@ -47,5 +47,5 @@ export class Deal {
 
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'created_by' })
-  createdBy?: User;
+  createdBy: User;
 }
