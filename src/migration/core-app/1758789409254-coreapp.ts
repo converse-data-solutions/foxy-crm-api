@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class Coreapp1758718816080 implements MigrationInterface {
-  name = 'Coreapp1758718816080';
+export class Coreapp1758789409254 implements MigrationInterface {
+  name = 'Coreapp1758789409254';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     const schema: string = (queryRunner.connection.options as any).schema || 'public';
@@ -33,12 +33,6 @@ export class Coreapp1758718816080 implements MigrationInterface {
     await queryRunner.query(
       `CREATE TABLE "notes" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "content" text NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "contact_id" uuid, "created_by" uuid, CONSTRAINT "PK_af6206538ea96c4e77e9f400c3d" PRIMARY KEY ("id"))`,
     );
-    await queryRunner.query(
-      `CREATE TYPE "deals_stage_enum" AS ENUM('qualified', 'proposal', 'negotiation', 'accepted', 'declined', 'completed')`,
-    );
-    await queryRunner.query(
-      `CREATE TABLE "deals" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "name" character varying(30) NOT NULL, "value" numeric(8,2) NOT NULL, "stage" "deals_stage_enum" NOT NULL DEFAULT 'qualified', "expected_close_date" date, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "contact_id" uuid, "created_by" uuid, CONSTRAINT "CHK_8033fda435366469b2ebec364e" CHECK ("expected_close_date" IS NULL OR "expected_close_date" > CURRENT_DATE), CONSTRAINT "PK_8c66f03b250f613ff8615940b4b" PRIMARY KEY ("id"))`,
-    );
     await queryRunner.query(`CREATE TYPE "tasks_entity_name_enum" AS ENUM('deals', 'tickets')`);
     await queryRunner.query(
       `CREATE TYPE "tasks_type_enum" AS ENUM('call', 'email', 'meeting', 'fixes', 'develop', 'design')`,
@@ -48,13 +42,19 @@ export class Coreapp1758718816080 implements MigrationInterface {
     );
     await queryRunner.query(`CREATE TYPE "tasks_priority_enum" AS ENUM('low', 'medium', 'high')`);
     await queryRunner.query(
-      `CREATE TABLE "tasks" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "entity_name" "tasks_entity_name_enum" NOT NULL, "entity_id" character varying(40) NOT NULL, "type" "tasks_type_enum" NOT NULL, "status" "tasks_status_enum" NOT NULL DEFAULT 'pending', "priority" "tasks_priority_enum" NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "assigned_to" uuid, CONSTRAINT "PK_8d12ff38fcc62aaba2cab748772" PRIMARY KEY ("id"))`,
+      `CREATE TABLE "tasks" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "name" character varying(100) NOT NULL, "entity_name" "tasks_entity_name_enum" NOT NULL, "entity_id" character varying(40) NOT NULL, "type" "tasks_type_enum" NOT NULL, "status" "tasks_status_enum" NOT NULL DEFAULT 'pending', "priority" "tasks_priority_enum" NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "assigned_to" uuid, "created_by" uuid, CONSTRAINT "PK_8d12ff38fcc62aaba2cab748772" PRIMARY KEY ("id"))`,
+    );
+    await queryRunner.query(
+      `CREATE TYPE "deals_stage_enum" AS ENUM('qualified', 'proposal', 'negotiation', 'accepted', 'declined', 'completed')`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE "deals" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "name" character varying(30) NOT NULL, "value" numeric(8,2) NOT NULL, "stage" "deals_stage_enum" NOT NULL DEFAULT 'qualified', "expected_close_date" date, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "contact_id" uuid, "created_by" uuid, CONSTRAINT "CHK_8033fda435366469b2ebec364e" CHECK ("expected_close_date" IS NULL OR "expected_close_date" > CURRENT_DATE), CONSTRAINT "PK_8c66f03b250f613ff8615940b4b" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
       `CREATE TYPE "tickets_status_enum" AS ENUM('open', 'in progress', 'resolved', 'closed')`,
     );
     await queryRunner.query(
-      `CREATE TABLE "tickets" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "title" character varying(30) NOT NULL, "description" character varying(300) NOT NULL, "status" "tickets_status_enum" NOT NULL DEFAULT 'open', "created_at" TIMESTAMP NOT NULL DEFAULT now(), "resolved_at" TIMESTAMP, "contact_id" uuid, "assigned_to" uuid, "deal_id" uuid, CONSTRAINT "PK_343bc942ae261cf7a1377f48fd0" PRIMARY KEY ("id"))`,
+      `CREATE TABLE "tickets" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "title" character varying(30) NOT NULL, "description" character varying(300) NOT NULL, "status" "tickets_status_enum" NOT NULL DEFAULT 'open', "created_at" TIMESTAMP NOT NULL DEFAULT now(), "resolved_at" TIMESTAMP, "contact_id" uuid, "deal_id" uuid, "created_by" uuid, "updated_by" uuid, CONSTRAINT "PK_343bc942ae261cf7a1377f48fd0" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
       `ALTER TABLE "leads" ADD CONSTRAINT "FK_5c37aa54e3b06f6733d56007e0c" FOREIGN KEY ("assigned_to") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
@@ -93,22 +93,28 @@ export class Coreapp1758718816080 implements MigrationInterface {
       `ALTER TABLE "notes" ADD CONSTRAINT "FK_b86c5f2b5de1e7a3d2a428cfb55" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
     );
     await queryRunner.query(
+      `ALTER TABLE "tasks" ADD CONSTRAINT "FK_5770b28d72ca90c43b1381bf787" FOREIGN KEY ("assigned_to") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "tasks" ADD CONSTRAINT "FK_9fc727aef9e222ebd09dc8dac08" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
       `ALTER TABLE "deals" ADD CONSTRAINT "FK_76e504b6bb116e6cdc2ee6a0cb5" FOREIGN KEY ("contact_id") REFERENCES "contacts"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
     );
     await queryRunner.query(
       `ALTER TABLE "deals" ADD CONSTRAINT "FK_a96c558d0ebee23c264dbe726fb" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
     );
     await queryRunner.query(
-      `ALTER TABLE "tasks" ADD CONSTRAINT "FK_5770b28d72ca90c43b1381bf787" FOREIGN KEY ("assigned_to") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
-    );
-    await queryRunner.query(
       `ALTER TABLE "tickets" ADD CONSTRAINT "FK_38b2f9803395427e46eb3467312" FOREIGN KEY ("contact_id") REFERENCES "contacts"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
     );
     await queryRunner.query(
-      `ALTER TABLE "tickets" ADD CONSTRAINT "FK_47c3fba35bfcbb08e3445f57d6e" FOREIGN KEY ("assigned_to") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
+      `ALTER TABLE "tickets" ADD CONSTRAINT "FK_76eb157f105e7628f17446b76b0" FOREIGN KEY ("deal_id") REFERENCES "deals"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
     );
     await queryRunner.query(
-      `ALTER TABLE "tickets" ADD CONSTRAINT "FK_76eb157f105e7628f17446b76b0" FOREIGN KEY ("deal_id") REFERENCES "deals"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
+      `ALTER TABLE "tickets" ADD CONSTRAINT "FK_8798a589dc4c71b6d0e8c2b9fc3" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "tickets" ADD CONSTRAINT "FK_11e329dba935d03d626939e78ec" FOREIGN KEY ("updated_by") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
     );
   }
 
@@ -116,17 +122,21 @@ export class Coreapp1758718816080 implements MigrationInterface {
     const schema: string = (queryRunner.connection.options as any).schema || 'public';
     await queryRunner.query(`SET search_path TO "${schema}",public`);
     await queryRunner.query(
-      `ALTER TABLE "tickets" DROP CONSTRAINT "FK_76eb157f105e7628f17446b76b0"`,
+      `ALTER TABLE "tickets" DROP CONSTRAINT "FK_11e329dba935d03d626939e78ec"`,
     );
     await queryRunner.query(
-      `ALTER TABLE "tickets" DROP CONSTRAINT "FK_47c3fba35bfcbb08e3445f57d6e"`,
+      `ALTER TABLE "tickets" DROP CONSTRAINT "FK_8798a589dc4c71b6d0e8c2b9fc3"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "tickets" DROP CONSTRAINT "FK_76eb157f105e7628f17446b76b0"`,
     );
     await queryRunner.query(
       `ALTER TABLE "tickets" DROP CONSTRAINT "FK_38b2f9803395427e46eb3467312"`,
     );
-    await queryRunner.query(`ALTER TABLE "tasks" DROP CONSTRAINT "FK_5770b28d72ca90c43b1381bf787"`);
     await queryRunner.query(`ALTER TABLE "deals" DROP CONSTRAINT "FK_a96c558d0ebee23c264dbe726fb"`);
     await queryRunner.query(`ALTER TABLE "deals" DROP CONSTRAINT "FK_76e504b6bb116e6cdc2ee6a0cb5"`);
+    await queryRunner.query(`ALTER TABLE "tasks" DROP CONSTRAINT "FK_9fc727aef9e222ebd09dc8dac08"`);
+    await queryRunner.query(`ALTER TABLE "tasks" DROP CONSTRAINT "FK_5770b28d72ca90c43b1381bf787"`);
     await queryRunner.query(`ALTER TABLE "notes" DROP CONSTRAINT "FK_b86c5f2b5de1e7a3d2a428cfb55"`);
     await queryRunner.query(`ALTER TABLE "notes" DROP CONSTRAINT "FK_a8301a5912b0226297e36cadf6e"`);
     await queryRunner.query(
@@ -151,13 +161,13 @@ export class Coreapp1758718816080 implements MigrationInterface {
     await queryRunner.query(`ALTER TABLE "leads" DROP CONSTRAINT "FK_5c37aa54e3b06f6733d56007e0c"`);
     await queryRunner.query(`DROP TABLE "tickets"`);
     await queryRunner.query(`DROP TYPE "tickets_status_enum"`);
+    await queryRunner.query(`DROP TABLE "deals"`);
+    await queryRunner.query(`DROP TYPE "deals_stage_enum"`);
     await queryRunner.query(`DROP TABLE "tasks"`);
     await queryRunner.query(`DROP TYPE "tasks_priority_enum"`);
     await queryRunner.query(`DROP TYPE "tasks_status_enum"`);
     await queryRunner.query(`DROP TYPE "tasks_type_enum"`);
     await queryRunner.query(`DROP TYPE "tasks_entity_name_enum"`);
-    await queryRunner.query(`DROP TABLE "deals"`);
-    await queryRunner.query(`DROP TYPE "deals_stage_enum"`);
     await queryRunner.query(`DROP TABLE "notes"`);
     await queryRunner.query(`DROP TABLE "contacts"`);
     await queryRunner.query(`DROP TABLE "accounts"`);

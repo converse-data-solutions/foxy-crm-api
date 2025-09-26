@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Req, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Req, Body, Query } from '@nestjs/common';
 import { SubscriptionService } from '../service/subscription.service';
 import { Request } from 'express';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';

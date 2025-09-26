@@ -25,11 +25,13 @@ import { LeadToContactDto } from 'src/dto/lead-dto/lead-to-contact.dto';
 import { User } from 'src/database/entity/core-app/user.entity';
 import { FileValidationPipe } from 'src/common/pipe/file-validation.pipe';
 
+@Roles(Role.Admin, Role.Manager)
 @Controller('lead')
 export class LeadController {
   constructor(private readonly leadService: LeadService) {}
 
   @Post()
+  @Roles(Role.Admin, Role.Manager, Role.SalesRep)
   @ApiOperation({ summary: 'Insert lead or create lead' })
   @ApiResponse({ status: 201, description: 'Lead created successfully' })
   async createLead(
@@ -41,7 +43,6 @@ export class LeadController {
   }
 
   @Post('upload')
-  @Roles(Role.Admin, Role.Manager)
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Upload CSV for bulk lead import' })
   @ApiBody({
@@ -96,7 +97,6 @@ export class LeadController {
   }
 
   @Get()
-  @Roles(Role.Admin, Role.Manager)
   @ApiOperation({ summary: 'Retrive lead based on query' })
   @ApiResponse({ status: 200, description: 'Lead fetched successfully' })
   async findAllLeads(@Query() leadQuery: LeadQueryDto, @Headers('x-tenant-id') tenantId: string) {

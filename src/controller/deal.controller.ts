@@ -9,12 +9,12 @@ import { Role } from 'src/enum/core-app.enum';
 import { UpdateDealDto } from 'src/dto/deal-dto/update-deal.dto';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 
+@Roles(Role.Admin, Role.SalesRep, Role.Manager)
 @Controller('deal')
 export class DealController {
   constructor(private readonly dealService: DealService) {}
 
   @Post()
-  @Roles(Role.Admin, Role.SalesRep, Role.Manager)
   @ApiOperation({ summary: 'Create deal info' })
   @ApiResponse({ status: 201, description: 'Deal info created successfully' })
   async createDeal(
@@ -28,13 +28,11 @@ export class DealController {
   @Get()
   @ApiOperation({ summary: 'Get deal info' })
   @ApiResponse({ status: 200, description: 'Deal info retrived successfully' })
-  @Roles(Role.Admin, Role.SalesRep, Role.Manager)
   async findAllDeals(@Headers('x-tenant-id') tenantId: string, @Query() dealQuery: GetDealDto) {
     return await this.dealService.findAllDeals(tenantId, dealQuery);
   }
 
   @Put(':id')
-  @Roles(Role.Admin, Role.SalesRep, Role.Manager)
   @ApiOperation({ summary: 'Update deal info' })
   @ApiResponse({ status: 200, description: 'Deal info updated successfully' })
   async updateDeal(

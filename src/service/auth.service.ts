@@ -142,6 +142,10 @@ export class AuthService {
   }
 
   async validateUser(payload: JwtPayload, schema: string) {
+    const schemaExist = await this.tenantRepo.findOne({ where: { schemaName: schema } });
+    if (!schemaExist) {
+      throw new BadRequestException({ message: 'Invalid schema name' });
+    }
     const userRepo = await getRepo(User, schema);
     const user = await userRepo.findOne({ where: { id: payload.id } });
     return user ? user : null;

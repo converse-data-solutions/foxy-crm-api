@@ -42,15 +42,18 @@ export class SubscriptionService {
     if (!subscription) {
       throw new BadRequestException({ message: 'Invalid subscription id' });
     }
+    if (!tenant) {
+      throw new UnauthorizedException({ message: 'Unauthorized access invalid tenant' });
+    }
     const tenantSubscription = await this.tenantSubRepo.findOne({
       where: { tenant: { id: payload.id } },
     });
 
-    if (!tenantSubscription && tenant) {
-      await this.tenantSubRepo.save({
-        subscription: subscription,
-        tenant: tenant,
-      });
+    if (tenantSubscription) {
+      tenantSubscription.subscription = subscription;
+      await this.tenantSubRepo.save(tenantSubscription);
+    } else {
+      await this.tenantSubRepo.save({ subscription, tenant });
     }
 
     const session = await this.createCheckoutSession(payload.email, subscription.priceId, token);
