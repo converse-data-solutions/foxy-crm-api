@@ -1,11 +1,14 @@
-import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 import { APIResponse } from 'src/common/dto/response.dto';
 import { Contact } from 'src/database/entity/core-app/contact.entity';
 import { Deal } from 'src/database/entity/core-app/deal.entity';
+import { Task } from 'src/database/entity/core-app/task.entity';
 import { User } from 'src/database/entity/core-app/user.entity';
 import { CreateDealDto } from 'src/dto/deal-dto/create-deal.dto';
 import { GetDealDto } from 'src/dto/deal-dto/get-deal.dto';
 import { UpdateDealDto } from 'src/dto/deal-dto/update-deal.dto';
+import { Role } from 'src/enum/core-app.enum';
+import { DealStage, TaskStatus } from 'src/enum/status.enum';
 import { getRepo } from 'src/shared/database-connection/get-connection';
 
 @Injectable()
@@ -77,11 +80,31 @@ export class DealService {
     updateDeal: UpdateDealDto,
   ): Promise<APIResponse> {
     const dealRepo = await getRepo(Deal, tenantId);
+    const taskRepo = await getRepo(Task, tenantId);
     const dealExist = await dealRepo.findOne({ where: { id } });
     const { value, ...deals } = updateDeal;
     if (!dealExist) {
       throw new BadRequestException({ message: 'Invalid deal id or deal not found' });
     }
+
+    if (updateDeal.stage == DealStage.Completed) {
+      const dealTasks = await taskRepo.find({ where: { entityId: id } });
+      if (dealTasks.length == 0) {
+        throw new BadRequestException({ message: 'Cannot complete the deal without doing task' });
+      } else {
+        for (const task of dealTasks) {
+          if (task.status !== TaskStatus.Completed) {
+            throw new BadRequestException({ message: 'Cannot complete task with pending tasks' });
+          }
+        }
+        if (user.role !== Role.Admin && user.role !== Role.Manager) {
+          throw new UnauthorizedException({
+            message: 'Admin or manager only can update the deal status',
+          });
+        }
+      }
+    }
+
     dealExist.value = value ? Number(value) : dealExist.value;
     dealRepo.merge(dealExist, deals);
     await dealRepo.save(dealExist);

@@ -7,9 +7,9 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Contact } from './contact.entity';
-import { User } from './user.entity';
 import { TicketStatus } from 'src/enum/status.enum';
 import { Deal } from './deal.entity';
+import { User } from './user.entity';
 
 @Entity({ name: 'tickets' })
 export class Ticket {
@@ -34,10 +34,6 @@ export class Ticket {
   @JoinColumn({ name: 'contact_id' })
   contactId: Contact;
 
-  @ManyToOne(() => User)
-  @JoinColumn({ name: 'assigned_to' })
-  assignedTo: User;
-
   @ManyToOne(() => Deal)
   @JoinColumn({ name: 'deal_id' })
   dealId: Deal;
@@ -46,5 +42,13 @@ export class Ticket {
   createdAt: Date;
 
   @Column({ name: 'resolved_at', type: 'timestamp', nullable: true })
-  resolvedAt: Date;
+  resolvedAt?: Date;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'created_by' })
+  createdBy: User;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'updated_by' })
+  updatedBy?: User;
 }
