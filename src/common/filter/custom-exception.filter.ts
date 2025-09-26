@@ -14,7 +14,7 @@ export class CustomExceptionFilter implements ExceptionFilter {
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
-      const errorResponse = exception.getResponse() as any;
+      const errorResponse = exception.getResponse() as any | unknown;
 
       if (status === HttpStatus.BAD_REQUEST && Array.isArray(errorResponse.message)) {
         message = 'Validation failed';

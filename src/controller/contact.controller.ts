@@ -9,12 +9,12 @@ import { CurrentUser } from 'src/common/decorator/current-user.decorator';
 import { User } from 'src/database/entity/core-app/user.entity';
 import { GetContactDto } from 'src/dto/contact-dto/get-contact.dto';
 
+@Roles(Role.Admin, Role.Manager)
 @Controller('contact')
 export class ContactController {
   constructor(private readonly contactService: ContactService) {}
 
   @Post()
-  @Roles(Role.Admin, Role.Manager)
   @ApiOperation({ summary: 'Create new contact' })
   @ApiResponse({ status: 201, description: 'Contact created successfully' })
   async create(
@@ -26,7 +26,6 @@ export class ContactController {
   }
 
   @Get()
-  @Roles(Role.Admin, Role.Manager)
   @ApiOperation({ summary: 'Get the existing contact' })
   @ApiResponse({ status: 200, description: 'Contact fetched successfully' })
   findAll(
@@ -38,7 +37,6 @@ export class ContactController {
   }
 
   @Put(':id')
-  @Roles(Role.Admin, Role.Manager)
   @ApiOperation({ summary: 'Update existing contact' })
   @ApiResponse({ status: 200, description: 'Contact updated successfully' })
   async update(

@@ -7,7 +7,7 @@ export class SubscriptionProcessor extends WorkerHost {
   constructor(private readonly subscriptionService: SubscriptionService) {
     super();
   }
-  async process(job: Job, token?: string) {
+  async process(job: Job) {
     switch (job.name) {
       case 'expire-subscription':
         await this.subscriptionService.expireSubscription(job.data.id as string);

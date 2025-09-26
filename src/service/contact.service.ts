@@ -129,11 +129,13 @@ export class ContactService {
       assignedTo: assignedUser ? assignedUser : undefined,
     };
     const updatedContact = await contactRepo.save(contact);
-    await noteRepo.save({
-      contact: updatedContact,
-      content: note,
-      createdBy: user,
-    });
+    if (note) {
+      await noteRepo.save({
+        contact: updatedContact,
+        content: note,
+        createdBy: user,
+      });
+    }
     return {
       success: true,
       statusCode: HttpStatus.OK,

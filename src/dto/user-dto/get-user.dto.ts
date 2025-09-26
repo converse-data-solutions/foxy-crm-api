@@ -34,6 +34,7 @@ export class GetUserDto {
   @IsString()
   country?: string;
 
+  @ApiPropertyOptional({ description: 'Items per page', default: 1 })
   @IsOptional()
   @Type(() => Number)
   @IsInt({ message: 'Page number must be an numeric value' })

@@ -55,8 +55,10 @@ export class TenantService {
     };
     try {
       await this.mailService.sendMail(mailOptions);
-    } catch (error) {
-      throw new InternalServerErrorException({ message: 'Error occured while sending mail' });
+    } catch (error: unknown) {
+      throw new InternalServerErrorException({
+        message: `Error occured while sending mail ${error}`,
+      });
     }
   }
 }

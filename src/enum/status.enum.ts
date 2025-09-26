@@ -8,7 +8,7 @@ export enum TicketStatus {
 export enum TaskStatus {
   Pending = 'pending',
   Completed = 'completed',
-  OverDue = 'overdue',
+  InProgress = 'in progress',
 }
 
 export enum LeadStatus {

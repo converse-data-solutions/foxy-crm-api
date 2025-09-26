@@ -6,7 +6,6 @@ import {
   IsDateString,
   IsDefined,
   Length,
-  Min,
   IsDecimal,
 } from 'class-validator';
 
