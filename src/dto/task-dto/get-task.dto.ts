@@ -1,8 +1,8 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, IsString, IsUUID, Min } from 'class-validator';
-import { EntityName, TaskType, TaskPriority } from 'src/enum/core-app.enum';
-import { TaskStatus } from 'src/enum/status.enum';
+import { TaskType, TaskPriority } from 'src/enums/core-app.enum';
+import { TaskStatus } from 'src/enums/status.enum';
 
 export class GetTaskDto {
   @ApiPropertyOptional({

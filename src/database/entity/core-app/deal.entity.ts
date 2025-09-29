@@ -9,7 +9,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Contact } from './contact.entity';
-import { DealStage } from 'src/enum/status.enum';
+import { DealStage } from 'src/enums/status.enum';
 import { User } from './user.entity';
 
 @Entity({ name: 'deals' })

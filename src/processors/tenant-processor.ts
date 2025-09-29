@@ -1,6 +1,6 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
-import { TenantService } from 'src/service/tenant.service';
+import { TenantService } from 'src/services/tenant.service';
 
 @Processor('tenant-setup')
 export class TenantProcessor extends WorkerHost {

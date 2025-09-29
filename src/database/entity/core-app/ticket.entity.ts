@@ -7,7 +7,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Contact } from './contact.entity';
-import { TicketStatus } from 'src/enum/status.enum';
+import { TicketStatus } from 'src/enums/status.enum';
 import { Deal } from './deal.entity';
 import { User } from './user.entity';
 
