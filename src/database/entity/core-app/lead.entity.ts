@@ -9,8 +9,8 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from './user.entity';
-import { LeadStatus } from 'src/enum/status.enum';
-import { LeadSource } from 'src/enum/core-app.enum';
+import { LeadStatus } from 'src/enums/status.enum';
+import { LeadSource } from 'src/enums/core-app.enum';
 import { Contact } from './contact.entity';
 
 @Entity({ name: 'leads' })

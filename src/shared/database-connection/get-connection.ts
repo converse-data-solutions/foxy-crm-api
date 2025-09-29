@@ -1,4 +1,4 @@
-import { coreDataSource } from 'src/database/datasource/core-app-data-source';
+import { coreDataSource } from 'src/database/datasources/core-app-data-source';
 import { DataSource, DataSourceOptions, EntityTarget, ObjectLiteral, Repository } from 'typeorm';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
 

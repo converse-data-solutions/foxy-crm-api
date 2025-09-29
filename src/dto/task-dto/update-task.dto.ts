@@ -1,7 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
-import { EntityName, TaskType, TaskPriority } from 'src/enum/core-app.enum';
-import { TaskStatus } from 'src/enum/status.enum';
+import { EntityName, TaskType, TaskPriority } from 'src/enums/core-app.enum';
+import { TaskStatus } from 'src/enums/status.enum';
 
 export class UpdateTaskDto {
   @ApiPropertyOptional({ example: 'Follow up with client' })

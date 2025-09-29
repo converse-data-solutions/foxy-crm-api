@@ -11,7 +11,7 @@ export class TenantSignupDto {
   @IsDefined({ message: 'User name is required' })
   @IsString({ message: 'User name must be a string' })
   @ApiProperty({ example: 'navaneethan' })
-  @Length(5, 30, { message: 'User name must be between 5 and 30 characters' })
+  @Length(3, 30, { message: 'User name must be between 3 and 30 characters' })
   userName: string;
 
   @IsDefined({ message: 'Email is required' })
@@ -40,6 +40,16 @@ export class TenantSignupDto {
   @IsUrl({}, { message: 'URL must be a string' })
   @ApiPropertyOptional({ example: 'http://www.abctech.in' })
   url?: string;
+
+  @IsOptional()
+  @IsString({ message: 'Please provide a valid address' })
+  @ApiPropertyOptional({ example: '11/2 Abc street' })
+  address?: string;
+
+  @IsOptional()
+  @IsString({ message: 'City should be string' })
+  @ApiPropertyOptional({ example: 'Gobi' })
+  city?: string;
 
   @IsOptional()
   @IsString({ message: 'Country should be string' })

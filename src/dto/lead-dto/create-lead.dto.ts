@@ -1,6 +1,6 @@
 import { IsDefined, IsEnum, IsOptional, IsString, Length, Matches } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { LeadSource } from 'src/enum/core-app.enum';
+import { LeadSource } from 'src/enums/core-app.enum';
 
 export class CreateLeadDto {
   @IsDefined({ message: 'Name is required' })
