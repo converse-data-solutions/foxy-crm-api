@@ -24,6 +24,7 @@ import { emailVerifyTemplate } from 'src/templates/email-verify.template';
 import { MailerService } from '@nestjs-modules/mailer';
 import { APIResponse } from 'src/common/dtos/response.dto';
 import { OtpDto } from 'src/dto/otp-dto/otp.dto';
+import { Role } from 'src/enums/core-app.enum';
 
 @Injectable()
 export class AuthService {
@@ -65,7 +66,7 @@ export class AuthService {
         country: tenantCountry ? tenantCountry : undefined,
         password: hashPassword,
       });
-
+      await this.sendOtp(tenant.email);
       return {
         success: true,
         statusCode: HttpStatus.CREATED,
@@ -146,7 +147,12 @@ export class AuthService {
           },
           { secret: process.env.SECRET_KEY },
         );
-        return { tenantAccessToken, accessToken };
+        return {
+          tenantAccessToken,
+          accessToken,
+          role: userExist.role,
+          xTenantId: tenant.schemaName,
+        };
       }
     }
   }
@@ -184,9 +190,14 @@ export class AuthService {
   async verifyOtp(otpDto: OtpDto) {
     const tenant = await this.getTenantId(otpDto.email);
     let repo: Repository<Tenant | User> = this.tenantRepo;
+    let tenantAccessToken: string | null = null;
     let userExist: User | Tenant | null = null;
     if (tenant.email === otpDto.email) {
       userExist = tenant;
+      tenantAccessToken = this.jwtService.sign(
+        { id: tenant.id, email: tenant.email },
+        { secret: process.env.SECRET_KEY },
+      );
     } else {
       repo = await getRepo<User>(User, tenant.schemaName);
       userExist = await repo.findOne({ where: { email: otpDto.email } });
@@ -200,20 +211,29 @@ export class AuthService {
     if (userExist.otp && userExist.otp !== otpDto.otp) {
       throw new BadRequestException({ message: 'Invalid or wrong otp' });
     }
+    let accessToken: string | null = null;
     if (userExist instanceof Tenant) {
       const subscription = this.subscriptionRepo.create({
         tenant: userExist,
       });
       await this.subscriptionRepo.save(subscription);
-
+      const payload = plainToInstance(JwtPayload, userExist, {
+        excludeExtraneousValues: true,
+      });
+      accessToken = this.jwtService.sign(
+        {
+          ...payload,
+        },
+        { secret: process.env.SECRET_KEY },
+      );
       await this.tenantQueue.add('tenant-setup', {
         tenant: userExist,
         country: tenant.country,
       });
     }
-    return { success: true, statusCode: HttpStatus.OK, message: 'Email verified successfully' };
+    const role = userExist instanceof Tenant ? Role.Admin : userExist.role;
+    return { tenantAccessToken, accessToken, role, xTenantId: tenant.schemaName };
   }
-
   async validateUser(payload: JwtPayload, schema: string) {
     const subscriptionExist = await this.subscriptionRepo.findOne({
       where: { tenant: { schemaName: schema } },

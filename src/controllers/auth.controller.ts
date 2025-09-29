@@ -32,19 +32,19 @@ export class AuthController {
   @ApiOperation({ summary: 'Signin user and access token is generated' })
   @ApiResponse({ status: 200, description: 'Signin successfully' })
   async userSignin(@Body() user: Signin, @Res() response: Response) {
-    const token = await this.authService.userSignin(user);
-    console.log(token);
+    const payload = await this.authService.userSignin(user);
+    console.log(payload);
 
     let cookieName = 'tenant_access_token';
-    if (token.tenantAccessToken) {
-      response.cookie(cookieName, token.tenantAccessToken, {
+    if (payload.tenantAccessToken) {
+      response.cookie(cookieName, payload.tenantAccessToken, {
         httpOnly: true,
         sameSite: 'lax',
         maxAge: 24 * 60 * 60 * 1000,
       });
     }
     cookieName = 'access_token';
-    response.cookie(cookieName, token.accessToken, {
+    response.cookie(cookieName, payload.accessToken, {
       httpOnly: true,
       sameSite: 'lax',
       secure: false,
@@ -56,7 +56,7 @@ export class AuthController {
       success: true,
       statusCode: HttpStatus.OK,
       message: 'Signin successfull',
-      token,
+      payload,
     });
   }
 
@@ -72,7 +72,32 @@ export class AuthController {
   @Post('verify-otp')
   @ApiOperation({ summary: 'Verify the otp' })
   @ApiResponse({ status: 200, description: 'Otp verified successfully' })
-  async verifyOtp(@Body() data: OtpDto) {
-    return await this.authService.verifyOtp(data);
+  async verifyOtp(@Body() data: OtpDto, @Res() response: Response) {
+    const payload = await this.authService.verifyOtp(data);
+    let cookieName = 'tenant_access_token';
+    if (payload.tenantAccessToken) {
+      response.cookie(cookieName, payload.tenantAccessToken, {
+        httpOnly: true,
+        sameSite: 'none',
+        secure: false,
+        path: '/',
+        maxAge: 24 * 60 * 60 * 1000,
+      });
+    }
+    cookieName = 'access_token';
+    response.cookie(cookieName, payload.accessToken, {
+      httpOnly: true,
+      sameSite: 'none',
+      secure: false,
+      path: '/',
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+    response.status(HttpStatus.OK);
+    response.json({
+      success: true,
+      statusCode: HttpStatus.OK,
+      message: 'Email verified successfully',
+      payload,
+    });
   }
 }
