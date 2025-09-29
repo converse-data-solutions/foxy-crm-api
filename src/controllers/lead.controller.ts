@@ -12,35 +12,31 @@ import {
   Put,
 } from '@nestjs/common';
 import { LeadService } from '../services/lead.service';
-import { CreateLeadDto } from '../dtos/lead-dto/create-lead.dto';
-import { UpdateLeadDto } from '../dtos/lead-dto/update-lead.dto';
+import { CreateLeadDto } from '../dto/lead-dto/create-lead.dto';
+import { UpdateLeadDto } from '../dto/lead-dto/update-lead.dto';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { ApiBody, ApiConsumes, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Express } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { LeadQueryDto } from 'src/dtos/lead-dto/get-lead.dto';
+import { LeadQueryDto } from 'src/dto/lead-dto/lead-query.dto';
 import { Roles } from 'src/common/decorators/role.decorator';
 import { Role } from 'src/enums/core-app.enum';
-import { LeadToContactDto } from 'src/dtos/lead-dto/lead-to-contact.dto';
-import { User } from 'src/database/entities/core-app-entities/user.entity';
+import { LeadToContactDto } from 'src/dto/lead-dto/lead-to-contact.dto';
+import { User } from 'src/database/entity/core-app/user.entity';
 import { FileValidationPipe } from 'src/common/pipes/file-validation.pipe';
-import { LeadConversionService } from 'src/services/lead-conversion.service';
 
 @Roles(Role.Admin, Role.Manager)
-@Controller('leads')
+@Controller('lead')
 export class LeadController {
-  constructor(
-    private readonly leadService: LeadService,
-    private readonly leadConversionService: LeadConversionService,
-  ) {}
+  constructor(private readonly leadService: LeadService) {}
 
   @Post()
   @Roles(Role.Admin, Role.Manager, Role.SalesRep)
   @ApiOperation({ summary: 'Insert lead or create lead' })
   @ApiResponse({ status: 201, description: 'Lead created successfully' })
   async createLead(
-    @Headers('x-tenant-id') tenantId: string,
     @Body() createLeadDto: CreateLeadDto,
+    @Headers('x-tenant-id') tenantId: string,
     @CurrentUser() user: User,
   ) {
     return await this.leadService.createLead(createLeadDto, tenantId, user);
@@ -76,10 +72,10 @@ export class LeadController {
     @Headers('x-tenant-id') tenantId: string,
     @CurrentUser() user: User,
   ) {
-    return this.leadService.importLeads(file, tenantId, user);
+    return await this.leadService.importLeads(file, tenantId, user);
   }
 
-  @Post(':id/conversion')
+  @Post(':id/convert')
   @Roles(Role.Admin, Role.Manager, Role.SalesRep)
   @ApiOperation({ summary: 'Convert lead to contact' })
   @ApiResponse({ status: 200, description: 'Lead converted successfully' })
@@ -89,27 +85,22 @@ export class LeadController {
     @CurrentUser() user: User,
     @Body() leadToContact?: LeadToContactDto,
   ) {
-    return await this.leadConversionService.convertLead(tenantId, id, user, leadToContact);
+    return await this.leadService.convertLead(tenantId, id, user, leadToContact);
   }
 
-  @Get(':id/conversion-preview')
+  @Get(':id/convert-preview')
   @ApiOperation({ summary: 'Retrive lead preview' })
   @ApiResponse({ status: 200, description: 'Lead preview fetched successfully' })
   @Roles(Role.Admin, Role.Manager, Role.SalesRep)
   async leadPreview(@Headers('x-tenant-id') tenantId: string, @Param('id') id: string) {
-    return await this.leadConversionService.leadPreview(tenantId, id);
+    return await this.leadService.leadPreview(tenantId, id);
   }
 
   @Get()
-  @Roles(Role.Admin, Role.Manager, Role.SalesRep)
   @ApiOperation({ summary: 'Retrive lead based on query' })
   @ApiResponse({ status: 200, description: 'Lead fetched successfully' })
-  async findAllLeads(
-    @Query() leadQuery: LeadQueryDto,
-    @Headers('x-tenant-id') tenantId: string,
-    @CurrentUser() user: User,
-  ) {
-    return this.leadService.findAllLeads(leadQuery, tenantId, user);
+  async findAllLeads(@Query() leadQuery: LeadQueryDto, @Headers('x-tenant-id') tenantId: string) {
+    return this.leadService.findAllLeads(leadQuery, tenantId);
   }
 
   @Put(':id')

@@ -1,105 +1,78 @@
-import { Body, Controller, HttpStatus, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, HttpStatus, Post, Res } from '@nestjs/common';
 import { AuthService } from '../services/auth.service';
-import { TenantSignupDto } from 'src/dtos/tenant-dto/tenant-signup.dto';
+import { TenantSignupDto } from 'src/dto/tenant-dto/tenant-signup.dto';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { Response, Request } from 'express';
-import { SignIn, UserSignupDto } from 'src/dtos/user-dto/user-signup.dto';
+import { Response } from 'express';
+import { Signin, UserSignupDto } from 'src/dto/user-dto/user-signup.dto';
 import { Public } from 'src/common/decorators/public.decorator';
-import { EmailDto, OtpDto } from 'src/dtos/otp-dto/otp.dto';
-import { TenantService } from 'src/services/tenant.service';
-import { OtpService } from 'src/services/otp.service';
-import { UserService } from 'src/services/user.service';
-import { ForgotPasswordDto, ResetPasswordDto } from 'src/dtos/password-dto/reset-password.dto';
-import { setCookie } from 'src/shared/utils/cookie.util';
-import { APIResponse } from 'src/common/dtos/response.dto';
+import { EmailDto, OtpDto } from 'src/dto/otp-dto/otp.dto';
 
-@Public()
 @Controller('auth')
 export class AuthController {
-  constructor(
-    private readonly authService: AuthService,
-    private readonly tenantService: TenantService,
-    private readonly otpService: OtpService,
-    private readonly userService: UserService,
-  ) {}
+  constructor(private readonly authService: AuthService) {}
 
+  @Public()
   @Post('tenant-signup')
   @ApiOperation({ summary: 'Signup tenant and automated initial setup' })
   @ApiResponse({ status: 201, description: 'Signup process completed' })
   async tenantSignup(@Body() tenant: TenantSignupDto) {
-    return await this.tenantService.tenantSignup(tenant);
+    return await this.authService.tenantSignup(tenant);
   }
 
+  @Public()
   @Post('user-signup')
   @ApiOperation({ summary: 'Signup or create a new account' })
   @ApiResponse({ status: 201, description: 'Signup process completed' })
   async userSignup(@Body() user: UserSignupDto) {
-    return await this.userService.userSignup(user);
+    return await this.authService.userSignup(user);
   }
 
+  @Public()
   @Post('signin')
   @ApiOperation({ summary: 'Signin user and access token is generated' })
   @ApiResponse({ status: 200, description: 'Signin successfully' })
-  async userSignin(@Body() user: SignIn, @Res({ passthrough: true }) response: Response) {
-    const payload = await this.authService.signin(user);
-    setCookie(payload.data!, response);
-    return payload;
+  async userSignin(@Body() user: Signin, @Res() response: Response) {
+    const token = await this.authService.userSignin(user);
+    console.log(token);
+
+    let cookieName = 'tenant_access_token';
+    if (token.tenantAccessToken) {
+      response.cookie(cookieName, token.tenantAccessToken, {
+        httpOnly: true,
+        sameSite: 'lax',
+        maxAge: 24 * 60 * 60 * 1000,
+      });
+    }
+    cookieName = 'access_token';
+    response.cookie(cookieName, token.accessToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: false,
+      path: '/',
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+    response.status(HttpStatus.OK);
+    response.json({
+      success: true,
+      statusCode: HttpStatus.OK,
+      message: 'Signin successfull',
+      token,
+    });
   }
 
-  @Post('verify-email/send-otp')
+  @Public()
+  @Post('send-otp')
   @ApiOperation({ summary: 'Send otp to the mail' })
   @ApiResponse({ status: 200, description: 'Otp sent successfully' })
   async sendOtp(@Body() payload: EmailDto) {
-    return await this.otpService.sendOtp(payload.email);
+    return await this.authService.sendOtp(payload.email);
   }
 
-  @Post('verify-email/confirm')
-  @ApiOperation({ summary: 'Verify the otp' })
-  @ApiResponse({ status: 200, description: 'Otp verified successfully' })
-  async emailVerifyOtp(@Body() data: OtpDto, @Res({ passthrough: true }) response: Response) {
-    const payload = await this.otpService.emailVerifyOtp(data);
-    setCookie(payload.data!, response);
-    return payload;
-  }
-
-  @Post('reset-password')
-  @ApiOperation({ summary: 'Update new password using current password' })
-  @ApiResponse({ status: 200, description: 'Password updated successfully' })
-  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
-    return await this.authService.resetPassword(resetPasswordDto);
-  }
-
-  @Post('forgot-password/send-otp')
-  @ApiOperation({ summary: 'Send otp to the mail' })
-  @ApiResponse({ status: 200, description: 'Otp sent successfully' })
-  async forgotPasswordSendOtp(@Body() payload: EmailDto) {
-    return await this.otpService.sendOtp(payload.email);
-  }
-
-  @Post('forgot-password/confirm')
-  @ApiOperation({ summary: 'Verify the otp' })
-  @ApiResponse({ status: 200, description: 'Otp verified successfully' })
-  async forgotPasswordVerifyOtp(@Body() otpDto: OtpDto) {
-    return await this.otpService.forgotPasswordVerifyOtp(otpDto);
-  }
-
-  @Post('forgot-password/reset')
-  @ApiOperation({ summary: 'Update new password using otp' })
-  @ApiResponse({ status: 200, description: 'Password updated successfully' })
-  async forgotPasswordReset(@Body() forgotPassword: ForgotPasswordDto) {
-    return await this.authService.forgotPasswordReset(forgotPassword);
-  }
-
-  @Post('refresh')
   @Public()
-  @ApiOperation({ summary: 'Update refresh token' })
-  @ApiResponse({ status: 200, description: 'Token updated successfully' })
-  async tokenRefresh(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-  ): Promise<APIResponse> {
-    const tokens = await this.authService.tokenRefresh(req);
-    setCookie(tokens, res);
-    return { success: true, statusCode: HttpStatus.OK, message: 'Token refreshed successfully' };
+  @Post('verify-otp')
+  @ApiOperation({ summary: 'Verify the otp' })
+  @ApiResponse({ status: 200, description: 'Otp verified successfully' })
+  async verifyOtp(@Body() data: OtpDto) {
+    return await this.authService.verifyOtp(data);
   }
 }

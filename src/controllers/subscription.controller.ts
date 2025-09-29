@@ -1,11 +1,11 @@
-import { Controller, Get, Post, Req, Body } from '@nestjs/common';
+import { Controller, Get, Post, Req, Body, Query } from '@nestjs/common';
 import { SubscriptionService } from '../services/subscription.service';
 import { Request } from 'express';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { SubscribeDto } from 'src/dtos/subscribe-dto/subscribe.dto';
+import { SubscribeDto } from 'src/dto/subscribe-dto/subscribe.dto';
 import { Public } from 'src/common/decorators/public.decorator';
 
-@Controller('plans')
+@Controller('subscription')
 export class SubscriptionController {
   constructor(private readonly subscriptionService: SubscriptionService) {}
 
@@ -13,28 +13,20 @@ export class SubscriptionController {
   @Public()
   @ApiOperation({ summary: 'Make a subscription' })
   @ApiResponse({ status: 201, description: 'Subscribed to the plan' })
-  async createSubscription(@Body() subscribe: SubscribeDto, @Req() request: Request) {
-    const token: string | undefined = request?.cookies['access_token'];
-    return await this.subscriptionService.createSubscription(subscribe, token);
+  async create(@Body() subscribe: SubscribeDto, @Req() request: Request) {
+    const token: string | undefined = request?.cookies['tenant_access_token'];
+    return await this.subscriptionService.create(subscribe, token);
   }
 
   @Get()
   @Public()
-  @ApiOperation({ summary: 'View all plans' })
-  async findAllPlans(@Req() request: Request) {
-    return this.subscriptionService.findAllPlans(request);
+  async findAll(@Req() request: Request) {
+    return this.subscriptionService.findAll(request);
   }
 
-  @Get('current')
+  @Get('session')
   @Public()
-  @ApiOperation({ summary: 'Get current subscription plan' })
-  async findCurrentplan(@Req() request: Request) {
-    return this.subscriptionService.findCurrentPlan(request);
-  }
-
-  @Get('success')
-  @Public()
-  async paymentSuccess() {
-    return { success: true, statusCode: 200, message: 'Payment done' };
+  async getSession(@Query('id') id: string, @Query('key') token: string) {
+    return this.subscriptionService.getSession(id, token);
   }
 }

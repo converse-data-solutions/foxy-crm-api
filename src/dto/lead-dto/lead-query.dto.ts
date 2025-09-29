@@ -1,7 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsOptional, IsString, IsEnum, IsInt, Min, Matches } from 'class-validator';
-import { LeadSource } from 'src/enum/core-app.enum';
+import { LeadSource } from 'src/enums/core-app.enum';
 
 export class LeadQueryDto {
   @ApiPropertyOptional()

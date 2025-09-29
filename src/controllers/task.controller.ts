@@ -1,16 +1,16 @@
 import { Controller, Get, Post, Body, Param, Headers, Put, Query } from '@nestjs/common';
 import { TaskService } from '../services/task.service';
-import { UpdateTaskDto } from 'src/dtos/task-dto/update-task.dto';
-import { CreateTaskDto } from 'src/dtos/task-dto/create-task.dto';
-import { User } from 'src/database/entities/core-app-entities/user.entity';
+import { UpdateTaskDto } from 'src/dto/task-dto/update-task.dto';
+import { CreateTaskDto } from 'src/dto/task-dto/create-task.dto';
+import { User } from 'src/database/entity/core-app/user.entity';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { GetUserDto } from 'src/dto/user-dto/get-user.dto';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Roles } from 'src/common/decorators/role.decorator';
 import { Role } from 'src/enums/core-app.enum';
-import { GetTaskDto } from 'src/dtos/task-dto/get-task.dto';
 
 @Roles(Role.Admin, Role.Manager)
-@Controller('tasks')
+@Controller('task')
 export class TaskController {
   constructor(private readonly taskService: TaskService) {}
 
@@ -32,7 +32,7 @@ export class TaskController {
   async findAllTasks(
     @Headers('x-tenant-id') tenantId: string,
     @CurrentUser() user: User,
-    @Query() taskQuery: GetTaskDto,
+    @Query() taskQuery: GetUserDto,
   ) {
     return await this.taskService.findAllTasks(tenantId, user, taskQuery);
   }

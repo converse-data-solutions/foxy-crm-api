@@ -1,98 +1,77 @@
-import { BadRequestException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
+import { MailerService } from '@nestjs-modules/mailer';
+import {
+  BadRequestException,
+  HttpStatus,
+  Inject,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Request } from 'express';
-import { APIResponse } from 'src/common/dtos/response.dto';
-import { Plan } from 'src/database/entities/base-app-entities/plan.entity';
-import { Subscription } from 'src/database/entities/base-app-entities/subscription.entity';
-import { Tenant } from 'src/database/entities/base-app-entities/tenant.entity';
-import { User } from 'src/database/entities/core-app-entities/user.entity';
-import { SubscribeDto } from 'src/dtos/subscribe-dto/subscribe.dto';
-import { StatusCause } from 'src/enums/status.enum';
-import { getRepo } from 'src/shared/database-connection/get-connection';
-import { subscriptionReminderTemplate } from 'src/templates/subscription-remainder.template';
-import { Repository } from 'typeorm';
-import { PlanPricing } from 'src/database/entities/base-app-entities/plan-pricing.entity';
-import { StripePaymentService } from './stripe-payment.service';
-import { TokenService } from './token.service';
-import { EmailService } from './email.service';
-import { SubscriptionHistory } from 'src/database/entities/base-app-entities/subscription-history.entity';
 import { JwtPayload } from 'src/common/dtos/jwt-payload.dto';
+import { APIResponse } from 'src/common/dtos/response.dto';
+import { Plan } from 'src/database/entity/base-app/plan.entity';
+import { Subscription } from 'src/database/entity/base-app/subscription.entity';
+import { Tenant } from 'src/database/entity/base-app/tenant.entity';
+import { SubscribeDto } from 'src/dto/subscribe-dto/subscribe.dto';
+import { invoiceTemplate, InvoiceTemplateOptions } from 'src/templates/invoice-template';
+import { subscriptionReminderTemplate } from 'src/templates/subscription-remainder.template';
+import Stripe from 'stripe';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class SubscriptionService {
   constructor(
+    private readonly jwtService: JwtService,
     @InjectRepository(Plan) private readonly planRepo: Repository<Plan>,
-    @InjectRepository(PlanPricing) private readonly planPriceRepo: Repository<PlanPricing>,
+    @Inject('STRIPE_CLIENT') private stripe: Stripe,
     @InjectRepository(Subscription)
     private readonly subscriptionRepo: Repository<Subscription>,
-    @InjectRepository(SubscriptionHistory)
-    private readonly subscriptionHistoryRepo: Repository<SubscriptionHistory>,
     @InjectRepository(Tenant) private readonly tenantRepo: Repository<Tenant>,
-    private readonly emailService: EmailService,
-    private readonly stripeService: StripePaymentService,
-    private readonly tokenService: TokenService,
+    private readonly mailService: MailerService,
   ) {}
 
-  async createSubscription(
-    subscribe: SubscribeDto,
-    token: string | undefined,
-  ): Promise<APIResponse> {
+  async create(subscribe: SubscribeDto, token: string | undefined): Promise<APIResponse> {
     if (!token) {
-      throw new UnauthorizedException('Unauthorized access token not found');
+      throw new UnauthorizedException({ message: 'Unauthorized access token not found' });
     }
-    const payload = await this.tokenService.verifyAccessToken(token);
-    const planPrice = await this.planPriceRepo.findOne({
-      where: { id: subscribe.planId },
-      relations: { plan: true },
+    const payload = await this.validateToken(token);
+    const plan = await this.planRepo.findOne({ where: { id: subscribe.id } });
+    const tenant = await this.tenantRepo.findOne({ where: { id: payload.id } });
+    if (!plan) {
+      throw new BadRequestException({ message: 'Invalid subscription id' });
+    }
+    if (!tenant) {
+      throw new UnauthorizedException({ message: 'Unauthorized access invalid tenant' });
+    }
+    const tenantSubscription = await this.subscriptionRepo.findOne({
+      where: { tenant: { id: payload.id } },
     });
-    const tenant = await this.checkTenant(payload);
-    if (!planPrice) {
-      throw new BadRequestException('Invalid subscription plan');
+
+    if (tenantSubscription) {
+      tenantSubscription.plan = plan;
+      await this.subscriptionRepo.save(tenantSubscription);
+    } else {
+      await this.subscriptionRepo.save({ plan, tenant });
     }
 
-    const tenantSubscription = await this.subscriptionRepo
-      .createQueryBuilder('subscription')
-      .leftJoin('subscription.tenant', 'tenant')
-      .leftJoinAndSelect('subscription.planPrice', 'planPrice')
-      .leftJoinAndSelect('planPrice.plan', 'plan')
-      .andWhere('tenant.email = :email', { email: payload.email })
-      .getOne();
-
-    if (tenantSubscription && tenantSubscription.endDate) {
-      if (
-        Number(tenantSubscription.planPrice.plan.userCount) > Number(planPrice.plan.userCount) &&
-        tenantSubscription.status === true
-      ) {
-        throw new BadRequestException('Cannot downgrade subscription while an active plan exists');
-      } else if (
-        tenantSubscription.planPrice.price > planPrice.price &&
-        Number(tenantSubscription.planPrice.plan.userCount) >= Number(planPrice.plan.userCount)
-      ) {
-        throw new BadRequestException('Cannot downgrade subscription while an active plan exists');
-      }
-    }
-
-    const session = await this.stripeService.createCheckoutSession(
-      payload.email,
-      tenant.schemaName,
-      planPrice.stripePriceId,
-    );
+    const session = await this.createCheckoutSession(payload.email, plan.priceId, token);
     return {
       success: true,
-      statusCode: HttpStatus.OK,
+      statusCode: HttpStatus.ACCEPTED,
       message: 'Payment link is retrived successfully',
       paymentUrl: session.url,
     };
   }
 
-  async findAllPlans(request: Request): Promise<APIResponse<Plan[]>> {
-    const token: string | undefined = request?.cookies['access_token'];
+  async findAll(request: Request): Promise<APIResponse<Plan[]>> {
+    const token: string | undefined = request?.cookies['tenant_access_token'];
     if (!token) {
-      throw new UnauthorizedException('Unauthorized access token not found');
+      throw new UnauthorizedException({ message: 'Unauthorized access token not found' });
     }
-    const payload = await this.tokenService.verifyAccessToken(token);
-    await this.checkTenant(payload);
-    const plans = await this.planRepo.find({ relations: { planPricings: true } });
+    const payload = await this.validateToken(token);
+    const plans = await this.planRepo.find();
 
     return {
       success: true,
@@ -102,45 +81,94 @@ export class SubscriptionService {
     };
   }
 
-  async findCurrentPlan(request: Request) {
-    const token: string | undefined = request?.cookies['access_token'];
-    if (!token) {
-      throw new UnauthorizedException('Unauthorized access token not found');
-    }
-    const payload = await this.tokenService.verifyAccessToken(token);
-    const subscription = await this.planPriceRepo.findOne({
-      where: {
-        tenantsSubscription: {
-          tenant: { id: payload.id },
-          status: true,
-        },
-      },
-      relations: { tenantsSubscription: true, plan: true },
+  private async validateToken(token: string) {
+    const verifyToken: JwtPayload = await this.jwtService.verifyAsync(token, {
+      secret: process.env.SECRET_KEY,
     });
-    if (!subscription) {
-      throw new BadRequestException('There is no active or current subscription');
+    return verifyToken;
+  }
+
+  async getSession(sessionId: string, token: string) {
+    const stripeResponse = await this.stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ['subscription', 'customer', 'invoice'],
+    });
+    const payload = await this.validateToken(token);
+    const existingSubscription = await this.subscriptionRepo.findOne({
+      where: { tenant: { id: payload.id } },
+      relations: { plan: true, tenant: true },
+    });
+    if (!existingSubscription) {
+      throw new UnauthorizedException({ message: 'Unauthorized access invalid token' });
     }
+
+    const stripeSubscription = stripeResponse.subscription as Stripe.Subscription;
+    const stripeCustomer = stripeResponse.customer as Stripe.Customer;
+    const stripeInvoice = stripeResponse.invoice as Stripe.Invoice;
+
+    const endDate = new Date(stripeSubscription.start_date * 1000);
+    const interval_count = stripeSubscription.items.data[0].price.recurring?.interval_count;
+    const month = interval_count
+      ? interval_count
+      : Number(existingSubscription.plan.validUpto.split(' ')[0]);
+    endDate.setMonth(endDate.getMonth() + month);
+
+    existingSubscription.stripeCustomerId = stripeCustomer.id;
+    existingSubscription.startDate = new Date(stripeSubscription.start_date * 1000);
+    existingSubscription.status = true;
+    existingSubscription.stripeSessionId = sessionId;
+    existingSubscription.stripeSubscriptionId = stripeSubscription.id;
+    existingSubscription.endDate = endDate;
+
+    await this.subscriptionRepo.save(existingSubscription);
+    const name = stripeCustomer.name ? stripeCustomer.name : existingSubscription.tenant.userName;
+    const option: InvoiceTemplateOptions = {
+      userName: name,
+      amount: stripeInvoice.amount_paid,
+      currency: stripeInvoice.currency,
+      dueDate: stripeInvoice.due_date
+        ? new Date(stripeInvoice.due_date * 1000).toDateString()
+        : undefined,
+      hostedInvoiceUrl: stripeInvoice.hosted_invoice_url
+        ? stripeInvoice.hosted_invoice_url
+        : undefined,
+      invoiceNumber: stripeInvoice.number ? stripeInvoice.number : undefined,
+      invoicePdf: stripeInvoice.invoice_pdf ? stripeInvoice.invoice_pdf : undefined,
+    };
+    const html = invoiceTemplate(option);
+    const to = stripeCustomer.email ? stripeCustomer.email : existingSubscription.tenant.email;
+    await this.mailService.sendMail({ to, html, subject: `Invoice${stripeInvoice.number}` });
+
     return {
       success: true,
       statusCode: HttpStatus.OK,
-      message: 'Fetched the current plan',
-      data: subscription,
+      message: 'Payment Details verified',
     };
+  }
+
+  private async createCheckoutSession(customerEmail: string, priceId: string, token: string) {
+    return await this.stripe.checkout.sessions.create({
+      mode: 'subscription',
+      payment_method_types: ['card'],
+      customer_email: customerEmail,
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      success_url: `http://localhost:8000/api/v1/subscription/session?id={CHECKOUT_SESSION_ID}&key=${token}`, //front end success url
+      cancel_url: 'http://localhost:8000/cancel', //front end cancel url
+    });
   }
 
   async expireSubscription(id: string) {
     const tenantSubscription = await this.subscriptionRepo.findOne({
       where: { id },
-      relations: { tenant: true },
     });
     if (tenantSubscription && tenantSubscription.endDate) {
       tenantSubscription.status = false;
       await this.subscriptionRepo.save(tenantSubscription);
     }
-    await this.subscriptionHistoryRepo.update(
-      { tenant: { id: tenantSubscription?.tenant.id }, status: true },
-      { status: false },
-    );
   }
   async subscriptionRemainder(id: string) {
     const tenantSubscription = await this.subscriptionRepo.findOne({
@@ -152,45 +180,11 @@ export class SubscriptionService {
         tenantSubscription.tenant.userName,
         tenantSubscription.endDate,
       );
-      await this.emailService.sendMail({
+      await this.mailService.sendMail({
         to: tenantSubscription.tenant.email,
         html,
         subject: `Reminder: Subscription Expiry on ${tenantSubscription.endDate.getDate()}`,
       });
     }
-  }
-
-  async changeSubscriptionPlans(subscription: Subscription) {
-    const planPriceId = subscription.planPrice.id;
-    const plan = await this.planRepo.findOne({
-      where: { planPricings: { id: planPriceId } },
-    });
-    const schemaName = subscription.tenant.schemaName;
-    const userRepo = await getRepo(User, schemaName);
-    const users = await userRepo.find({
-      order: { createdAt: 'ASC' },
-    });
-    for (let i = 0; i < users.length; i++) {
-      if (plan?.userCount) {
-        if (i + 1 > plan.userCount) {
-          users[i].status = false;
-          users[i].statusCause = StatusCause.Plan_Limit;
-        } else {
-          if (users[i].status === false && users[i].statusCause === StatusCause.Plan_Limit) {
-            users[i].status = true;
-            users[i].statusCause = null;
-          }
-        }
-      }
-    }
-    await userRepo.save(users);
-  }
-
-  private async checkTenant(payload: JwtPayload) {
-    const tenant = await this.tenantRepo.findOne({ where: { email: payload.email } });
-    if (!tenant) {
-      throw new UnauthorizedException('Unauthorized access');
-    }
-    return tenant;
   }
 }

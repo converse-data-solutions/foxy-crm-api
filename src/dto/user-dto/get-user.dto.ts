@@ -1,7 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsEmail, IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
-import { Role } from 'src/enum/core-app.enum';
+import { Role } from 'src/enums/core-app.enum';
 
 export class GetUserDto {
   @ApiPropertyOptional({ description: 'Name of the user' })

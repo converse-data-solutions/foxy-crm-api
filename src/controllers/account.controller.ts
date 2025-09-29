@@ -1,16 +1,16 @@
 import { Controller, Get, Post, Body, Param, Headers, Put, Query } from '@nestjs/common';
 import { AccountService } from '../services/account.service';
-import { CreateAccountDto } from 'src/dtos/account-dto/create-account.dto';
-import { UpdateAccountDto } from 'src/dtos/account-dto/update-account.dto';
-import { User } from 'src/database/entities/core-app-entities/user.entity';
+import { CreateAccountDto } from 'src/dto/account-dto/create-account.dto';
+import { UpdateAccountDto } from 'src/dto/account-dto/update-account.dto';
+import { User } from 'src/database/entity/core-app/user.entity';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Roles } from 'src/common/decorators/role.decorator';
 import { Role } from 'src/enums/core-app.enum';
-import { GetAccountDto } from 'src/dtos/account-dto/get-account.dto';
+import { GetAccountDto } from 'src/dto/account-dto/get-account.dto';
 
 @Roles(Role.Admin, Role.Manager)
-@Controller('accounts')
+@Controller('account')
 export class AccountController {
   constructor(private readonly accountService: AccountService) {}
 

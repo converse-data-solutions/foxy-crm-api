@@ -1,7 +1,7 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { User } from 'src/database/entity/core-app/user.entity';
-import { LeadService } from 'src/service/lead.service';
+import { LeadService } from 'src/services/lead.service';
 
 @Processor('file-import')
 export class FileProcessor extends WorkerHost {

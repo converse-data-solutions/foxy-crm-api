@@ -28,7 +28,7 @@ export enum Role {
 
 export enum LeadSource {
   Website = 'website',
-  Referral = 'referral',
+  Referral = 'refferral',
   SocialMedia = 'social media',
   Other = 'other',
 }

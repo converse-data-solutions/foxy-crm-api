@@ -1,24 +1,29 @@
-import { BadRequestException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
-import { CreateLeadDto } from '../dtos/lead-dto/create-lead.dto';
-import { UpdateLeadDto } from '../dtos/lead-dto/update-lead.dto';
+import {
+  BadRequestException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { CreateLeadDto } from '../dto/lead-dto/create-lead.dto';
+import { UpdateLeadDto } from '../dto/lead-dto/update-lead.dto';
 import { getRepo } from 'src/shared/database-connection/get-connection';
-import { Lead } from 'src/database/entities/core-app-entities/lead.entity';
-import { User } from 'src/database/entities/core-app-entities/user.entity';
+import { Lead } from 'src/database/entity/core-app/lead.entity';
+import { User } from 'src/database/entity/core-app/user.entity';
 import { Queue } from 'bullmq';
-import csv from 'csv-parser';
 import { InjectQueue } from '@nestjs/bullmq';
-import { LeadQueryDto } from 'src/dtos/lead-dto/get-lead.dto';
+import { LeadQueryDto } from 'src/dto/lead-dto/lead-query.dto';
 import { APIResponse } from 'src/common/dtos/response.dto';
+import { Contact } from 'src/database/entity/core-app/contact.entity';
+import { Account } from 'src/database/entity/core-app/account.entity';
+import { LeadPreview } from 'src/dto/lead-dto/lead-preview.dto';
+import { ILike } from 'typeorm';
+import { LeadToContactDto } from 'src/dto/lead-dto/lead-to-contact.dto';
+import { Country } from 'src/database/entity/common-entity/country.entity';
 import { Role } from 'src/enums/core-app.enum';
 import { LeadStatus } from 'src/enums/status.enum';
 import { Readable } from 'stream';
-import { paginationParams } from 'src/shared/utils/pagination-params.util';
-import { Note } from 'src/database/entities/core-app-entities/note.entity';
-import { NotesEntityName } from 'src/enums/lead-activity.enum';
-import { MetricService } from './metric.service';
-import { MetricDto } from 'src/dtos/metric-dto/metric.dto';
-import { bulkLeadFailureTemplate } from 'src/templates/bulk-failure.template';
-import { EmailService } from './email.service';
+import * as csv from 'csv-parser';
 
 interface SerializedBuffer {
   type: 'Buffer';
@@ -27,41 +32,25 @@ interface SerializedBuffer {
 
 @Injectable()
 export class LeadService {
-  constructor(
-    @InjectQueue('file-import') private readonly fileQueue: Queue,
-    private readonly metricService: MetricService,
-    private readonly emailService: EmailService,
-  ) {}
+  constructor(@InjectQueue('file-import') private readonly fileQueue: Queue) {}
 
   async createLead(createLeadDto: CreateLeadDto, tenantId: string, user: User) {
     const leadRepo = await getRepo(Lead, tenantId);
-    const userRepo = await getRepo(User, tenantId);
     const leadExist = await leadRepo.findOne({
       where: [{ email: createLeadDto.email }, { phone: createLeadDto.phone }],
     });
-    const { assignedTo, ...createLead } = createLeadDto;
-    let existingUser: User | null = null;
-    if (assignedTo) {
-      if (![Role.Admin, Role.Manager].includes(user.role)) {
-        throw new UnauthorizedException('Admin or manger only can assign a lead to the user');
-      }
-      existingUser = await userRepo.findOne({ where: { id: assignedTo } });
-      if (!existingUser) {
-        throw new BadRequestException('Invalid user id for lead assignment');
-      }
-    }
+
     if (leadExist) {
-      throw new BadRequestException('The lead is already present');
+      throw new BadRequestException({
+        message: 'The lead is already present',
+      });
     } else {
       const newLead: Lead = leadRepo.create({
-        ...createLead,
+        ...createLeadDto,
         createdBy: user,
-        assignedTo: existingUser ?? undefined,
       });
 
       await leadRepo.save(newLead);
-      const metric: Partial<MetricDto> = { leads: 1 };
-      await this.metricService.updateTenantCounts(tenantId, metric);
       return {
         success: true,
         statusCode: HttpStatus.CREATED,
@@ -72,59 +61,155 @@ export class LeadService {
 
   async importLeads(file: Express.Multer.File, tenant: string, user: User) {
     const leadData = { file, tenant, user };
-    this.fileQueue.add('file-import', leadData);
+    await this.fileQueue.add('file-import', leadData);
     return {
       success: true,
       statusCode: HttpStatus.CREATED,
-      message: 'Bulk lead upload received. Processing in background.',
+      message: 'Lead data imported successfully',
     };
   }
 
-  async findAllLeads(
-    leadQuery: LeadQueryDto,
-    tenant: string,
+  async leadPreview(tenantId: string, id: string): Promise<APIResponse<LeadPreview>> {
+    const leadRepo = await getRepo<Lead>(Lead, tenantId);
+    const lead = await leadRepo.findOne({ where: { id } });
+    const contactRepo = await getRepo<Contact>(Contact, tenantId);
+    const accountRepo = await getRepo<Account>(Account, tenantId);
+    if (!lead) {
+      throw new NotFoundException({ message: 'Lead not found or invalid lead id' });
+    } else {
+      const account = await accountRepo.findOne({ where: { name: ILike(`%${lead.company}%`) } });
+      const contact = await contactRepo.findOne({
+        where: [{ email: lead.email }, { phone: lead.phone }],
+      });
+      const leadPreview: LeadPreview = {
+        createAccount: account ? false : true,
+        createContact: contact ? false : true,
+        accountName: account ? undefined : lead.company,
+        contactName: contact ? undefined : lead.name,
+      };
+      return {
+        success: true,
+        statusCode: HttpStatus.OK,
+        message: 'Lead preview fetched successfully',
+        data: leadPreview,
+      };
+    }
+  }
+
+  async convertLead(
+    tenantId: string,
+    id: string,
     user: User,
-  ): Promise<APIResponse<Lead[]>> {
+    leadToContact?: LeadToContactDto,
+  ): Promise<APIResponse<unknown>> {
+    const leadRepo = await getRepo<Lead>(Lead, tenantId);
+    const lead = await leadRepo.findOne({ where: { id }, relations: { assignedTo: true } });
+    const contactRepo = await getRepo<Contact>(Contact, tenantId);
+    const accountRepo = await getRepo<Account>(Account, tenantId);
+    const countryRepo = await getRepo<Country>(Country, tenantId);
+
+    if (!lead) {
+      throw new BadRequestException({ message: 'Invalid lead id or lead not found' });
+    }
+    if (!lead.assignedTo && user.role == Role.SalesRep) {
+      throw new UnauthorizedException({
+        message: 'Not authorized to convert others lead to contact',
+      });
+    } else if (lead.assignedTo && lead.assignedTo.id != user.id && user.role == Role.SalesRep) {
+      throw new UnauthorizedException({
+        message: 'Not authorized to convert others lead to contact',
+      });
+    }
+    if (lead.status === LeadStatus.Disqualified) {
+      throw new BadRequestException({
+        message: 'Cannot convert disqualified lead first update status',
+      });
+    }
+
+    const isContact = await contactRepo.findOne({
+      where: [{ email: lead.email }, { phone: lead.phone }],
+    });
+    if (isContact) {
+      throw new BadRequestException({ message: 'This lead is already converted into contact' });
+    }
+    const isAccount = await accountRepo.findOne({ where: { name: ILike(`%${lead.company}%`) } });
+    let newAccount = leadToContact?.account
+      ? await accountRepo.findOne({
+          where: { name: leadToContact?.account?.name },
+        })
+      : null;
+
+    if (!isAccount && leadToContact && leadToContact.account) {
+      const { country, ...accountData } = leadToContact.account;
+      let accountCountry: Country | null = null;
+
+      if (country) {
+        accountCountry = await countryRepo.findOne({
+          where: { name: ILike(`%${country}%`) },
+        });
+        if (!accountCountry) {
+          throw new NotFoundException({ message: 'Country not found for account' });
+        }
+      }
+
+      if (!newAccount) {
+        newAccount = await accountRepo.save({
+          ...accountData,
+          createdBy: user,
+          country: accountCountry ? accountCountry : undefined,
+        });
+      }
+    }
+    const newContact = await contactRepo.save({
+      name: lead.name,
+      email: lead.email,
+      phone: lead.phone,
+      createdBy: user,
+      accountId: isAccount ? isAccount : newAccount ? newAccount : undefined,
+    });
+    lead.contact = newContact;
+    lead.status = LeadStatus.Converted;
+    lead.convertedBy = user;
+    await leadRepo.save(lead);
+    return {
+      success: true,
+      statusCode: HttpStatus.OK,
+      message: 'Lead is successfully converted into contact',
+    };
+  }
+
+  async findAllLeads(leadQuery: LeadQueryDto, tenant: string): Promise<APIResponse<Lead[]>> {
     const leadRepo = await getRepo(Lead, tenant);
-    const noteRepo = await getRepo(Note, tenant);
-    const qb = leadRepo
-      .createQueryBuilder('lead')
-      .leftJoin('lead.assignedTo', 'user')
-      .leftJoinAndSelect('lead.leadActivities', 'leadActivities');
-
-    const { limit, page, skip } = paginationParams(leadQuery.page, leadQuery.limit);
-
+    const qb = leadRepo.createQueryBuilder('lead');
     for (const [key, value] of Object.entries(leadQuery)) {
       if (value == null || key === 'page' || key === 'limit') continue;
 
-      if (['source', 'email', 'phone'].includes(key)) {
+      if (key === 'source') {
         qb.andWhere(`lead.${key} = :${key}`, { [key]: value });
-      } else if (['name', 'company'].includes(key)) {
+      } else if (['name', 'email', 'phone', 'company'].includes(key)) {
         qb.andWhere(`lead.${key} ILIKE :${key}`, { [key]: `%${value}%` });
       } else {
         qb.andWhere(`lead.${key} = :${key}`, { [key]: value });
       }
     }
-    if (![Role.Admin, Role.Manager].includes(user.role)) {
-      qb.andWhere(`user.id =:id`, { id: user.id });
-    }
+
+    const page = leadQuery.page ?? 1;
+    const limit = leadQuery.limit ?? 10;
+    const skip = (page - 1) * limit;
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
-    const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };
-    const leadData: Lead[] = [];
-    for (const lead of data) {
-      const notes = await noteRepo.find({
-        where: { entityId: lead.id, entityName: NotesEntityName.Lead },
-      });
-      lead['notes'] = notes;
-      leadData.push(lead);
-    }
+
     return {
       success: true,
       statusCode: HttpStatus.OK,
       message: 'Lead details fetched based on filter',
-      data: leadData,
-      pageInfo,
+      data,
+      pageInfo: {
+        total,
+        limit,
+        page,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 
@@ -132,22 +217,25 @@ export class LeadService {
     const leadRepo = await getRepo(Lead, tenant);
     const userRepo = await getRepo(User, tenant);
     let assignedUser: User | null = null;
-    if (updateLeadDto.assignedTo) {
-      if (user.role === Role.SalesRep) {
-        throw new UnauthorizedException('Not have enough authorization to assign a lead');
-      }
+    if (updateLeadDto.assignedTo && user.role == Role.SalesRep) {
+      throw new UnauthorizedException({
+        message: 'Not have enough authorization to assign a lead',
+      });
+    } else {
       assignedUser = await userRepo.findOne({ where: { id: updateLeadDto.assignedTo } });
       if (!assignedUser) {
-        throw new BadRequestException('Lead is not assigned to invalid id');
+        throw new BadRequestException({ message: 'Lead is not assigned to invalid id' });
       }
     }
 
     const lead = await leadRepo.findOne({ where: { id } });
     if (!lead) {
-      throw new BadRequestException('Lead not found or invalid lead id');
+      throw new BadRequestException({
+        message: 'Lead not found or invalid lead id',
+      });
     } else {
       if (lead.status == LeadStatus.Converted) {
-        throw new BadRequestException('Lead is already converted cannot update');
+        throw new BadRequestException({ message: 'Lead is already converted cannot update' });
       }
 
       const { assignedTo, ...other } = updateLeadDto;
@@ -165,54 +253,41 @@ export class LeadService {
   async bulkLeadsSave(file: Express.Multer.File, tenant: string, user: User) {
     const results: Partial<Lead>[] = [];
     const leadRepo = await getRepo(Lead, tenant);
-    const existingLeads = await leadRepo.find({ select: { email: true, phone: true } });
+    const leads = await leadRepo.find({ select: { email: true, phone: true } });
 
-    const buffer = Buffer.from((file.buffer as unknown as SerializedBuffer).data);
-    const stream = new Readable();
-    stream.push(buffer);
-    stream.push(null);
+    await new Promise((resolve, reject) => {
+      const serializedBuffer = file.buffer as unknown as SerializedBuffer;
 
-    try {
-      await new Promise<void>((resolve, reject) => {
-        stream
-          .pipe(csv())
-          .on('data', (row: CreateLeadDto) => {
-            results.push({
-              name: row['name'],
-              email: row['email'],
-              phone: row['phone'],
-              company: row['company'] || undefined,
-              source: row['source'] || undefined,
-              createdBy: user,
-            });
-          })
-          .on('end', async () => {
-            try {
-              const newLeads = results.filter(
-                (r) => !existingLeads.some((l) => l.email === r.email || l.phone === r.phone),
-              );
+      const buffer = Buffer.from(serializedBuffer.data);
+      const stream = new Readable();
 
-              if (newLeads.length > 0) {
-                const created = leadRepo.create(newLeads);
-                const inserted = await leadRepo.insert(created);
-                await this.metricService.updateTenantCounts(tenant, {
-                  leads: inserted.identifiers.length,
-                });
-              }
-              resolve();
-            } catch (err) {
-              reject(err);
-            }
-          })
-          .on('error', (err) => reject(err));
-      });
-    } catch (err: any) {
-      const html = bulkLeadFailureTemplate(user.name, file.originalname, err.message);
-      await this.emailService.sendMail({
-        to: user.email,
-        html,
-        subject: 'Bulk Lead Upload Failed - Action Required',
-      });
-    }
+      stream.push(buffer);
+      stream.push(null);
+
+      stream
+        .pipe(csv())
+        .on('data', (row: CreateLeadDto) => {
+          results.push({
+            name: row['name'],
+            email: row['email'],
+            phone: row['phone'],
+            company: row['company'] || undefined,
+            source: row['source'] || undefined,
+            createdBy: user,
+          });
+        })
+        .on('end', async () => {
+          const finalLead = results.filter(
+            (result) =>
+              !leads.some((lead) => lead.email === result.email || lead.phone === result.phone),
+          );
+          if (finalLead.length > 0) {
+            const newLeads = leadRepo.create(finalLead);
+            await leadRepo.save(newLeads);
+          }
+          resolve(results as Lead[]);
+        })
+        .on('error', (err: unknown) => reject(err));
+    });
   }
 }

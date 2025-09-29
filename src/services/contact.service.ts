@@ -6,65 +6,50 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { APIResponse } from 'src/common/dtos/response.dto';
-import { Account } from 'src/database/entities/core-app-entities/account.entity';
-import { Contact } from 'src/database/entities/core-app-entities/contact.entity';
-import { Note } from 'src/database/entities/core-app-entities/note.entity';
-import { User } from 'src/database/entities/core-app-entities/user.entity';
-import { CreateContactDto } from 'src/dtos/contact-dto/create-contact.dto';
-import { GetContactDto } from 'src/dtos/contact-dto/get-contact.dto';
-import { UpdateContactDto } from 'src/dtos/contact-dto/update-contact.dto';
+import { Account } from 'src/database/entity/core-app/account.entity';
+import { Contact } from 'src/database/entity/core-app/contact.entity';
+import { Note } from 'src/database/entity/core-app/note.entity';
+import { User } from 'src/database/entity/core-app/user.entity';
+import { CreateContactDto } from 'src/dto/contact-dto/create-contact.dto';
+import { GetContactDto } from 'src/dto/contact-dto/get-contact.dto';
+import { UpdateContactDto } from 'src/dto/contact-dto/update-contact.dto';
 import { Role } from 'src/enums/core-app.enum';
-import { NotesEntityName } from 'src/enums/lead-activity.enum';
 import { getRepo } from 'src/shared/database-connection/get-connection';
-import { paginationParams } from 'src/shared/utils/pagination-params.util';
-import { MetricService } from './metric.service';
-import { MetricDto } from 'src/dtos/metric-dto/metric.dto';
 
 @Injectable()
 export class ContactService {
-  constructor(private metricService: MetricService) {}
   async create(
     tenantId: string,
     user: User,
     createContactDto: CreateContactDto,
   ): Promise<APIResponse> {
-    const contactRepo = await getRepo(Contact, tenantId);
-    const accountRepo = await getRepo(Account, tenantId);
-    const userRepo = await getRepo(User, tenantId);
+    const contactRepo = await getRepo<Contact>(Contact, tenantId);
+    const accountRepo = await getRepo<Account>(Account, tenantId);
 
     const contactExist = await contactRepo.findOne({
       where: [{ email: createContactDto.email }, { phone: createContactDto.phone }],
     });
     if (contactExist) {
-      throw new BadRequestException('Contact is already exist');
+      throw new BadRequestException({ message: 'Contact is alredy exist' });
     }
-    const { account, assignedTo, ...contact } = createContactDto;
+    const { account, ...contact } = createContactDto;
     let accountExist: Account | null = null;
 
     if (account) {
       accountExist = await accountRepo.findOne({ where: { name: account } });
       if (!accountExist) {
-        throw new NotFoundException('Account not found');
-      }
-    }
-    let existingUser: User | null = null;
-    if (assignedTo) {
-      existingUser = await userRepo.findOne({ where: { id: assignedTo } });
-      if (!existingUser) {
-        throw new NotFoundException('User not found');
+        throw new NotFoundException({ message: 'Account not found' });
       }
     }
 
     await contactRepo.save({
       ...contact,
       createdBy: user,
-      accountId: accountExist ?? undefined,
-      assignedTo: existingUser ?? undefined,
+      accountId: accountExist ? accountExist : undefined,
     });
-    const metric: Partial<MetricDto> = { contacts: 1 };
-    await this.metricService.updateTenantCounts(tenantId, metric);
+
     return {
-      success: true,
+      success: false,
       statusCode: HttpStatus.CREATED,
       message: 'Contact created successfully',
     };
@@ -76,13 +61,10 @@ export class ContactService {
     contactQuery: GetContactDto,
   ): Promise<APIResponse<Contact[]>> {
     const contactRepo = await getRepo<Contact>(Contact, tenantId);
-    const noteRepo = await getRepo<Note>(Note, tenantId);
     const qb = contactRepo
       .createQueryBuilder('contact')
-      .leftJoinAndSelect('contact.assignedTo', 'user')
-      .leftJoinAndSelect('contact.accountId', 'account');
-    const { limit, page, skip } = paginationParams(contactQuery.page, contactQuery.limit);
-
+      .leftJoinAndSelect('contact.accountId', 'account')
+      .leftJoinAndSelect('contact.notes', 'note');
     for (const [key, value] of Object.entries(contactQuery)) {
       if (value == null || key === 'page' || key === 'limit') {
         continue;
@@ -92,27 +74,22 @@ export class ContactService {
         qb.andWhere('account.name ILIKE :accountName', { accountName: `%${value}%` });
       }
     }
-    if (![Role.Admin, Role.Manager].includes(user.role)) {
-      qb.andWhere(`user.id =:id`, { id: user.id });
-    }
+    const page = contactQuery.page ?? 1;
+    const limit = contactQuery.limit ?? 10;
+    const skip = (page - 1) * limit;
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
-    const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };
-    const contactData: Contact[] = [];
-    for (const contact of data) {
-      const notes = await noteRepo.find({
-        where: { entityId: contact.id, entityName: NotesEntityName.Contact },
-      });
-      contact['notes'] = notes;
-      contact;
-      contactData.push(contact);
-    }
     return {
       success: true,
       statusCode: HttpStatus.OK,
       message: 'Contact details fetched based on filter',
-      data: contactData,
-      pageInfo,
+      data,
+      pageInfo: {
+        total,
+        limit,
+        page,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 
@@ -127,34 +104,34 @@ export class ContactService {
     let contact = await contactRepo.findOne({ where: { id } });
     const { account, assignedTo, note, ...updateContact } = updateContactDto;
     if (!contact) {
-      throw new NotFoundException('Contact not found or invalid contact id');
+      throw new NotFoundException({ message: 'Contact not found or invalid contact id' });
     }
-    if (updateContactDto.assignedTo && ![Role.Admin, Role.Manager].includes(user.role)) {
-      throw new UnauthorizedException('Not have enough authorization to assign a contact');
+    if (updateContactDto.assignedTo && user.role == Role.SalesRep) {
+      throw new UnauthorizedException({
+        message: 'Not have enough authorization to assign a contact',
+      });
     } else {
       assignedUser = await userRepo.findOne({ where: { id: updateContactDto.assignedTo } });
       if (!assignedUser) {
-        throw new BadRequestException('Contact is not assigned to invalid id');
+        throw new BadRequestException({ message: 'Contact is not assigned to invalid id' });
       }
     }
     if (updateContactDto.account) {
-      accountId = await accountRepo.findOne({ where: { name: updateContactDto.account } });
+      accountId = await accountRepo.findOne({ where: { name: updateContactDto.name } });
       if (!accountId) {
-        throw new NotFoundException('Account not found');
+        throw new NotFoundException({ message: 'Account not found' });
       }
     }
     contact = {
       ...contact,
       ...updateContact,
-      accountId: accountId ?? undefined,
-      assignedTo: assignedUser ?? undefined,
-      updatedBy: user,
+      accountId: accountId ? accountId : undefined,
+      assignedTo: assignedUser ? assignedUser : undefined,
     };
     const updatedContact = await contactRepo.save(contact);
     if (note) {
       await noteRepo.save({
-        entityId: updatedContact.id,
-        entityName: NotesEntityName.Contact,
+        contact: updatedContact,
         content: note,
         createdBy: user,
       });

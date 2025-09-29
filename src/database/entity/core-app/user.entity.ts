@@ -8,7 +8,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Lead } from './lead.entity';
-import { Role } from 'src/enum/core-app.enum';
+import { Role } from 'src/enums/core-app.enum';
 import { Country } from '../common-entity/country.entity';
 
 @Entity({ name: 'users' })
@@ -40,6 +40,15 @@ export class User {
   @ManyToOne(() => Country)
   @JoinColumn({ name: 'country_id' })
   country: Country;
+
+  @Column({ name: 'otp', type: 'int', nullable: true })
+  otp?: number;
+
+  @Column({ name: 'otp_expiry_at', type: 'timestamp', nullable: true })
+  otpExpiryAt?: Date;
+
+  @Column({ name: 'is_verified', type: 'boolean', default: false })
+  isVerified: boolean;
 
   @OneToMany(() => Lead, (lead) => lead.assignedTo, { nullable: true })
   leads: Lead[];

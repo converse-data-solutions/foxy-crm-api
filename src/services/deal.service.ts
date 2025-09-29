@@ -1,101 +1,75 @@
-import {
-  BadRequestException,
-  ConflictException,
-  HttpStatus,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { BadRequestException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 import { APIResponse } from 'src/common/dtos/response.dto';
-import { Contact } from 'src/database/entities/core-app-entities/contact.entity';
-import { Deal } from 'src/database/entities/core-app-entities/deal.entity';
-import { Task } from 'src/database/entities/core-app-entities/task.entity';
-import { User } from 'src/database/entities/core-app-entities/user.entity';
-import { CreateDealDto } from 'src/dtos/deal-dto/create-deal.dto';
-import { GetDealDto } from 'src/dtos/deal-dto/get-deal.dto';
-import { UpdateDealDto } from 'src/dtos/deal-dto/update-deal.dto';
+import { Contact } from 'src/database/entity/core-app/contact.entity';
+import { Deal } from 'src/database/entity/core-app/deal.entity';
+import { Task } from 'src/database/entity/core-app/task.entity';
+import { User } from 'src/database/entity/core-app/user.entity';
+import { CreateDealDto } from 'src/dto/deal-dto/create-deal.dto';
+import { GetDealDto } from 'src/dto/deal-dto/get-deal.dto';
+import { UpdateDealDto } from 'src/dto/deal-dto/update-deal.dto';
 import { Role } from 'src/enums/core-app.enum';
 import { DealStage, TaskStatus } from 'src/enums/status.enum';
 import { getRepo } from 'src/shared/database-connection/get-connection';
-import { paginationParams } from 'src/shared/utils/pagination-params.util';
-import { MetricService } from './metric.service';
-import { MetricDto } from 'src/dtos/metric-dto/metric.dto';
 
 @Injectable()
 export class DealService {
-  constructor(private readonly metricService: MetricService) {}
   async createDeal(tenantId: string, user: User, createDealDto: CreateDealDto) {
     const dealRepo = await getRepo(Deal, tenantId);
     const contactRepo = await getRepo(Contact, tenantId);
     const { contactId, value, ...createDeal } = createDealDto;
-    let dealValue = Number(value);
-
-    if (value !== undefined && value !== null && String(value).trim() !== '') {
-      dealValue = Number(value);
-      if (Number.isNaN(dealValue)) {
-        throw new BadRequestException('Invalid deal value');
-      }
-    }
-    const dealExist = await dealRepo.findOne({ where: { name: createDealDto.name } });
-    if (dealExist) {
-      throw new ConflictException('Deal with this name is already created');
-    }
+    const dealValue = Number(value);
     const contact = await contactRepo.findOne({
       where: { id: contactId },
     });
     if (contactId && !contact) {
-      throw new BadRequestException('Invalid contact id');
+      throw new BadRequestException({ message: 'Invalid contact id' });
     }
     await dealRepo.save({
       ...createDeal,
       value: dealValue,
-      contactId: contact ?? undefined,
+      contactId: contact ? contact : undefined,
       createdBy: user,
     });
-
-    const metric: Partial<MetricDto> = { deals: 1 };
-    await this.metricService.updateTenantCounts(tenantId, metric);
     return { success: true, statusCode: HttpStatus.CREATED, message: 'Deal created successfully' };
   }
 
-  async findAllDeals(tenantId: string, dealQuery: GetDealDto, user: User) {
+  async findAllDeals(tenantId: string, dealQuery: GetDealDto) {
     const dealRepo = await getRepo<Deal>(Deal, tenantId);
-    const qb = dealRepo.createQueryBuilder('deal').leftJoinAndSelect('deal.contactId', 'contact');
-
-    const { limit, page, skip } = paginationParams(dealQuery.page, dealQuery.limit);
+    const qb = dealRepo.createQueryBuilder('deal');
 
     for (const [key, value] of Object.entries(dealQuery)) {
-      if (value == null || key === 'page' || key === 'limit') continue;
-      if (key === 'name') qb.andWhere('deal.name ILIKE :name', { name: `%${String(value)}%` });
-      else if (key === 'maxValue') {
-        const nv = Number(value);
-        if (!Number.isNaN(nv)) qb.andWhere('deal.value >= :maxValue', { maxValue: nv });
-      } else if (key === 'minValue') {
-        const nv = Number(value);
-        if (!Number.isNaN(nv)) qb.andWhere('deal.value <= :minValue', { minValue: nv });
+      if (value == null || key === 'page' || key === 'limit') {
+        continue;
+      } else if (key === 'name') {
+        qb.andWhere('deal.name ILIKE :name', { name: `%${dealQuery.name}%` });
+      } else if (key === 'greaterValue') {
+        qb.andWhere('deal.value >=:greaterValue', { greaterValue: dealQuery.greaterValue });
+      } else if (key === 'lesserValue') {
+        qb.andWhere('deal.value <=:lesserValue', { lesserValue: dealQuery.lesserValue });
       } else if (key === 'fromDate') {
-        const d = new Date(String(value));
-        if (!Number.isNaN(d.getTime()))
-          qb.andWhere('deal.expected_close_date >= :fromDate', { fromDate: d.toISOString() });
+        qb.andWhere('deal.expected_close_date >=:fromDate ', { fromDate: dealQuery.fromDate });
       } else if (key === 'toDate') {
-        const d = new Date(String(value));
-        if (!Number.isNaN(d.getTime()))
-          qb.andWhere('deal.expected_close_date <= :toDate', { toDate: d.toISOString() });
+        qb.andWhere('deal.expected_close_date <=:toDate ', { toDate: dealQuery.toDate });
       }
     }
 
+    const page = dealQuery.page ?? 1;
+    const limit = dealQuery.limit ?? 10;
+    const skip = (page - 1) * limit;
+
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
-    const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };
-    const deals: Partial<Deal>[] = data.map(({ value, ...deal }) => deal);
-    let dealData: Partial<Deal>[] = data;
-    if (![Role.Admin].includes(user.role)) {
-      dealData = deals;
-    }
+
     return {
       success: true,
       statusCode: HttpStatus.OK,
       message: 'Deal fetched based on filter',
-      data: dealData,
-      pageInfo,
+      data,
+      pageInfo: {
+        total,
+        limit,
+        page,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 
@@ -110,39 +84,28 @@ export class DealService {
     const dealExist = await dealRepo.findOne({ where: { id } });
     const { value, ...deals } = updateDeal;
     if (!dealExist) {
-      throw new BadRequestException('Invalid deal id or deal not found');
-    }
-    if (updateDeal.name) {
-      const dealNameExist = await dealRepo.findOne({ where: { name: updateDeal.name } });
-      if (dealNameExist && dealExist.name !== updateDeal.name) {
-        throw new ConflictException('Deal is already present with this name');
-      }
-    }
-    if (dealExist.stage === DealStage.Completed && deals.stage !== DealStage.Accepted) {
-      throw new BadRequestException('Cannot update a deal after it is completed');
+      throw new BadRequestException({ message: 'Invalid deal id or deal not found' });
     }
 
-    if (updateDeal.stage === DealStage.Completed) {
-      if (user.role !== Role.Admin && user.role !== Role.Manager) {
-        throw new UnauthorizedException('Admin or manager only can update the deal status');
-      }
-
+    if (updateDeal.stage == DealStage.Completed) {
       const dealTasks = await taskRepo.find({ where: { entityId: id } });
-      if (dealTasks.length === 0) {
-        throw new BadRequestException('Cannot complete the deal without doing task');
-      }
-      const hasPending = dealTasks.some((t) => t.status !== TaskStatus.Completed);
-      if (hasPending) {
-        throw new BadRequestException('Cannot complete the deal while there are pending tasks');
+      if (dealTasks.length == 0) {
+        throw new BadRequestException({ message: 'Cannot complete the deal without doing task' });
+      } else {
+        for (const task of dealTasks) {
+          if (task.status !== TaskStatus.Completed) {
+            throw new BadRequestException({ message: 'Cannot complete task with pending tasks' });
+          }
+        }
+        if (user.role !== Role.Admin && user.role !== Role.Manager) {
+          throw new UnauthorizedException({
+            message: 'Admin or manager only can update the deal status',
+          });
+        }
       }
     }
 
-    if (value !== undefined && value !== null) {
-      const numeric = Number(value);
-      if (Number.isNaN(numeric)) throw new BadRequestException('Invalid value');
-      dealExist.value = numeric;
-    }
-
+    dealExist.value = value ? Number(value) : dealExist.value;
     dealRepo.merge(dealExist, deals);
     await dealRepo.save(dealExist);
     return {

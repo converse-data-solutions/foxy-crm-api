@@ -4,8 +4,8 @@ import { DataSource } from 'typeorm';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { CustomExceptionFilter } from './common/filter/custom-exception.filter';
 import * as cookieParser from 'cookie-parser';
-import { CustomValidationPipe } from './common/pipe/custom-validation.pipe';
-import { SeedService } from './service/seed.service';
+import { CustomValidationPipe } from './common/pipes/custom-validation.pipe';
+import { SeedService } from './services/seed.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

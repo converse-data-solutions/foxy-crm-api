@@ -1,38 +1,36 @@
-import { BadRequestException, ConflictException, HttpStatus, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { APIResponse } from 'src/common/dtos/response.dto';
-import { Account } from 'src/database/entities/core-app-entities/account.entity';
-import { User } from 'src/database/entities/core-app-entities/user.entity';
-import { CreateAccountDto } from 'src/dtos/account-dto/create-account.dto';
-import { GetAccountDto } from 'src/dtos/account-dto/get-account.dto';
-import { UpdateAccountDto } from 'src/dtos/account-dto/update-account.dto';
+import { Country } from 'src/database/entity/common-entity/country.entity';
+import { Account } from 'src/database/entity/core-app/account.entity';
+import { User } from 'src/database/entity/core-app/user.entity';
+import { CreateAccountDto } from 'src/dto/account-dto/create-account.dto';
+import { GetAccountDto } from 'src/dto/account-dto/get-account.dto';
+import { UpdateAccountDto } from 'src/dto/account-dto/update-account.dto';
 import { getRepo } from 'src/shared/database-connection/get-connection';
-import { CountryService } from './country.service';
-import { paginationParams } from 'src/shared/utils/pagination-params.util';
+import { ILike } from 'typeorm';
 
 @Injectable()
 export class AccountService {
-  constructor(private readonly countryService: CountryService) {}
   async create(
     tenantId: string,
     user: User,
     createAccountDto: CreateAccountDto,
   ): Promise<APIResponse> {
     const accountRepo = await getRepo<Account>(Account, tenantId);
-    const accountExist = await accountRepo.findOne({
-      where: [{ name: createAccountDto.name }, { website: createAccountDto.website }],
-    });
+    const accountExist = await accountRepo.findOne({ where: { name: createAccountDto.name } });
+    const countryRepo = await getRepo<Country>(Country, tenantId);
 
     if (accountExist) {
-      throw new ConflictException('Account with this websitye or name is already present');
+      throw new BadRequestException({ message: 'Account already registered' });
     }
     const { country, ...createAccount } = createAccountDto;
-    let accountCountry: string | undefined;
+    let accountCountry: Country | null = null;
     if (country) {
-      accountCountry = this.countryService.getCountry(country);
+      accountCountry = await countryRepo.findOne({ where: { name: ILike(`%${country}%`) } });
     }
     await accountRepo.save({
       ...createAccount,
-      country: accountCountry,
+      country: accountCountry ? accountCountry : undefined,
       createdBy: user,
     });
     return {
@@ -44,25 +42,33 @@ export class AccountService {
 
   async findAll(tenantId: string, accountQuery: GetAccountDto): Promise<APIResponse<Account[]>> {
     const accountRepo = await getRepo<Account>(Account, tenantId);
-    const qb = accountRepo.createQueryBuilder('account');
+    const qb = accountRepo.createQueryBuilder('account').leftJoin('account.country', 'country');
 
-    const { limit, page, skip } = paginationParams(accountQuery.page, accountQuery.limit);
     for (const [key, value] of Object.entries(accountQuery)) {
       if (value == null || key === 'page' || key === 'limit') {
         continue;
-      } else if (['name', 'industry', 'city', 'country'].includes(key)) {
+      } else if (['name', 'industry', 'city'].includes(key)) {
         qb.andWhere(`account.${key} LIKE :${key}`, { [key]: `%${value}%` });
+      } else {
+        qb.andWhere('country.name ILIKE :country', { country: `%${value}%` });
       }
     }
+    const page = accountQuery.page ?? 1;
+    const limit = accountQuery.limit ?? 10;
+    const skip = (page - 1) * limit;
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
-    const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };
     return {
       success: true,
       statusCode: HttpStatus.OK,
       message: 'Account details fetched based on filter',
       data,
-      pageInfo,
+      pageInfo: {
+        total,
+        limit,
+        page,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 
@@ -72,25 +78,21 @@ export class AccountService {
     updateAccountDto: UpdateAccountDto,
   ): Promise<APIResponse> {
     const accountRepo = await getRepo<Account>(Account, tenantId);
+    const countryRepo = await getRepo<Country>(Country, tenantId);
 
     const account = await accountRepo.findOne({ where: { id } });
     if (!account) {
-      throw new BadRequestException('Invalid account id');
+      throw new BadRequestException({ message: 'Invalid account id' });
     }
     const { country, ...updateAccount } = updateAccountDto;
-    let accountCountry: string | undefined;
+    let accountCountry: Country | null = null;
     if (country) {
-      accountCountry = this.countryService.getCountry(country);
-    }
-    if (updateAccount.name || updateAccount.website) {
-      const accounts = await accountRepo.find({
-        where: [{ name: updateAccount.name }, { website: updateAccount.website }],
-      });
-      if (accounts.length > 0) {
-        throw new ConflictException('The account with this name or website is already present');
+      accountCountry = await countryRepo.findOne({ where: { name: country } });
+      if (!accountCountry) {
+        throw new NotFoundException({ message: 'Country not found' });
       }
     }
-    account.country = accountCountry;
+    account.country = accountCountry ? accountCountry : undefined;
     await accountRepo.save({ ...account, ...updateAccount });
     return {
       success: true,

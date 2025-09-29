@@ -1,39 +1,22 @@
 import {
   BadRequestException,
   ConflictException,
-  HttpException,
   HttpStatus,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { User } from 'src/database/entities/core-app-entities/user.entity';
-import { UpdateUserDto } from 'src/dtos/user-dto/update-user.dto';
+import { Country } from 'src/database/entity/common-entity/country.entity';
+import { User } from 'src/database/entity/core-app/user.entity';
+import { UpdateUserDto } from 'src/dto/user-dto/update-user.dto';
 import { Role } from 'src/enums/core-app.enum';
 import { getRepo } from 'src/shared/database-connection/get-connection';
 import * as bcrypt from 'bcrypt';
 import { APIResponse } from 'src/common/dtos/response.dto';
-import { GetUserDto } from 'src/dtos/user-dto/get-user.dto';
-import { CountryService } from './country.service';
-import { UserSignupDto } from 'src/dtos/user-dto/user-signup.dto';
-import { TenantService } from './tenant.service';
-import { JwtPayload } from 'src/common/dtos/jwt-payload.dto';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Subscription } from 'src/database/entities/base-app-entities/subscription.entity';
-import { Repository } from 'typeorm';
-import { paginationParams } from 'src/shared/utils/pagination-params.util';
-import { Environment, SALT_ROUNDS } from 'src/shared/utils/config.util';
-import { PlanPricing } from 'src/database/entities/base-app-entities/plan-pricing.entity';
+import { GetUserDto } from 'src/dto/user-dto/get-user.dto';
 
 @Injectable()
 export class UserService {
-  constructor(
-    private readonly countryService: CountryService,
-    private readonly tenantService: TenantService,
-    @InjectRepository(Subscription)
-    private readonly subscriptionRepo: Repository<Subscription>,
-    @InjectRepository(PlanPricing)
-    private readonly planPriceRepo: Repository<PlanPricing>,
-  ) {}
   async updateUser(
     tenantId: string,
     user: User,
@@ -41,21 +24,16 @@ export class UserService {
     updateUser: UpdateUserDto,
   ): Promise<APIResponse> {
     const userRepo = await getRepo(User, tenantId);
+    const countryRepo = await getRepo(Country, tenantId);
     const existUser = await userRepo.findOne({ where: { id } });
     if (user.id !== id && user.role != Role.Admin) {
-      throw new UnauthorizedException('Not have authorization to edit others data');
+      throw new UnauthorizedException({ message: 'Not have authorization to edit others data' });
     }
     if (updateUser.role && user.role != Role.Admin) {
-      throw new UnauthorizedException('Not have enough authorization to update role');
+      throw new UnauthorizedException({ message: 'Not have enough authorization to update role' });
     }
     if (!existUser) {
-      throw new BadRequestException('Invalid user id or user not found');
-    }
-    if (updateUser.email) {
-      if (existUser.role === Role.Admin) {
-        throw new UnauthorizedException('Not able to update admin mail');
-      }
-      await this.tenantService.getTenant(updateUser.email);
+      throw new BadRequestException({ message: 'Invalid user id or user not found' });
     }
 
     const mailOrPhoneExist = await userRepo.find({
@@ -65,19 +43,25 @@ export class UserService {
     if (mailOrPhoneExist.length > 0) {
       for (const user of mailOrPhoneExist) {
         if (updateUser.email && user.email === updateUser.email && user.id !== existUser.id) {
-          throw new ConflictException('Email already in use');
+          throw new ConflictException({ message: 'Email already in use' });
         }
         if (updateUser.phone && user.phone === updateUser.phone && user.id !== existUser.id) {
-          throw new ConflictException('Phone number already in use');
+          throw new ConflictException({ message: 'Phone number already in use' });
         }
       }
     }
-    const { country, ...userData } = updateUser;
+    const { country, password, ...userData } = updateUser;
     if (country) {
-      const countryExist = this.countryService.getCountry(country);
+      const countryExist = await countryRepo.findOne({ where: { name: country } });
+      if (!countryExist) {
+        throw new NotFoundException({ message: 'Country not found or invalid country name' });
+      }
       existUser.country = countryExist;
     }
-    await userRepo.save({ ...existUser, ...userData });
+    const hashedPassword = password
+      ? await bcrypt.hash(password, Number(process.env.SALT))
+      : undefined;
+    await userRepo.save({ ...existUser, password: hashedPassword, ...userData });
     return {
       success: true,
       statusCode: HttpStatus.OK,
@@ -85,109 +69,37 @@ export class UserService {
     };
   }
 
-  async getAllUsers(
-    tenantId: string,
-    userQuery: GetUserDto,
-  ): Promise<APIResponse<Omit<User, 'password' | 'otp'>[]>> {
+  async getUser(tenantId: string, userQuery: GetUserDto) {
     const userRepo = await getRepo(User, tenantId);
-    const qb = userRepo.createQueryBuilder('user');
-
-    const { limit, page, skip } = paginationParams(userQuery.page, userQuery.limit);
+    const qb = userRepo.createQueryBuilder('user').leftJoin('user.country', 'country');
 
     for (const [key, value] of Object.entries(userQuery)) {
       if (value == null || key === 'page' || key === 'limit') {
         continue;
-      } else if (['name', 'email', 'phone', 'city', 'country'].includes(key)) {
+      } else if (['name', 'email', 'phone', 'city'].includes(key)) {
         qb.andWhere(`user.${key} LIKE :${key}`, { [key]: `%${value}%` });
       } else if (key === 'role') {
         qb.andWhere('user.role =:role', { role: userQuery.role });
-      } else if (key === 'statusCause') {
-        qb.andWhere('user.status_cause =:statusCause', { statusCause: userQuery.statusCause });
-      } else if (key === 'status') {
-        qb.andWhere('user.status =:status', { status: userQuery.status });
+      } else {
+        qb.andWhere('country.name ILIKE :country', { country: `%${value}%` });
       }
     }
+    const page = userQuery.page ?? 1;
+    const limit = userQuery.limit ?? 10;
+    const skip = (page - 1) * limit;
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
-    const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };
     return {
       success: true,
       statusCode: HttpStatus.OK,
       message: 'User details fetched based on filter',
       data,
-      pageInfo,
-    };
-  }
-
-  async getUser(tenantId: string, user: User) {
-    const userRepo = await getRepo(User, tenantId);
-  }
-
-  async userSignup(user: UserSignupDto): Promise<APIResponse> {
-    const tenant = await this.tenantService.getTenant(user.email);
-    const userRepo = await getRepo<User>(User, tenant.schemaName);
-    const userCount = await userRepo.count();
-    const planPricing = await this.planPriceRepo.findOne({
-      where: { tenantsSubscription: { id: tenant.subscription.id } },
-      relations: {
-        tenantsSubscription: true,
-        plan: true,
+      pageInfo: {
+        total,
+        limit,
+        page,
+        totalPages: Math.ceil(total / limit),
       },
-    });
-    const subscriptionExist = planPricing?.tenantsSubscription[0].status;
-    if (planPricing?.tenantsSubscription && !subscriptionExist) {
-      throw new BadRequestException('No subscription found. Please subscribe.');
-    }
-
-    if (planPricing?.plan && userCount >= planPricing.plan.userCount) {
-      throw new BadRequestException('User limit exceeded for your plan');
-    }
-    const isUser = await userRepo.findOne({
-      where: [{ email: user.email }, { phone: user.phone }],
-    });
-    if (isUser) {
-      throw new ConflictException('User with this email or phone number is already registered');
-    }
-    let country: string | undefined;
-    if (user.country) {
-      country = this.countryService.getCountry(user.country);
-    }
-    const hashPassword = await bcrypt.hash(user.password, SALT_ROUNDS);
-    const newUser = userRepo.create({
-      name: user.name,
-      password: hashPassword,
-      email: user.email,
-      phone: user.phone,
-      country: country,
-    });
-    await userRepo.save(newUser);
-
-    return {
-      success: true,
-      statusCode: HttpStatus.CREATED,
-      message: 'User account created successfully',
     };
-  }
-
-  async validateUser(payload: JwtPayload, schema: string) {
-    const subscriptionExist = await this.subscriptionRepo.findOne({
-      where: { tenant: { schemaName: schema } },
-      relations: { tenant: true },
-    });
-    if (!subscriptionExist) {
-      throw new BadRequestException('Invalid schema name');
-    }
-    if (subscriptionExist.status === false && Environment.NODE_ENV === 'prod') {
-      throw new HttpException(
-        { message: 'Subscription got expired please subscribe' },
-        HttpStatus.PAYMENT_REQUIRED,
-      );
-    }
-
-    const userRepo = await getRepo(User, schema);
-    const user = await userRepo.findOne({
-      where: { email: payload.email },
-    });
-    return user ?? null;
   }
 }
