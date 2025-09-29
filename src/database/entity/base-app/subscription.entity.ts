@@ -1,23 +1,37 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { TenantSubscription } from './tenant-subscription.entity';
+import { Entity, PrimaryGeneratedColumn, OneToOne, JoinColumn, ManyToOne, Column } from 'typeorm';
+import { Tenant } from './tenant.entity';
+import { Plan } from './plan.entity';
 
 @Entity({ name: 'subscriptions' })
 export class Subscription {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'plan_name', type: 'varchar', length: 20 })
-  planName: string;
+  @Column({ type: 'boolean', default: false })
+  status: boolean;
 
-  @Column({ type: 'int' })
-  price: number;
+  @Column({ type: 'timestamp', nullable: true, name: 'start_date' })
+  startDate?: Date;
 
-  @Column({ type: 'varchar', name: 'price_id', length: 50 })
-  priceId: string;
+  @Column({ type: 'timestamp', nullable: true, name: 'end_date' })
+  endDate?: Date;
 
-  @Column({ type: 'varchar', name: 'valid_upto', length: 20 })
-  validUpto: string;
+  @Column({ name: 'stripe_session_id', type: 'varchar', nullable: true, length: 100 })
+  stripeSessionId?: string;
 
-  @OneToMany(() => TenantSubscription, (ts) => ts.subscription)
-  tenantsSubscription: TenantSubscription[];
+  @Column({ name: 'stripe_subscription_id', type: 'varchar', nullable: true, length: 50 })
+  stripeSubscriptionId?: string;
+
+  @Column({ name: 'stripe_customer_id', type: 'varchar', nullable: true, length: 50 })
+  stripeCustomerId?: string;
+
+  @OneToOne(() => Tenant, (tenant) => tenant.subscription, { cascade: true })
+  @JoinColumn({ name: 'tenant_id' })
+  tenant: Tenant;
+
+  @ManyToOne(() => Plan, (plan) => plan.tenantsSubscription, {
+    nullable: true,
+  })
+  @JoinColumn({ name: 'subscription_id' })
+  plan: Plan;
 }

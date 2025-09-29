@@ -1,7 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsString, IsUUID, Length } from 'class-validator';
-import { LeadSource } from 'src/enum/core-app.enum';
-import { LeadStatus } from 'src/enum/status.enum';
+import { LeadSource } from 'src/enums/core-app.enum';
+import { LeadStatus } from 'src/enums/status.enum';
 
 export class UpdateLeadDto {
   @ApiPropertyOptional({

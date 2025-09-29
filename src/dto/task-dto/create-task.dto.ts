@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsDefined, IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
-import { EntityName, TaskType, TaskPriority } from 'src/enum/core-app.enum';
+import { EntityName, TaskType, TaskPriority } from 'src/enums/core-app.enum';
 
 export class CreateTaskDto {
   @ApiProperty({

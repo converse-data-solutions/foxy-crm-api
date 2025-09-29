@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsDefined, IsOptional, IsString, Length, Matches } from 'class-validator';
 
 export class Signin {
@@ -33,7 +33,17 @@ export class UserSignupDto extends Signin {
   phone: string;
 
   @IsOptional()
+  @IsString({ message: 'Please provide a valid address' })
+  @ApiPropertyOptional({ example: '11/2 Abc street' })
+  address?: string;
+
+  @IsOptional()
+  @IsString({ message: 'City should be string' })
+  @ApiPropertyOptional({ example: 'Gobi' })
+  city?: string;
+
+  @IsOptional()
   @IsString({ message: 'Country should be string' })
-  @ApiProperty({ example: 'India' })
+  @ApiPropertyOptional({ example: 'India' })
   country?: string;
 }

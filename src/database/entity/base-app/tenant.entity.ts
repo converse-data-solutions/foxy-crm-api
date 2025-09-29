@@ -8,7 +8,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { TenantSubscription } from './tenant-subscription.entity';
+import { Subscription } from './subscription.entity';
 import { Country } from '../common-entity/country.entity';
 
 @Entity({ name: 'tenants' })
@@ -59,8 +59,17 @@ export class Tenant {
   @JoinColumn({ name: 'country_id' })
   country: Country;
 
-  @OneToOne(() => TenantSubscription, (ts) => ts.tenant)
-  tenantSubscription: TenantSubscription;
+  @Column({ name: 'otp', type: 'int', nullable: true })
+  otp?: number;
+
+  @Column({ name: 'otp_expiry_at', type: 'timestamp', nullable: true })
+  otpExpiryAt?: Date;
+
+  @Column({ name: 'is_verified', type: 'boolean', default: false })
+  isVerified: boolean;
+
+  @OneToOne(() => Subscription, (subscription) => subscription.tenant)
+  subscription: Subscription;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString, IsEnum, IsDecimal } from 'class-validator';
-import { DealStage } from 'src/enum/status.enum';
+import { DealStage } from 'src/enums/status.enum';
 
 export class UpdateDealDto {
   @ApiPropertyOptional({ description: 'Name of the deal', type: String })

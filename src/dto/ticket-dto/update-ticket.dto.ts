@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsString } from 'class-validator';
-import { TicketStatus } from 'src/enum/status.enum';
+import { TicketStatus } from 'src/enums/status.enum';
 
 export class UpdateTicketDto {
   @ApiPropertyOptional({

@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsString, Length, Matches } from 'class-validator';
-import { Role } from 'src/enum/core-app.enum';
+import { Role } from 'src/enums/core-app.enum';
 
 export class UpdateUserDto {
   @ApiPropertyOptional({ example: 'navaneethan' })
