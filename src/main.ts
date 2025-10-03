@@ -31,7 +31,6 @@ async function bootstrap() {
   const dataSource = app.get(DataSource);
   await dataSource.runMigrations();
   const seederService = app.get(SeedService);
-  await seederService.countrySeed();
   await seederService.subscriptionSeed();
 
   app.useGlobalPipes(new CustomValidationPipe());

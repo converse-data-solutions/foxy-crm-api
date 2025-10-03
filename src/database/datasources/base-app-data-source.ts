@@ -9,10 +9,7 @@ export const dataSource = new DataSource({
   password: process.env.DB_PASS,
   port: Number(process.env.DB_PORT),
   database: process.env.DB_NAME,
-  entities: [
-    __dirname + '/../entity/base-app/*.entity.js',
-    __dirname + '/../entity/common-entity/*.entity.js',
-  ],
+  entities: [__dirname + '/../entities/base-app-entities/*.entity.js'],
   synchronize: false,
   logging: true,
   migrations: ['dist/migrations/base-app/*.js'],

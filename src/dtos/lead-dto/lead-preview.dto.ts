@@ -1,6 +1,6 @@
 export class LeadPreview {
-  contactExist: boolean;
-  accountExist: boolean;
+  createContact: boolean;
+  createAccount: boolean;
   accountName?: string;
   contactName?: string;
 }

@@ -1,27 +1,22 @@
-import { ApiPropertyOptional, IntersectionType, PartialType, PickType } from '@nestjs/swagger';
-import { IsOptional, IsDateString, IsDecimal } from 'class-validator';
-import { CreateDealDto } from './create-deal.dto';
-import { PageDto } from '../page-dto/page.dto';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import { IsOptional, IsString, IsNumber, IsDateString, IsInt, Min } from 'class-validator';
 
-export class GetDealDto extends IntersectionType(
-  PartialType(PickType(CreateDealDto, ['name'] as const)),
-  PageDto,
-) {
+export class GetDealDto {
   @ApiPropertyOptional()
   @IsOptional()
-  @IsDecimal(
-    { decimal_digits: '0,2' },
-    { message: 'Amount should contain maximum 2 decimal points' },
-  )
-  maxValue?: string;
+  @IsString({ message: 'Name must be a string' })
+  name?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsDecimal(
-    { decimal_digits: '0,2' },
-    { message: 'Amount should contain maximum 2 decimal points' },
-  )
-  minValue?: string;
+  @IsNumber({}, { message: 'greaterValue must be a number' })
+  greaterValue?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber({}, { message: 'lesserValue must be a number' })
+  lesserValue?: number;
 
   @ApiPropertyOptional({
     type: String,
@@ -38,4 +33,20 @@ export class GetDealDto extends IntersectionType(
   @IsOptional()
   @IsDateString({}, { message: 'toDate must be a valid date string (YYYY-MM-DD)' })
   toDate?: Date;
+
+  @ApiPropertyOptional({
+    default: 1,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: 'Page number must be an numeric value' })
+  @Min(1)
+  page?: number = 1;
+
+  @ApiPropertyOptional({ description: 'Items per page', default: 10 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: 'Limit must be an numeric value' })
+  @Min(1)
+  limit?: number = 10;
 }

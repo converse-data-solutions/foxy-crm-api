@@ -1,13 +1,13 @@
 import { Controller, Get, Post, Body, Param, Headers, Put, Query } from '@nestjs/common';
 import { ContactService } from '../services/contact.service';
-import { UpdateContactDto } from 'src/dto/contact-dto/update-contact.dto';
-import { CreateContactDto } from 'src/dto/contact-dto/create-contact.dto';
+import { UpdateContactDto } from 'src/dtos/contact-dto/update-contact.dto';
+import { CreateContactDto } from 'src/dtos/contact-dto/create-contact.dto';
 import { Roles } from 'src/common/decorators/role.decorator';
 import { Role } from 'src/enums/core-app.enum';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
-import { User } from 'src/database/entity/core-app/user.entity';
-import { GetContactDto } from 'src/dto/contact-dto/get-contact.dto';
+import { User } from 'src/database/entities/core-app-entities/user.entity';
+import { GetContactDto } from 'src/dtos/contact-dto/get-contact.dto';
 
 @Roles(Role.Admin, Role.Manager)
 @Controller('contact')

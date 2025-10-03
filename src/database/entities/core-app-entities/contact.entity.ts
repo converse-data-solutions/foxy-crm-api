@@ -4,12 +4,13 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
-  UpdateDateColumn,
 } from 'typeorm';
 import { Account } from './account.entity';
 import { Lead } from './lead.entity';
+import { Note } from './note.entity';
 import { User } from './user.entity';
 
 @Entity({ name: 'contacts' })
@@ -33,6 +34,9 @@ export class Contact {
   @OneToOne(() => Lead, (lead) => lead.contact)
   lead: Lead;
 
+  @OneToMany(() => Note, (note) => note.contact)
+  notes: Note[];
+
   @ManyToOne(() => User, (user) => user.leads, { nullable: true })
   @JoinColumn({ name: 'assigned_to' })
   assignedTo?: User;
@@ -40,14 +44,7 @@ export class Contact {
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
-
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'created_by' })
   createdBy?: User;
-
-  @ManyToOne(() => User, { nullable: true })
-  @JoinColumn({ name: 'updated_by' })
-  updatedBy?: User;
 }

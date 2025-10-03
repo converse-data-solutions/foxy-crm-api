@@ -1,39 +1,45 @@
 import { Body, Controller, HttpStatus, Post, Res } from '@nestjs/common';
 import { AuthService } from '../services/auth.service';
-import { TenantSignupDto } from 'src/dto/tenant-dto/tenant-signup.dto';
+import { TenantSignupDto } from 'src/dtos/tenant-dto/tenant-signup.dto';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Response } from 'express';
-import { Signin, UserSignupDto } from 'src/dto/user-dto/user-signup.dto';
+import { Signin, UserSignupDto } from 'src/dtos/user-dto/user-signup.dto';
 import { Public } from 'src/common/decorators/public.decorator';
-import { EmailDto, OtpDto } from 'src/dto/otp-dto/otp.dto';
+import { EmailDto, OtpDto } from 'src/dtos/otp-dto/otp.dto';
+import { TenantService } from 'src/services/tenant.service';
+import { OtpService } from 'src/services/otp.service';
+import { UserService } from 'src/services/user.service';
+import { ForgotPasswordDto, ResetPasswordDto } from 'src/dtos/password-dto/reset-password.dto';
 
+@Public()
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly tenantService: TenantService,
+    private readonly otpService: OtpService,
+    private readonly userService: UserService,
+  ) {}
 
-  @Public()
   @Post('tenant-signup')
   @ApiOperation({ summary: 'Signup tenant and automated initial setup' })
   @ApiResponse({ status: 201, description: 'Signup process completed' })
   async tenantSignup(@Body() tenant: TenantSignupDto) {
-    return await this.authService.tenantSignup(tenant);
+    return await this.tenantService.tenantSignup(tenant);
   }
 
-  @Public()
   @Post('user-signup')
   @ApiOperation({ summary: 'Signup or create a new account' })
   @ApiResponse({ status: 201, description: 'Signup process completed' })
   async userSignup(@Body() user: UserSignupDto) {
-    return await this.authService.userSignup(user);
+    return await this.userService.userSignup(user);
   }
 
-  @Public()
   @Post('signin')
   @ApiOperation({ summary: 'Signin user and access token is generated' })
   @ApiResponse({ status: 200, description: 'Signin successfully' })
   async userSignin(@Body() user: Signin, @Res() response: Response) {
-    const payload = await this.authService.userSignin(user);
-    console.log(payload);
+    const payload = await this.authService.signin(user);
 
     let cookieName = 'tenant_access_token';
     if (payload.tenantAccessToken) {
@@ -60,38 +66,37 @@ export class AuthController {
     });
   }
 
-  @Public()
-  @Post('send-otp')
+  @Post('verify-email/send-otp')
   @ApiOperation({ summary: 'Send otp to the mail' })
   @ApiResponse({ status: 200, description: 'Otp sent successfully' })
   async sendOtp(@Body() payload: EmailDto) {
-    return await this.authService.sendOtp(payload.email);
+    return await this.otpService.sendOtp(payload.email);
   }
 
-  @Public()
-  @Post('verify-otp')
+  @Post('verify-email/confirm')
   @ApiOperation({ summary: 'Verify the otp' })
   @ApiResponse({ status: 200, description: 'Otp verified successfully' })
-  async verifyOtp(@Body() data: OtpDto, @Res() response: Response) {
-    const payload = await this.authService.verifyOtp(data);
+  async emailVerifyOtp(@Body() data: OtpDto, @Res() response: Response) {
+    const payload = await this.otpService.emailVerifyOtp(data);
     let cookieName = 'tenant_access_token';
     if (payload.tenantAccessToken) {
       response.cookie(cookieName, payload.tenantAccessToken, {
         httpOnly: true,
-        sameSite: 'none',
+        sameSite: 'lax',
+        secure: false,
+        path: '/',
+        maxAge: 24 * 60 * 60 * 1000,
+      });
+    } else {
+      cookieName = 'access_token';
+      response.cookie(cookieName, payload.accessToken, {
+        httpOnly: true,
+        sameSite: 'lax',
         secure: false,
         path: '/',
         maxAge: 24 * 60 * 60 * 1000,
       });
     }
-    cookieName = 'access_token';
-    response.cookie(cookieName, payload.accessToken, {
-      httpOnly: true,
-      sameSite: 'none',
-      secure: false,
-      path: '/',
-      maxAge: 24 * 60 * 60 * 1000,
-    });
     response.status(HttpStatus.OK);
     response.json({
       success: true,
@@ -99,5 +104,33 @@ export class AuthController {
       message: 'Email verified successfully',
       payload,
     });
+  }
+
+  @Post('reset-password')
+  @ApiOperation({ summary: 'Update new password using current password' })
+  @ApiResponse({ status: 200, description: 'Password updated successfully' })
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    return await this.authService.resetPassword(resetPasswordDto);
+  }
+
+  @Post('forgot-password/send-otp')
+  @ApiOperation({ summary: 'Send otp to the mail' })
+  @ApiResponse({ status: 200, description: 'Otp sent successfully' })
+  async forgotPasswordSendOtp(@Body() payload: EmailDto) {
+    return await this.otpService.sendOtp(payload.email);
+  }
+
+  @Post('forgot-password/confirm')
+  @ApiOperation({ summary: 'Verify the otp' })
+  @ApiResponse({ status: 200, description: 'Otp verified successfully' })
+  async forgotPasswordVerifyOtp(@Body() otpDto: OtpDto) {
+    return await this.otpService.forgotPasswordVerifyOtp(otpDto);
+  }
+
+  @Post('forgot-password/reset')
+  @ApiOperation({ summary: 'Update new password using otp' })
+  @ApiResponse({ status: 200, description: 'Password updated successfully' })
+  async forgotPasswordReset(@Body() forgotPassword: ForgotPasswordDto) {
+    return await this.authService.forgotPasswordReset(forgotPassword);
   }
 }

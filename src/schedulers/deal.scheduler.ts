@@ -2,9 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Between, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Subscription } from 'src/database/entity/base-app/subscription.entity';
+import { Subscription } from 'src/database/entities/base-app-entities/subscription.entity';
 import { getRepo } from 'src/shared/database-connection/get-connection';
-import { Deal } from 'src/database/entity/core-app/deal.entity';
+import { Deal } from 'src/database/entities/core-app-entities/deal.entity';
 import { dealRemainderTemplate } from 'src/templates/deal-remainder.template';
 import { MailerService } from '@nestjs-modules/mailer';
 

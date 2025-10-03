@@ -5,25 +5,25 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { CreateLeadDto } from '../dto/lead-dto/create-lead.dto';
-import { UpdateLeadDto } from '../dto/lead-dto/update-lead.dto';
+import { CreateLeadDto } from '../dtos/lead-dto/create-lead.dto';
+import { UpdateLeadDto } from '../dtos/lead-dto/update-lead.dto';
 import { getRepo } from 'src/shared/database-connection/get-connection';
-import { Lead } from 'src/database/entity/core-app/lead.entity';
-import { User } from 'src/database/entity/core-app/user.entity';
+import { Lead } from 'src/database/entities/core-app-entities/lead.entity';
+import { User } from 'src/database/entities/core-app-entities/user.entity';
 import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
-import { LeadQueryDto } from 'src/dto/lead-dto/lead-query.dto';
+import { LeadQueryDto } from 'src/dtos/lead-dto/lead-query.dto';
 import { APIResponse } from 'src/common/dtos/response.dto';
-import { Contact } from 'src/database/entity/core-app/contact.entity';
-import { Account } from 'src/database/entity/core-app/account.entity';
-import { LeadPreview } from 'src/dto/lead-dto/lead-preview.dto';
+import { Contact } from 'src/database/entities/core-app-entities/contact.entity';
+import { Account } from 'src/database/entities/core-app-entities/account.entity';
+import { LeadPreview } from 'src/dtos/lead-dto/lead-preview.dto';
 import { ILike } from 'typeorm';
-import { LeadToContactDto } from 'src/dto/lead-dto/lead-to-contact.dto';
-import { Country } from 'src/database/entity/common-entity/country.entity';
+import { LeadToContactDto } from 'src/dtos/lead-dto/lead-to-contact.dto';
 import { Role } from 'src/enums/core-app.enum';
 import { LeadStatus } from 'src/enums/status.enum';
 import { Readable } from 'stream';
 import * as csv from 'csv-parser';
+import { CountryService } from './country.service';
 
 interface SerializedBuffer {
   type: 'Buffer';
@@ -32,7 +32,10 @@ interface SerializedBuffer {
 
 @Injectable()
 export class LeadService {
-  constructor(@InjectQueue('file-import') private readonly fileQueue: Queue) {}
+  constructor(
+    @InjectQueue('file-import') private readonly fileQueue: Queue,
+    private readonly countryService: CountryService,
+  ) {}
 
   async createLead(createLeadDto: CreateLeadDto, tenantId: string, user: User) {
     const leadRepo = await getRepo(Lead, tenantId);
@@ -106,7 +109,6 @@ export class LeadService {
     const lead = await leadRepo.findOne({ where: { id }, relations: { assignedTo: true } });
     const contactRepo = await getRepo<Contact>(Contact, tenantId);
     const accountRepo = await getRepo<Account>(Account, tenantId);
-    const countryRepo = await getRepo<Country>(Country, tenantId);
 
     if (!lead) {
       throw new BadRequestException({ message: 'Invalid lead id or lead not found' });
@@ -141,22 +143,16 @@ export class LeadService {
 
     if (!isAccount && leadToContact && leadToContact.account) {
       const { country, ...accountData } = leadToContact.account;
-      let accountCountry: Country | null = null;
-
+      let accountCountry: string | undefined;
       if (country) {
-        accountCountry = await countryRepo.findOne({
-          where: { name: ILike(`%${country}%`) },
-        });
-        if (!accountCountry) {
-          throw new NotFoundException({ message: 'Country not found for account' });
-        }
+        accountCountry = this.countryService.getCountry(country);
       }
 
       if (!newAccount) {
         newAccount = await accountRepo.save({
           ...accountData,
           createdBy: user,
-          country: accountCountry ? accountCountry : undefined,
+          country: accountCountry,
         });
       }
     }

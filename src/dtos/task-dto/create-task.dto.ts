@@ -25,6 +25,7 @@ export class CreateTaskDto {
   entityId: string;
 
   @ApiProperty({
+    description: 'Type of task',
     enum: TaskType,
     example: TaskType.Call,
   })
@@ -32,6 +33,7 @@ export class CreateTaskDto {
   type: TaskType;
 
   @ApiPropertyOptional({
+    description: 'Task priority',
     enum: TaskPriority,
     example: TaskPriority.High,
   })

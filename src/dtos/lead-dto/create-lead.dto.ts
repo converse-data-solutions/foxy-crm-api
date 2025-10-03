@@ -1,4 +1,4 @@
-import { IsDefined, IsEnum, IsOptional, IsString, IsUUID, Length, Matches } from 'class-validator';
+import { IsDefined, IsEnum, IsOptional, IsString, Length, Matches } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { LeadSource } from 'src/enums/core-app.enum';
 
@@ -36,9 +36,4 @@ export class CreateLeadDto {
   })
   @ApiPropertyOptional({ example: LeadSource.SocialMedia })
   source?: LeadSource;
-
-  @ApiPropertyOptional({ example: '10495caf-7023-40cf-be93-dc26f62569de' })
-  @IsOptional()
-  @IsUUID('4', { message: 'Assigned should be UUID' })
-  assignedTo?: string;
 }

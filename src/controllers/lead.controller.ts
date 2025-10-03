@@ -12,17 +12,17 @@ import {
   Put,
 } from '@nestjs/common';
 import { LeadService } from '../services/lead.service';
-import { CreateLeadDto } from '../dto/lead-dto/create-lead.dto';
-import { UpdateLeadDto } from '../dto/lead-dto/update-lead.dto';
+import { CreateLeadDto } from '../dtos/lead-dto/create-lead.dto';
+import { UpdateLeadDto } from '../dtos/lead-dto/update-lead.dto';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { ApiBody, ApiConsumes, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Express } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { LeadQueryDto } from 'src/dto/lead-dto/lead-query.dto';
+import { LeadQueryDto } from 'src/dtos/lead-dto/lead-query.dto';
 import { Roles } from 'src/common/decorators/role.decorator';
 import { Role } from 'src/enums/core-app.enum';
-import { LeadToContactDto } from 'src/dto/lead-dto/lead-to-contact.dto';
-import { User } from 'src/database/entity/core-app/user.entity';
+import { LeadToContactDto } from 'src/dtos/lead-dto/lead-to-contact.dto';
+import { User } from 'src/database/entities/core-app-entities/user.entity';
 import { FileValidationPipe } from 'src/common/pipes/file-validation.pipe';
 
 @Roles(Role.Admin, Role.Manager)

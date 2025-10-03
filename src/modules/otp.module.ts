@@ -1,18 +1,17 @@
 import { BullModule } from '@nestjs/bullmq';
 import { forwardRef, Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { Subscription } from 'src/database/entities/base-app-entities/subscription.entity';
+import { Tenant } from 'src/database/entities/base-app-entities/tenant.entity';
 import { OtpService } from 'src/services/otp.service';
 import { TenantModule } from './tenant.module';
-import { entities } from 'src/database/entities/base-app-entities';
-import { TokenModule } from './token.module';
-import { EmailModule } from './email.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature(entities),
-    EmailModule,
+    TypeOrmModule.forFeature([Tenant, Subscription]),
     BullModule.registerQueue({ name: 'tenant-setup' }),
-    TokenModule,
+    JwtModule,
     forwardRef(() => TenantModule),
   ],
   providers: [OtpService],

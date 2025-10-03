@@ -1,23 +1,26 @@
-import { ApiPropertyOptional, IntersectionType, PartialType, PickType } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsEnum, IsOptional, IsString, IsDateString, IsInt, Min } from 'class-validator';
 import { TicketStatus } from 'src/enums/status.enum';
-import { CreateTicketDto } from './create-ticket.dto';
-import { PageDto } from '../page-dto/page.dto';
 
-export class GetTicketDto extends IntersectionType(
-  PartialType(PickType(CreateTicketDto, ['title'] as const)),
-  PageDto,
-) {
+export class GetTicketDto {
+  @ApiPropertyOptional({
+    description: 'Filter tickets by title',
+  })
+  @IsOptional()
+  @IsString()
+  title?: string;
+
   @ApiPropertyOptional({
     description: 'Filter tickets by status',
+    enum: TicketStatus,
   })
   @IsOptional()
   @IsEnum(TicketStatus)
   status?: TicketStatus;
 
   @ApiPropertyOptional({
-    description: 'Filter tickets by deal name',
+    description: 'Filter tickets by deal ID',
   })
   @IsOptional()
   @IsString()
@@ -36,4 +39,20 @@ export class GetTicketDto extends IntersectionType(
   @IsOptional()
   @IsDateString()
   resolvedTo?: Date;
+
+  @ApiPropertyOptional({
+    default: 1,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: 'Page number must be an numeric value' })
+  @Min(1)
+  page?: number = 1;
+
+  @ApiPropertyOptional({ description: 'Items per page', default: 10 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: 'Limit must be an numeric value' })
+  @Min(1)
+  limit?: number = 10;
 }

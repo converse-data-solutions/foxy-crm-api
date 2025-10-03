@@ -1,12 +1,12 @@
 import { Controller, Get, Post, Body, Headers, Query, Put, Param } from '@nestjs/common';
 import { DealService } from '../services/deal.service';
-import { CreateDealDto } from 'src/dto/deal-dto/create-deal.dto';
+import { CreateDealDto } from 'src/dtos/deal-dto/create-deal.dto';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
-import { User } from 'src/database/entity/core-app/user.entity';
-import { GetDealDto } from 'src/dto/deal-dto/get-deal.dto';
+import { User } from 'src/database/entities/core-app-entities/user.entity';
+import { GetDealDto } from 'src/dtos/deal-dto/get-deal.dto';
 import { Roles } from 'src/common/decorators/role.decorator';
 import { Role } from 'src/enums/core-app.enum';
-import { UpdateDealDto } from 'src/dto/deal-dto/update-deal.dto';
+import { UpdateDealDto } from 'src/dtos/deal-dto/update-deal.dto';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @Roles(Role.Admin, Role.SalesRep, Role.Manager)

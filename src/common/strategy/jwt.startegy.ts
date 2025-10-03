@@ -3,11 +3,11 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { JwtPayload } from 'src/common/dtos/jwt-payload.dto';
 import { Request } from 'express';
-import { AuthService } from 'src/services/auth.service';
+import { UserService } from 'src/services/user.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private authService: AuthService) {
+  constructor(private userService: UserService) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         (request: Request) => request?.cookies?.access_token || null,
@@ -25,7 +25,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         message: 'x-tenant-id header is missing',
       });
     }
-    const user = await this.authService.validateUser(
+    const user = await this.userService.validateUser(
       payload,
       Array.isArray(tenantId) ? tenantId[0] : tenantId,
     );
