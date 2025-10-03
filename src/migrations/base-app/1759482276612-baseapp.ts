@@ -1,11 +1,14 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class Baseapp1759241540549 implements MigrationInterface {
-  name = 'Baseapp1759241540549';
+export class Baseapp1759482276612 implements MigrationInterface {
+  name = 'Baseapp1759482276612';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
-      `CREATE TABLE "plans" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "plan_name" character varying(20) NOT NULL, "price" integer NOT NULL, "price_id" character varying(50) NOT NULL, "valid_upto" character varying(20) NOT NULL, CONSTRAINT "PK_3720521a81c7c24fe9b7202ba61" PRIMARY KEY ("id"))`,
+      `CREATE TYPE "public"."plans_user_count_enum" AS ENUM('10', '20', '30', 'Infinity')`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE "plans" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "plan_name" character varying(20) NOT NULL, "price" integer NOT NULL, "price_id" character varying(50) NOT NULL, "valid_upto" character varying(20) NOT NULL, "user_count" "public"."plans_user_count_enum" NOT NULL, CONSTRAINT "PK_3720521a81c7c24fe9b7202ba61" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
       `CREATE TABLE "subscriptions" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "status" boolean NOT NULL DEFAULT false, "start_date" TIMESTAMP, "end_date" TIMESTAMP, "stripe_session_id" character varying(100), "stripe_subscription_id" character varying(50), "stripe_customer_id" character varying(50), "tenant_id" uuid, "subscription_id" uuid, CONSTRAINT "REL_f6ac03431c311ccb8bbd7d3af1" UNIQUE ("tenant_id"), CONSTRAINT "PK_a87248d73155605cf782be9ee5e" PRIMARY KEY ("id"))`,
@@ -31,5 +34,6 @@ export class Baseapp1759241540549 implements MigrationInterface {
     await queryRunner.query(`DROP TABLE "tenants"`);
     await queryRunner.query(`DROP TABLE "subscriptions"`);
     await queryRunner.query(`DROP TABLE "plans"`);
+    await queryRunner.query(`DROP TYPE "public"."plans_user_count_enum"`);
   }
 }

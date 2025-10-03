@@ -63,6 +63,8 @@ export class DealService {
 
     const { limit, page, skip } = paginationParams(dealQuery.page, dealQuery.limit);
 
+    const defaultLimit = Number(dealQuery.limit ?? 10);
+    
     for (const [key, value] of Object.entries(dealQuery)) {
       if (value == null || key === 'page' || key === 'limit') continue;
       if (key === 'name') qb.andWhere('deal.name ILIKE :name', { name: `%${String(value)}%` });

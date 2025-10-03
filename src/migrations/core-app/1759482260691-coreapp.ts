@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class Coreapp1759241503170 implements MigrationInterface {
-  name = 'Coreapp1759241503170';
+export class Coreapp1759482260691 implements MigrationInterface {
+  name = 'Coreapp1759482260691';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     const schema: string = (queryRunner.connection.options as any).schema || 'public';
@@ -28,7 +28,10 @@ export class Coreapp1759241503170 implements MigrationInterface {
       `CREATE TYPE "users_role_enum" AS ENUM('admin', 'manager', 'salesrep', 'support', 'technical')`,
     );
     await queryRunner.query(
-      `CREATE TABLE "users" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "name" character varying(30) NOT NULL, "email" character varying(50) NOT NULL, "phone" character varying(20) NOT NULL, "password" character varying(100) NOT NULL, "role" "users_role_enum" NOT NULL DEFAULT 'salesrep', "address" character varying(50), "city" character varying(40), "country" character varying(50), "otp" integer, "otp_expiry_at" TIMESTAMP, "email_verified" boolean NOT NULL DEFAULT false, "otp_verified" boolean NOT NULL DEFAULT false, "created_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "UQ_97672ac88f789774dd47f7c8be3" UNIQUE ("email"), CONSTRAINT "UQ_a000cca60bcf04454e727699490" UNIQUE ("phone"), CONSTRAINT "PK_a3ffb1c0c8416b9fc6f907b7433" PRIMARY KEY ("id"))`,
+      `CREATE TYPE "users_status_cause_enum" AS ENUM('plan limit', 'admin disabled')`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE "users" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "name" character varying(30) NOT NULL, "email" character varying(50) NOT NULL, "phone" character varying(20) NOT NULL, "password" character varying(100) NOT NULL, "role" "users_role_enum" NOT NULL DEFAULT 'salesrep', "address" character varying(50), "city" character varying(40), "country" character varying(50), "status" boolean NOT NULL DEFAULT true, "status_cause" "users_status_cause_enum", "otp" integer, "otp_expiry_at" TIMESTAMP, "email_verified" boolean NOT NULL DEFAULT false, "otp_verified" boolean NOT NULL DEFAULT false, "created_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "UQ_97672ac88f789774dd47f7c8be3" UNIQUE ("email"), CONSTRAINT "UQ_a000cca60bcf04454e727699490" UNIQUE ("phone"), CONSTRAINT "PK_a3ffb1c0c8416b9fc6f907b7433" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
       `CREATE TYPE "deals_stage_enum" AS ENUM('qualified', 'proposal', 'negotiation', 'accepted', 'declined', 'completed')`,
@@ -156,6 +159,7 @@ export class Coreapp1759241503170 implements MigrationInterface {
     await queryRunner.query(`DROP TABLE "deals"`);
     await queryRunner.query(`DROP TYPE "deals_stage_enum"`);
     await queryRunner.query(`DROP TABLE "users"`);
+    await queryRunner.query(`DROP TYPE "users_status_cause_enum"`);
     await queryRunner.query(`DROP TYPE "users_role_enum"`);
     await queryRunner.query(`DROP TABLE "leads"`);
     await queryRunner.query(`DROP TYPE "leads_source_enum"`);

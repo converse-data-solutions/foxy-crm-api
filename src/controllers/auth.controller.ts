@@ -102,32 +102,4 @@ export class AuthController {
     setCookie(tokens, res);
     return { success: true, statusCode: HttpStatus.OK, message: 'Token refreshed successfully' };
   }
-
-  @Post('reset-password')
-  @ApiOperation({ summary: 'Update new password using current password' })
-  @ApiResponse({ status: 200, description: 'Password updated successfully' })
-  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
-    return await this.authService.resetPassword(resetPasswordDto);
-  }
-
-  @Post('forgot-password/send-otp')
-  @ApiOperation({ summary: 'Send otp to the mail' })
-  @ApiResponse({ status: 200, description: 'Otp sent successfully' })
-  async forgotPasswordSendOtp(@Body() payload: EmailDto) {
-    return await this.otpService.sendOtp(payload.email);
-  }
-
-  @Post('forgot-password/confirm')
-  @ApiOperation({ summary: 'Verify the otp' })
-  @ApiResponse({ status: 200, description: 'Otp verified successfully' })
-  async forgotPasswordVerifyOtp(@Body() otpDto: OtpDto) {
-    return await this.otpService.forgotPasswordVerifyOtp(otpDto);
-  }
-
-  @Post('forgot-password/reset')
-  @ApiOperation({ summary: 'Update new password using otp' })
-  @ApiResponse({ status: 200, description: 'Password updated successfully' })
-  async forgotPasswordReset(@Body() forgotPassword: ForgotPasswordDto) {
-    return await this.authService.forgotPasswordReset(forgotPassword);
-  }
 }
