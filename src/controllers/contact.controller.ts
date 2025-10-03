@@ -10,7 +10,7 @@ import { User } from 'src/database/entities/core-app-entities/user.entity';
 import { GetContactDto } from 'src/dtos/contact-dto/get-contact.dto';
 
 @Roles(Role.Admin, Role.Manager)
-@Controller('contact')
+@Controller('contacts')
 export class ContactController {
   constructor(private readonly contactService: ContactService) {}
 

@@ -43,6 +43,14 @@ export class AccountService {
     const accountRepo = await getRepo<Account>(Account, tenantId);
     const qb = accountRepo.createQueryBuilder('account');
 
+    const page = Math.max(1, Number(accountQuery.page ?? 1));
+    const defaultLimit = Number(accountQuery.limit ?? 10);
+    const limit =
+      Number.isFinite(defaultLimit) && defaultLimit > 0
+        ? Math.min(100, Math.floor(defaultLimit))
+        : 10;
+    const skip = (page - 1) * limit;
+
     for (const [key, value] of Object.entries(accountQuery)) {
       if (value == null || key === 'page' || key === 'limit') {
         continue;
@@ -50,9 +58,6 @@ export class AccountService {
         qb.andWhere(`account.${key} LIKE :${key}`, { [key]: `%${value}%` });
       }
     }
-    const page = accountQuery.page ?? 1;
-    const limit = accountQuery.limit ?? 10;
-    const skip = (page - 1) * limit;
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
     return {

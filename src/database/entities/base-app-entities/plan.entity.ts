@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { Subscription } from './subscription.entity';
+import { UserCount } from 'src/enums/user-count.enum';
 
 @Entity({ name: 'plans' })
 export class Plan {
@@ -17,6 +18,9 @@ export class Plan {
 
   @Column({ type: 'varchar', name: 'valid_upto', length: 20 })
   validUpto: string;
+
+  @Column({ name: 'user_count', type: 'enum', enum: UserCount })
+  userCount: UserCount;
 
   @OneToMany(() => Subscription, (subscription) => subscription.plan)
   tenantsSubscription: Subscription[];
