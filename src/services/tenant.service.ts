@@ -116,4 +116,18 @@ export class TenantService {
     }
     return domainExist;
   }
+
+  async tenantSignup(tenant: TenantSignupDto) {
+    const domain = tenant.email.split('@')[1].split('.')[0];
+
+    const isTenant = await this.tenantRepo.findOne({
+      where: [{ organizationName: tenant.organizationName }, { email: tenant.email }, { domain }],
+    });
+    if (isTenant != null) {
+      throw new ConflictException({
+        message: 'The Organization or email with this domain is already registered',
+      });
+    }
+    return domainExist;
+  }
 }

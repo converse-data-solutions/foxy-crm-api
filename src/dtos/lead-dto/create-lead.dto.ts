@@ -36,9 +36,12 @@ export class CreateLeadDto {
   })
   @ApiPropertyOptional({ example: LeadSource.SocialMedia })
   source?: LeadSource;
+<<<<<<< HEAD
 
   @ApiPropertyOptional({ example: '10495caf-7023-40cf-be93-dc26f62569de' })
   @IsOptional()
   @IsUUID('4', { message: 'Assigned should be UUID' })
   assignedTo?: string;
+=======
+>>>>>>> da3c435 (reset-password)
 }
