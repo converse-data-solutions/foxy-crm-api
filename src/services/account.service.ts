@@ -1,16 +1,16 @@
-import { BadRequestException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
 import { APIResponse } from 'src/common/dtos/response.dto';
-import { Country } from 'src/database/entity/common-entity/country.entity';
-import { Account } from 'src/database/entity/core-app/account.entity';
-import { User } from 'src/database/entity/core-app/user.entity';
-import { CreateAccountDto } from 'src/dto/account-dto/create-account.dto';
-import { GetAccountDto } from 'src/dto/account-dto/get-account.dto';
-import { UpdateAccountDto } from 'src/dto/account-dto/update-account.dto';
+import { Account } from 'src/database/entities/core-app-entities/account.entity';
+import { User } from 'src/database/entities/core-app-entities/user.entity';
+import { CreateAccountDto } from 'src/dtos/account-dto/create-account.dto';
+import { GetAccountDto } from 'src/dtos/account-dto/get-account.dto';
+import { UpdateAccountDto } from 'src/dtos/account-dto/update-account.dto';
 import { getRepo } from 'src/shared/database-connection/get-connection';
-import { ILike } from 'typeorm';
+import { CountryService } from './country.service';
 
 @Injectable()
 export class AccountService {
+  constructor(private readonly countryService: CountryService) {}
   async create(
     tenantId: string,
     user: User,
@@ -18,19 +18,18 @@ export class AccountService {
   ): Promise<APIResponse> {
     const accountRepo = await getRepo<Account>(Account, tenantId);
     const accountExist = await accountRepo.findOne({ where: { name: createAccountDto.name } });
-    const countryRepo = await getRepo<Country>(Country, tenantId);
 
     if (accountExist) {
       throw new BadRequestException({ message: 'Account already registered' });
     }
     const { country, ...createAccount } = createAccountDto;
-    let accountCountry: Country | null = null;
+    let accountCountry: string | undefined;
     if (country) {
-      accountCountry = await countryRepo.findOne({ where: { name: ILike(`%${country}%`) } });
+      accountCountry = this.countryService.getCountry(country);
     }
     await accountRepo.save({
       ...createAccount,
-      country: accountCountry ? accountCountry : undefined,
+      country: accountCountry,
       createdBy: user,
     });
     return {
@@ -42,15 +41,13 @@ export class AccountService {
 
   async findAll(tenantId: string, accountQuery: GetAccountDto): Promise<APIResponse<Account[]>> {
     const accountRepo = await getRepo<Account>(Account, tenantId);
-    const qb = accountRepo.createQueryBuilder('account').leftJoin('account.country', 'country');
+    const qb = accountRepo.createQueryBuilder('account');
 
     for (const [key, value] of Object.entries(accountQuery)) {
       if (value == null || key === 'page' || key === 'limit') {
         continue;
-      } else if (['name', 'industry', 'city'].includes(key)) {
+      } else if (['name', 'industry', 'city', 'country'].includes(key)) {
         qb.andWhere(`account.${key} LIKE :${key}`, { [key]: `%${value}%` });
-      } else {
-        qb.andWhere('country.name ILIKE :country', { country: `%${value}%` });
       }
     }
     const page = accountQuery.page ?? 1;
@@ -78,21 +75,17 @@ export class AccountService {
     updateAccountDto: UpdateAccountDto,
   ): Promise<APIResponse> {
     const accountRepo = await getRepo<Account>(Account, tenantId);
-    const countryRepo = await getRepo<Country>(Country, tenantId);
 
     const account = await accountRepo.findOne({ where: { id } });
     if (!account) {
       throw new BadRequestException({ message: 'Invalid account id' });
     }
     const { country, ...updateAccount } = updateAccountDto;
-    let accountCountry: Country | null = null;
+    let accountCountry: string | undefined;
     if (country) {
-      accountCountry = await countryRepo.findOne({ where: { name: country } });
-      if (!accountCountry) {
-        throw new NotFoundException({ message: 'Country not found' });
-      }
+      accountCountry = this.countryService.getCountry(country);
     }
-    account.country = accountCountry ? accountCountry : undefined;
+    account.country = accountCountry;
     await accountRepo.save({ ...account, ...updateAccount });
     return {
       success: true,

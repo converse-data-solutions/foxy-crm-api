@@ -21,6 +21,8 @@ import { TenantModule } from './modules/tenant.module';
 import { TicketModule } from './modules/ticket.module';
 import { TaskModule } from './modules/task.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { OtpModule } from './modules/otp.module';
+import { CountryModule } from './modules/country.module';
 
 @Module({
   imports: [
@@ -71,6 +73,8 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
     TenantModule,
     TicketModule,
     TaskModule,
+    OtpModule,
+    CountryModule,
   ],
   providers: [
     {

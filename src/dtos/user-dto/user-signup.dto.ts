@@ -11,9 +11,12 @@ export class Signin {
   email: string;
 
   @IsDefined({ message: 'Password must be required' })
-  @IsString({ message: 'Please give password in correct format' })
   @Length(7, 15, { message: 'Password must be between 7 and 15 characters' })
-  @ApiProperty({ example: 'pa$w0rd$' })
+  @ApiProperty({ example: 'StrongP@ssw0rd' })
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{7,15}$/, {
+    message:
+      'Password must be 7-15 characters long, include at least one uppercase letter, one lowercase letter, one number, and one special character',
+  })
   password: string;
 }
 

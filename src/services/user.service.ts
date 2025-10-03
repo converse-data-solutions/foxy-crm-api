@@ -3,20 +3,31 @@ import {
   ConflictException,
   HttpStatus,
   Injectable,
-  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { Country } from 'src/database/entity/common-entity/country.entity';
-import { User } from 'src/database/entity/core-app/user.entity';
-import { UpdateUserDto } from 'src/dto/user-dto/update-user.dto';
+import { User } from 'src/database/entities/core-app-entities/user.entity';
+import { UpdateUserDto } from 'src/dtos/user-dto/update-user.dto';
 import { Role } from 'src/enums/core-app.enum';
 import { getRepo } from 'src/shared/database-connection/get-connection';
 import * as bcrypt from 'bcrypt';
 import { APIResponse } from 'src/common/dtos/response.dto';
-import { GetUserDto } from 'src/dto/user-dto/get-user.dto';
+import { GetUserDto } from 'src/dtos/user-dto/get-user.dto';
+import { CountryService } from './country.service';
+import { UserSignupDto } from 'src/dtos/user-dto/user-signup.dto';
+import { TenantService } from './tenant.service';
+import { JwtPayload } from 'src/common/dtos/jwt-payload.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Subscription } from 'src/database/entities/base-app-entities/subscription.entity';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class UserService {
+  constructor(
+    private readonly countryService: CountryService,
+    private readonly tenantService: TenantService,
+    @InjectRepository(Subscription)
+    private readonly subscriptionRepo: Repository<Subscription>,
+  ) {}
   async updateUser(
     tenantId: string,
     user: User,
@@ -24,7 +35,6 @@ export class UserService {
     updateUser: UpdateUserDto,
   ): Promise<APIResponse> {
     const userRepo = await getRepo(User, tenantId);
-    const countryRepo = await getRepo(Country, tenantId);
     const existUser = await userRepo.findOne({ where: { id } });
     if (user.id !== id && user.role != Role.Admin) {
       throw new UnauthorizedException({ message: 'Not have authorization to edit others data' });
@@ -52,10 +62,7 @@ export class UserService {
     }
     const { country, password, ...userData } = updateUser;
     if (country) {
-      const countryExist = await countryRepo.findOne({ where: { name: country } });
-      if (!countryExist) {
-        throw new NotFoundException({ message: 'Country not found or invalid country name' });
-      }
+      const countryExist = this.countryService.getCountry(country);
       existUser.country = countryExist;
     }
     const hashedPassword = password
@@ -71,17 +78,15 @@ export class UserService {
 
   async getUser(tenantId: string, userQuery: GetUserDto) {
     const userRepo = await getRepo(User, tenantId);
-    const qb = userRepo.createQueryBuilder('user').leftJoin('user.country', 'country');
+    const qb = userRepo.createQueryBuilder('user');
 
     for (const [key, value] of Object.entries(userQuery)) {
       if (value == null || key === 'page' || key === 'limit') {
         continue;
-      } else if (['name', 'email', 'phone', 'city'].includes(key)) {
+      } else if (['name', 'email', 'phone', 'city', 'country'].includes(key)) {
         qb.andWhere(`user.${key} LIKE :${key}`, { [key]: `%${value}%` });
       } else if (key === 'role') {
         qb.andWhere('user.role =:role', { role: userQuery.role });
-      } else {
-        qb.andWhere('country.name ILIKE :country', { country: `%${value}%` });
       }
     }
     const page = userQuery.page ?? 1;
@@ -101,5 +106,54 @@ export class UserService {
         totalPages: Math.ceil(total / limit),
       },
     };
+  }
+
+  async userSignup(user: UserSignupDto) {
+    const tenant = await this.tenantService.getTenant(user.email);
+    const userRepo = await getRepo<User>(User, tenant.schemaName);
+    const isUser = await userRepo.findOne({
+      where: [{ email: user.email }, { phone: user.phone }],
+    });
+    if (isUser) {
+      throw new ConflictException({
+        message: 'User with this email or phone number is already registered',
+      });
+    } else {
+      let country: string | undefined;
+      if (user.country) {
+        country = this.countryService.getCountry(user.country);
+      }
+      const hashPassword = await bcrypt.hash(user.password, Number(process.env.SALT || 5));
+      const newUser = userRepo.create({
+        name: user.name,
+        password: hashPassword,
+        email: user.email,
+        phone: user.phone,
+        country: country,
+      });
+      await userRepo.save(newUser);
+      return {
+        success: true,
+        statusCode: HttpStatus.CREATED,
+        message: 'User account created successfully',
+      };
+    }
+  }
+
+  async validateUser(payload: JwtPayload, schema: string) {
+    const subscriptionExist = await this.subscriptionRepo.findOne({
+      where: { tenant: { schemaName: schema } },
+      relations: { tenant: true },
+    });
+    if (!subscriptionExist) {
+      throw new BadRequestException({ message: 'Invalid schema name' });
+    }
+    if (subscriptionExist.status === false && process.env.DEVELOPMENT == 'prod') {
+      throw new BadRequestException({ message: 'Subscription got expired please subscribe' });
+    }
+
+    const userRepo = await getRepo(User, schema);
+    const user = await userRepo.findOne({ where: { id: payload.id } });
+    return user ? user : null;
   }
 }

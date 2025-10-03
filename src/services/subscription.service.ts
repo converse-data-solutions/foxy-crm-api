@@ -11,10 +11,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Request } from 'express';
 import { JwtPayload } from 'src/common/dtos/jwt-payload.dto';
 import { APIResponse } from 'src/common/dtos/response.dto';
-import { Plan } from 'src/database/entity/base-app/plan.entity';
-import { Subscription } from 'src/database/entity/base-app/subscription.entity';
-import { Tenant } from 'src/database/entity/base-app/tenant.entity';
-import { SubscribeDto } from 'src/dto/subscribe-dto/subscribe.dto';
+import { Plan } from 'src/database/entities/base-app-entities/plan.entity';
+import { Subscription } from 'src/database/entities/base-app-entities/subscription.entity';
+import { Tenant } from 'src/database/entities/base-app-entities/tenant.entity';
+import { SubscribeDto } from 'src/dtos/subscribe-dto/subscribe.dto';
 import { invoiceTemplate, InvoiceTemplateOptions } from 'src/templates/invoice-template';
 import { subscriptionReminderTemplate } from 'src/templates/subscription-remainder.template';
 import Stripe from 'stripe';
@@ -70,7 +70,7 @@ export class SubscriptionService {
     if (!token) {
       throw new UnauthorizedException({ message: 'Unauthorized access token not found' });
     }
-    const payload = await this.validateToken(token);
+    await this.validateToken(token);
     const plans = await this.planRepo.find();
 
     return {

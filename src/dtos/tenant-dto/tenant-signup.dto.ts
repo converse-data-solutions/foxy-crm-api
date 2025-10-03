@@ -31,9 +31,12 @@ export class TenantSignupDto {
   phone: string;
 
   @IsDefined({ message: 'Password is required' })
-  @IsString({ message: 'Password must be a string' })
-  @ApiProperty({ example: 'pa$w0rd$' })
+  @ApiProperty({ example: 'StrongP@ssw0rd' })
   @Length(7, 15, { message: 'Password must be between 7 and 15 characters' })
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{7,15}$/, {
+    message:
+      'Password must be 7-15 characters long, include at least one uppercase letter, one lowercase letter, one number, and one special character',
+  })
   password: string;
 
   @IsOptional()

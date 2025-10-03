@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import { Task } from 'src/database/entity/core-app/task.entity';
+import { Task } from 'src/database/entities/core-app-entities/task.entity';
 import { TaskService } from 'src/services/task.service';
 
 @Injectable()

@@ -1,15 +1,6 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  JoinColumn,
-  ManyToOne,
-  OneToMany,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
+import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { Lead } from './lead.entity';
 import { Role } from 'src/enums/core-app.enum';
-import { Country } from '../common-entity/country.entity';
 
 @Entity({ name: 'users' })
 export class User {
@@ -37,9 +28,8 @@ export class User {
   @Column({ name: 'city', type: 'varchar', length: 40, nullable: true })
   city?: string;
 
-  @ManyToOne(() => Country)
-  @JoinColumn({ name: 'country_id' })
-  country: Country;
+  @Column({ name: 'country', type: 'varchar', length: 50, nullable: true })
+  country?: string;
 
   @Column({ name: 'otp', type: 'int', nullable: true })
   otp?: number;
@@ -47,8 +37,11 @@ export class User {
   @Column({ name: 'otp_expiry_at', type: 'timestamp', nullable: true })
   otpExpiryAt?: Date;
 
-  @Column({ name: 'is_verified', type: 'boolean', default: false })
-  isVerified: boolean;
+  @Column({ name: 'email_verified', type: 'boolean', default: false })
+  emailVerified: boolean;
+
+  @Column({ name: 'otp_verified', type: 'boolean', default: false })
+  otpVerified: boolean;
 
   @OneToMany(() => Lead, (lead) => lead.assignedTo, { nullable: true })
   leads: Lead[];

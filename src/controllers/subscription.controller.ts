@@ -2,7 +2,7 @@ import { Controller, Get, Post, Req, Body, Query } from '@nestjs/common';
 import { SubscriptionService } from '../services/subscription.service';
 import { Request } from 'express';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { SubscribeDto } from 'src/dto/subscribe-dto/subscribe.dto';
+import { SubscribeDto } from 'src/dtos/subscribe-dto/subscribe.dto';
 import { Public } from 'src/common/decorators/public.decorator';
 
 @Controller('subscription')
