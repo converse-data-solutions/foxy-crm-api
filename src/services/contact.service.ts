@@ -65,6 +65,15 @@ export class ContactService {
       .createQueryBuilder('contact')
       .leftJoinAndSelect('contact.accountId', 'account')
       .leftJoinAndSelect('contact.notes', 'note');
+
+    const page = Math.max(1, Number(contactQuery.page ?? 1));
+    const defaultLimit = Number(contactQuery.limit ?? 10);
+    const limit =
+      Number.isFinite(defaultLimit) && defaultLimit > 0
+        ? Math.min(100, Math.floor(defaultLimit))
+        : 10;
+    const skip = (page - 1) * limit;
+
     for (const [key, value] of Object.entries(contactQuery)) {
       if (value == null || key === 'page' || key === 'limit') {
         continue;
@@ -74,9 +83,6 @@ export class ContactService {
         qb.andWhere('account.name ILIKE :accountName', { accountName: `%${value}%` });
       }
     }
-    const page = contactQuery.page ?? 1;
-    const limit = contactQuery.limit ?? 10;
-    const skip = (page - 1) * limit;
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
     return {

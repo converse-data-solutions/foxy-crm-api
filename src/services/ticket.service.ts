@@ -55,6 +55,15 @@ export class TicketService {
   ): Promise<APIResponse> {
     const ticketRepo = await getRepo(Ticket, tenantId);
     const qb = ticketRepo.createQueryBuilder('ticket').leftJoin('ticket.dealId', 'deal');
+
+    const page = Math.max(1, Number(ticketQuery.page ?? 1));
+    const defaultLimit = Number(ticketQuery.limit ?? 10);
+    const limit =
+      Number.isFinite(defaultLimit) && defaultLimit > 0
+        ? Math.min(100, Math.floor(defaultLimit))
+        : 10;
+    const skip = (page - 1) * limit;
+
     for (const [key, value] of Object.entries(ticketQuery)) {
       if (value == null || key === 'page' || key === 'limit') {
         continue;
@@ -70,9 +79,6 @@ export class TicketService {
         qb.andWhere(`ticket.resolved_at <=:resolvedTo`, { resolvedTo: value });
       }
     }
-    const page = ticketQuery.page ?? 1;
-    const limit = ticketQuery.limit ?? 10;
-    const skip = (page - 1) * limit;
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
     return {

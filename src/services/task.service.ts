@@ -76,6 +76,15 @@ export class TaskService {
   async findAllTasks(tenantId: string, user: User, taskQuery: GetTaskDto) {
     const taskRepo = await getRepo(Task, tenantId);
     const qb = taskRepo.createQueryBuilder('task').leftJoin('task.assignedTo', 'user');
+
+    const page = Math.max(1, Number(taskQuery.page ?? 1));
+    const defaultLimit = Number(taskQuery.limit ?? 10);
+    const limit =
+      Number.isFinite(defaultLimit) && defaultLimit > 0
+        ? Math.min(100, Math.floor(defaultLimit))
+        : 10;
+    const skip = (page - 1) * limit;
+
     for (const [key, value] of Object.entries(taskQuery)) {
       if (value == null || key === 'page' || key === 'limit') {
         continue;
@@ -92,9 +101,6 @@ export class TaskService {
         qb.andWhere(`user.name ILIKE :assignedTo`, { assignedTo: `%${taskQuery.assignedTo}%` });
       }
     }
-    const page = taskQuery.page ?? 1;
-    const limit = taskQuery.limit ?? 10;
-    const skip = (page - 1) * limit;
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
     return {

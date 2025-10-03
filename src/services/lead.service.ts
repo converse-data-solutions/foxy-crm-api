@@ -177,6 +177,15 @@ export class LeadService {
   async findAllLeads(leadQuery: LeadQueryDto, tenant: string): Promise<APIResponse<Lead[]>> {
     const leadRepo = await getRepo(Lead, tenant);
     const qb = leadRepo.createQueryBuilder('lead');
+
+    const page = Math.max(1, Number(leadQuery.page ?? 1));
+    const defaultLimit = Number(leadQuery.limit ?? 10);
+    const limit =
+      Number.isFinite(defaultLimit) && defaultLimit > 0
+        ? Math.min(100, Math.floor(defaultLimit))
+        : 10;
+    const skip = (page - 1) * limit;
+
     for (const [key, value] of Object.entries(leadQuery)) {
       if (value == null || key === 'page' || key === 'limit') continue;
 
@@ -188,10 +197,6 @@ export class LeadService {
         qb.andWhere(`lead.${key} = :${key}`, { [key]: value });
       }
     }
-
-    const page = leadQuery.page ?? 1;
-    const limit = leadQuery.limit ?? 10;
-    const skip = (page - 1) * limit;
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
 

@@ -26,7 +26,7 @@ import { User } from 'src/database/entities/core-app-entities/user.entity';
 import { FileValidationPipe } from 'src/common/pipes/file-validation.pipe';
 
 @Roles(Role.Admin, Role.Manager)
-@Controller('lead')
+@Controller('leads')
 export class LeadController {
   constructor(private readonly leadService: LeadService) {}
 

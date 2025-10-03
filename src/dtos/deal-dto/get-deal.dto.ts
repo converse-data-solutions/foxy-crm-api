@@ -1,6 +1,14 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsOptional, IsString, IsNumber, IsDateString, IsInt, Min } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsDateString,
+  IsInt,
+  Min,
+  IsDecimal,
+} from 'class-validator';
 
 export class GetDealDto {
   @ApiPropertyOptional()
@@ -10,13 +18,19 @@ export class GetDealDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsNumber({}, { message: 'greaterValue must be a number' })
-  greaterValue?: number;
+  @IsDecimal(
+    { decimal_digits: '0,2' },
+    { message: 'Amount should contain maximum 2 decimal points' },
+  )
+  greaterValue?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsNumber({}, { message: 'lesserValue must be a number' })
-  lesserValue?: number;
+  @IsDecimal(
+    { decimal_digits: '0,2' },
+    { message: 'Amount should contain maximum 2 decimal points' },
+  )
+  lesserValue?: string;
 
   @ApiPropertyOptional({
     type: String,

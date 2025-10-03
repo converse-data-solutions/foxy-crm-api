@@ -1,4 +1,5 @@
 import { MailerService } from '@nestjs-modules/mailer';
+import { InjectQueue } from '@nestjs/bullmq';
 import {
   BadRequestException,
   HttpStatus,
@@ -8,13 +9,17 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Queue } from 'bullmq';
 import { Request } from 'express';
 import { JwtPayload } from 'src/common/dtos/jwt-payload.dto';
 import { APIResponse } from 'src/common/dtos/response.dto';
 import { Plan } from 'src/database/entities/base-app-entities/plan.entity';
 import { Subscription } from 'src/database/entities/base-app-entities/subscription.entity';
 import { Tenant } from 'src/database/entities/base-app-entities/tenant.entity';
+import { User } from 'src/database/entities/core-app-entities/user.entity';
 import { SubscribeDto } from 'src/dtos/subscribe-dto/subscribe.dto';
+import { StatusCause } from 'src/enums/status.enum';
+import { getRepo } from 'src/shared/database-connection/get-connection';
 import { invoiceTemplate, InvoiceTemplateOptions } from 'src/templates/invoice-template';
 import { subscriptionReminderTemplate } from 'src/templates/subscription-remainder.template';
 import Stripe from 'stripe';
@@ -30,6 +35,7 @@ export class SubscriptionService {
     private readonly subscriptionRepo: Repository<Subscription>,
     @InjectRepository(Tenant) private readonly tenantRepo: Repository<Tenant>,
     private readonly mailService: MailerService,
+    @InjectQueue('subscription') private readonly subscriptionQueue: Queue,
   ) {}
 
   async create(subscribe: SubscribeDto, token: string | undefined): Promise<APIResponse> {
@@ -119,7 +125,8 @@ export class SubscriptionService {
     existingSubscription.stripeSubscriptionId = stripeSubscription.id;
     existingSubscription.endDate = endDate;
 
-    await this.subscriptionRepo.save(existingSubscription);
+    const subscription = await this.subscriptionRepo.save(existingSubscription);
+    await this.subscriptionQueue.add('change-subscription-plan', subscription);
     const name = stripeCustomer.name ? stripeCustomer.name : existingSubscription.tenant.userName;
     const option: InvoiceTemplateOptions = {
       userName: name,
@@ -156,7 +163,7 @@ export class SubscriptionService {
           quantity: 1,
         },
       ],
-      success_url: `http://localhost:8000/api/v1/subscription/session?id={CHECKOUT_SESSION_ID}&key=${token}`, //front end success url
+      success_url: `http://localhost:8000/api/v1/plans/session?id={CHECKOUT_SESSION_ID}&key=${token}`, //front end success url
       cancel_url: 'http://localhost:8000/cancel', //front end cancel url
     });
   }
@@ -186,5 +193,26 @@ export class SubscriptionService {
         subject: `Reminder: Subscription Expiry on ${tenantSubscription.endDate.getDate()}`,
       });
     }
+  }
+
+  async changeSubscriptionPlans(subscription: Subscription) {
+    const userCount = subscription.plan.userCount;
+    const schemaName = subscription.tenant.schemaName;
+    const userRepo = await getRepo(User, schemaName);
+    const users = await userRepo.find({
+      order: { createdAt: 'ASC' },
+    });
+    for (let i = 0; i < users.length; i++) {
+      if (i + 1 > userCount) {
+        users[i].status = false;
+        users[i].statusCause = StatusCause.Plan_Limit;
+      } else {
+        if (users[i].status === false) {
+          users[i].status = true;
+          users[i].statusCause = null;
+        }
+      }
+    }
+    await userRepo.save(users);
   }
 }

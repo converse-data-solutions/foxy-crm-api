@@ -3,24 +3,28 @@
     "planName": "Silver",
     "price": 199,
     "priceId": "price_1SA9SLRyXWpP04jPon7uXFzA",
+    "userCount": 10,
     "validUpto": "1 month"
   },
   {
     "planName": "Gold",
     "price": 599,
     "priceId": "price_1SA95xRyXWpP04jPsWNkYFdd",
+    "userCount": 20,
     "validUpto": "3 months"
   },
   {
     "planName": "Diamond",
     "price": 899,
     "priceId": "price_1SA9TlRyXWpP04jPOpk1MqK5",
+    "userCount": 30,
     "validUpto": "6 months"
   },
   {
     "planName": "Platinum",
     "price": 1499,
     "priceId": "price_1SA96dRyXWpP04jPhQ7zg5pw",
+    "userCount": "Infinity",
     "validUpto": "12 months"
   }
 ]
