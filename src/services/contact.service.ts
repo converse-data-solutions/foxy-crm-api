@@ -6,13 +6,13 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { APIResponse } from 'src/common/dtos/response.dto';
-import { Account } from 'src/database/entity/core-app/account.entity';
-import { Contact } from 'src/database/entity/core-app/contact.entity';
-import { Note } from 'src/database/entity/core-app/note.entity';
-import { User } from 'src/database/entity/core-app/user.entity';
-import { CreateContactDto } from 'src/dto/contact-dto/create-contact.dto';
-import { GetContactDto } from 'src/dto/contact-dto/get-contact.dto';
-import { UpdateContactDto } from 'src/dto/contact-dto/update-contact.dto';
+import { Account } from 'src/database/entities/core-app-entities/account.entity';
+import { Contact } from 'src/database/entities/core-app-entities/contact.entity';
+import { Note } from 'src/database/entities/core-app-entities/note.entity';
+import { User } from 'src/database/entities/core-app-entities/user.entity';
+import { CreateContactDto } from 'src/dtos/contact-dto/create-contact.dto';
+import { GetContactDto } from 'src/dtos/contact-dto/get-contact.dto';
+import { UpdateContactDto } from 'src/dtos/contact-dto/update-contact.dto';
 import { Role } from 'src/enums/core-app.enum';
 import { getRepo } from 'src/shared/database-connection/get-connection';
 

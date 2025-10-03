@@ -1,12 +1,12 @@
 import { Body, Controller, Put, Headers, Param, Get, Query } from '@nestjs/common';
 import { UserService } from '../services/user.service';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
-import { User } from 'src/database/entity/core-app/user.entity';
-import { UpdateUserDto } from 'src/dto/user-dto/update-user.dto';
+import { User } from 'src/database/entities/core-app-entities/user.entity';
+import { UpdateUserDto } from 'src/dtos/user-dto/update-user.dto';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Roles } from 'src/common/decorators/role.decorator';
 import { Role } from 'src/enums/core-app.enum';
-import { GetUserDto } from 'src/dto/user-dto/get-user.dto';
+import { GetUserDto } from 'src/dtos/user-dto/get-user.dto';
 
 @Controller('user')
 export class UserController {

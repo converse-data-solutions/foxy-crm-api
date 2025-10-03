@@ -7,7 +7,6 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Country } from '../common-entity/country.entity';
 import { User } from './user.entity';
 import { Contact } from './contact.entity';
 
@@ -31,9 +30,8 @@ export class Account {
   @Column({ name: 'city', type: 'varchar', length: 40, nullable: true })
   city?: string;
 
-  @ManyToOne(() => Country)
-  @JoinColumn({ name: 'country_id' })
-  country?: Country;
+  @Column({ name: 'country', type: 'varchar', length: 50, nullable: true })
+  country?: string;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

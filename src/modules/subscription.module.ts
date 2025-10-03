@@ -3,10 +3,9 @@ import { SubscriptionService } from '../services/subscription.service';
 import { SubscriptionController } from '../controllers/subscription.controller';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Subscription } from 'src/database/entity/base-app/subscription.entity';
-import { Tenant } from 'src/database/entity/base-app/tenant.entity';
-import { Country } from 'src/database/entity/common-entity/country.entity';
-import { Plan } from 'src/database/entity/base-app/plan.entity';
+import { Subscription } from 'src/database/entities/base-app-entities/subscription.entity';
+import { Tenant } from 'src/database/entities/base-app-entities/tenant.entity';
+import { Plan } from 'src/database/entities/base-app-entities/plan.entity';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { SubscriptionScheduler } from 'src/schedulers/subscription.scheduler';
@@ -16,7 +15,7 @@ import { SubscriptionProcessor } from 'src/processors/subscription.processor';
 @Module({
   imports: [
     JwtModule,
-    TypeOrmModule.forFeature([Tenant, Subscription, Country, Plan]),
+    TypeOrmModule.forFeature([Tenant, Subscription, Plan]),
     BullModule.registerQueue({ name: 'subscription' }),
   ],
   controllers: [SubscriptionController],

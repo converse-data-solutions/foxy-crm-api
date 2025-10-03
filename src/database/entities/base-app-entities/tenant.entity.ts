@@ -2,14 +2,11 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  JoinColumn,
-  ManyToOne,
   OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Subscription } from './subscription.entity';
-import { Country } from '../common-entity/country.entity';
 
 @Entity({ name: 'tenants' })
 export class Tenant {
@@ -55,9 +52,8 @@ export class Tenant {
   @Column({ name: 'city', type: 'varchar', length: 40, nullable: true })
   city?: string;
 
-  @ManyToOne(() => Country)
-  @JoinColumn({ name: 'country_id' })
-  country: Country;
+  @Column({ name: 'country', type: 'varchar', length: 50, nullable: true })
+  country?: string;
 
   @Column({ name: 'otp', type: 'int', nullable: true })
   otp?: number;
@@ -66,7 +62,7 @@ export class Tenant {
   otpExpiryAt?: Date;
 
   @Column({ name: 'is_verified', type: 'boolean', default: false })
-  isVerified: boolean;
+  emailVerified: boolean;
 
   @OneToOne(() => Subscription, (subscription) => subscription.tenant)
   subscription: Subscription;
