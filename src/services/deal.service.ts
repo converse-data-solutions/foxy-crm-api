@@ -17,7 +17,15 @@ export class DealService {
     const dealRepo = await getRepo(Deal, tenantId);
     const contactRepo = await getRepo(Contact, tenantId);
     const { contactId, value, ...createDeal } = createDealDto;
-    const dealValue = Number(value);
+    let dealValue = Number(value);
+
+    if (value !== undefined && value !== null && String(value).trim() !== '') {
+      dealValue = Number(value);
+      if (Number.isNaN(dealValue)) {
+        throw new BadRequestException({ message: 'Invalid deal value' });
+      }
+    }
+
     const contact = await contactRepo.findOne({
       where: { id: contactId },
     });
@@ -37,25 +45,33 @@ export class DealService {
     const dealRepo = await getRepo<Deal>(Deal, tenantId);
     const qb = dealRepo.createQueryBuilder('deal');
 
+    const page = Math.max(1, Number(dealQuery.page ?? 1));
+    const defaultLimit = Number(dealQuery.limit ?? 10);
+    const limit =
+      Number.isFinite(defaultLimit) && defaultLimit > 0
+        ? Math.min(100, Math.floor(defaultLimit))
+        : 10;
+    const skip = (page - 1) * limit;
+
     for (const [key, value] of Object.entries(dealQuery)) {
-      if (value == null || key === 'page' || key === 'limit') {
-        continue;
-      } else if (key === 'name') {
-        qb.andWhere('deal.name ILIKE :name', { name: `%${dealQuery.name}%` });
-      } else if (key === 'greaterValue') {
-        qb.andWhere('deal.value >=:greaterValue', { greaterValue: dealQuery.greaterValue });
+      if (value == null || key === 'page' || key === 'limit') continue;
+      if (key === 'name') qb.andWhere('deal.name ILIKE :name', { name: `%${String(value)}%` });
+      else if (key === 'greaterValue') {
+        const nv = Number(value);
+        if (!Number.isNaN(nv)) qb.andWhere('deal.value >= :greaterValue', { greaterValue: nv });
       } else if (key === 'lesserValue') {
-        qb.andWhere('deal.value <=:lesserValue', { lesserValue: dealQuery.lesserValue });
+        const nv = Number(value);
+        if (!Number.isNaN(nv)) qb.andWhere('deal.value <= :lesserValue', { lesserValue: nv });
       } else if (key === 'fromDate') {
-        qb.andWhere('deal.expected_close_date >=:fromDate ', { fromDate: dealQuery.fromDate });
+        const d = new Date(String(value));
+        if (!Number.isNaN(d.getTime()))
+          qb.andWhere('deal.expected_close_date >= :fromDate', { fromDate: d.toISOString() });
       } else if (key === 'toDate') {
-        qb.andWhere('deal.expected_close_date <=:toDate ', { toDate: dealQuery.toDate });
+        const d = new Date(String(value));
+        if (!Number.isNaN(d.getTime()))
+          qb.andWhere('deal.expected_close_date <= :toDate', { toDate: d.toISOString() });
       }
     }
-
-    const page = dealQuery.page ?? 1;
-    const limit = dealQuery.limit ?? 10;
-    const skip = (page - 1) * limit;
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
 
@@ -87,25 +103,31 @@ export class DealService {
       throw new BadRequestException({ message: 'Invalid deal id or deal not found' });
     }
 
-    if (updateDeal.stage == DealStage.Completed) {
+    if (updateDeal.stage === DealStage.Completed) {
+      if (user.role !== Role.Admin && user.role !== Role.Manager) {
+        throw new UnauthorizedException({
+          message: 'Admin or manager only can update the deal status',
+        });
+      }
+
       const dealTasks = await taskRepo.find({ where: { entityId: id } });
-      if (dealTasks.length == 0) {
+      if (dealTasks.length === 0) {
         throw new BadRequestException({ message: 'Cannot complete the deal without doing task' });
-      } else {
-        for (const task of dealTasks) {
-          if (task.status !== TaskStatus.Completed) {
-            throw new BadRequestException({ message: 'Cannot complete task with pending tasks' });
-          }
-        }
-        if (user.role !== Role.Admin && user.role !== Role.Manager) {
-          throw new UnauthorizedException({
-            message: 'Admin or manager only can update the deal status',
-          });
-        }
+      }
+      const hasPending = dealTasks.some((t) => t.status !== TaskStatus.Completed);
+      if (hasPending) {
+        throw new BadRequestException({
+          message: 'Cannot complete the deal while there are pending tasks',
+        });
       }
     }
 
-    dealExist.value = value ? Number(value) : dealExist.value;
+    if (value !== undefined && value !== null) {
+      const numeric = Number(value);
+      if (Number.isNaN(numeric)) throw new BadRequestException({ message: 'Invalid value' });
+      dealExist.value = numeric;
+    }
+
     dealRepo.merge(dealExist, deals);
     await dealRepo.save(dealExist);
     return {

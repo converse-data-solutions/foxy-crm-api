@@ -10,7 +10,6 @@ import {
 import * as bcrypt from 'bcrypt';
 import { Tenant } from 'src/database/entities/base-app-entities/tenant.entity';
 import { getConnection } from 'src/shared/database-connection/get-connection';
-import { SeedService } from './seed.service';
 import { Repository } from 'typeorm';
 import { User } from 'src/database/entities/core-app-entities/user.entity';
 import { Role } from 'src/enums/core-app.enum';
@@ -25,7 +24,6 @@ import { CountryService } from './country.service';
 @Injectable()
 export class TenantService {
   constructor(
-    private readonly seedService: SeedService,
     private readonly countryService: CountryService,
     private readonly mailService: MailerService,
     @Inject(forwardRef(() => OtpService))
@@ -111,6 +109,7 @@ export class TenantService {
     const domain = email.split('@')[1].split('.')[0];
     const domainExist = await this.tenantRepo.findOne({
       where: { domain },
+      relations: { subscription: true },
     });
     if (!domainExist) {
       throw new BadRequestException({ message: 'Please provide registered email address' });

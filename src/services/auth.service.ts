@@ -43,6 +43,11 @@ export class AuthService {
           message: 'Invalid password please enter correct password',
         });
       } else {
+        if (!userExist.status) {
+          throw new BadRequestException({
+            message: 'Your account is disabled please contact the admin',
+          });
+        }
         if (!userExist.emailVerified) {
           throw new BadRequestException({ message: 'Please verify the email then login' });
         }

@@ -1,0 +1,6 @@
+export enum UserCount {
+  SILVER_USER_COUNT = 10,
+  GOLD_USER_COUNT = 20,
+  DIAMOND_USER_COUNT = 30,
+  PLATINUM_USER_COUNT = Infinity,
+}

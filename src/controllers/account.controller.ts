@@ -10,7 +10,7 @@ import { Role } from 'src/enums/core-app.enum';
 import { GetAccountDto } from 'src/dtos/account-dto/get-account.dto';
 
 @Roles(Role.Admin, Role.Manager)
-@Controller('account')
+@Controller('accounts')
 export class AccountController {
   constructor(private readonly accountService: AccountService) {}
 

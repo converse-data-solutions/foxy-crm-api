@@ -2,6 +2,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsEmail, IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
 import { Role } from 'src/enums/core-app.enum';
+import { StatusCause } from 'src/enums/status.enum';
 
 export class GetUserDto {
   @ApiPropertyOptional({ description: 'Name of the user' })
@@ -18,6 +19,16 @@ export class GetUserDto {
   @IsOptional()
   @IsString()
   phone?: string;
+
+  @ApiPropertyOptional({ description: 'Status of the user' })
+  @IsOptional()
+  @IsString()
+  status?: boolean;
+
+  @ApiPropertyOptional({ enum: StatusCause, description: 'Status cause of the user' })
+  @IsOptional()
+  @IsEnum(StatusCause)
+  statusCause?: StatusCause;
 
   @ApiPropertyOptional({ enum: Role, description: 'Role of the user' })
   @IsOptional()

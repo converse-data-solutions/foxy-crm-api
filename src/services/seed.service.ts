@@ -12,7 +12,7 @@ export class SeedService {
   constructor(@InjectRepository(Plan) private readonly planRepo: Repository<Plan>) {}
 
   async subscriptionSeed() {
-    const filePath = join(process.cwd(), 'src/asset/subscription-mock-data.json');
+    const filePath = join(process.cwd(), 'src/seed/subscription-mock-data.json');
     if (!fs.existsSync(filePath)) {
       throw new Error(`File not found at path: ${filePath}`);
     }

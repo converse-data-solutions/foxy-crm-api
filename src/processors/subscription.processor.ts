@@ -1,5 +1,6 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
+import { Subscription } from 'src/database/entities/base-app-entities/subscription.entity';
 import { SubscriptionService } from 'src/services/subscription.service';
 
 @Processor('subscription')
@@ -13,7 +14,11 @@ export class SubscriptionProcessor extends WorkerHost {
         await this.subscriptionService.expireSubscription(job.data.id as string);
         break;
       case 'subscription-reminder-mail':
-        await this.subscriptionService.subscriptionRemainder(job.data.id as string);
+        await this.subscriptionService.subscriptionRemainder(job.data.subscriptionId as string);
+        break;
+      case 'change-subscription-plan':
+        await this.subscriptionService.changeSubscriptionPlans(job.data as Subscription);
+        console.log(job.data);
         break;
     }
   }

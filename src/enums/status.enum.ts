@@ -27,3 +27,8 @@ export enum DealStage {
   Declined = 'declined',
   Completed = 'completed',
 }
+
+export enum StatusCause {
+  Plan_Limit = 'plan limit',
+  Admin_Disabled = 'admin disabled',
+}

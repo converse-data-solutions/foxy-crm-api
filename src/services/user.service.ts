@@ -80,6 +80,14 @@ export class UserService {
     const userRepo = await getRepo(User, tenantId);
     const qb = userRepo.createQueryBuilder('user');
 
+    const page = Math.max(1, Number(userQuery.page ?? 1));
+    const defaultLimit = Number(userQuery.limit ?? 10);
+    const limit =
+      Number.isFinite(defaultLimit) && defaultLimit > 0
+        ? Math.min(100, Math.floor(defaultLimit))
+        : 10;
+    const skip = (page - 1) * limit;
+
     for (const [key, value] of Object.entries(userQuery)) {
       if (value == null || key === 'page' || key === 'limit') {
         continue;
@@ -87,11 +95,12 @@ export class UserService {
         qb.andWhere(`user.${key} LIKE :${key}`, { [key]: `%${value}%` });
       } else if (key === 'role') {
         qb.andWhere('user.role =:role', { role: userQuery.role });
+      } else if (key === 'statusCause') {
+        qb.andWhere('user.status_cause =:statusCause', { statusCause: userQuery.statusCause });
+      } else if (key === 'status') {
+        qb.andWhere('user.status =:status', { status: userQuery.status });
       }
     }
-    const page = userQuery.page ?? 1;
-    const limit = userQuery.limit ?? 10;
-    const skip = (page - 1) * limit;
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
     return {
@@ -111,32 +120,47 @@ export class UserService {
   async userSignup(user: UserSignupDto) {
     const tenant = await this.tenantService.getTenant(user.email);
     const userRepo = await getRepo<User>(User, tenant.schemaName);
-    const isUser = await userRepo.findOne({
-      where: [{ email: user.email }, { phone: user.phone }],
+    const users = await userRepo.find();
+    const subscription = await this.subscriptionRepo.findOne({
+      where: { id: tenant.subscription.id },
+      relations: { plan: true },
     });
-    if (isUser) {
-      throw new ConflictException({
-        message: 'User with this email or phone number is already registered',
+    console.log(subscription?.plan);
+
+    if (!subscription?.plan && !subscription?.status) {
+      throw new BadRequestException({ message: 'No subscription found. Please subscribe.' });
+    }
+
+    if (users.length < subscription.plan.userCount) {
+      const isUser = await userRepo.findOne({
+        where: [{ email: user.email }, { phone: user.phone }],
       });
-    } else {
-      let country: string | undefined;
-      if (user.country) {
-        country = this.countryService.getCountry(user.country);
+      if (isUser) {
+        throw new ConflictException({
+          message: 'User with this email or phone number is already registered',
+        });
+      } else {
+        let country: string | undefined;
+        if (user.country) {
+          country = this.countryService.getCountry(user.country);
+        }
+        const hashPassword = await bcrypt.hash(user.password, Number(process.env.SALT || 5));
+        const newUser = userRepo.create({
+          name: user.name,
+          password: hashPassword,
+          email: user.email,
+          phone: user.phone,
+          country: country,
+        });
+        await userRepo.save(newUser);
+        return {
+          success: true,
+          statusCode: HttpStatus.CREATED,
+          message: 'User account created successfully',
+        };
       }
-      const hashPassword = await bcrypt.hash(user.password, Number(process.env.SALT || 5));
-      const newUser = userRepo.create({
-        name: user.name,
-        password: hashPassword,
-        email: user.email,
-        phone: user.phone,
-        country: country,
-      });
-      await userRepo.save(newUser);
-      return {
-        success: true,
-        statusCode: HttpStatus.CREATED,
-        message: 'User account created successfully',
-      };
+    } else {
+      throw new BadRequestException({ message: 'User limit exceeded for your plan' });
     }
   }
 

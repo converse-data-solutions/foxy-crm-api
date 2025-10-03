@@ -5,7 +5,7 @@ import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { SubscribeDto } from 'src/dtos/subscribe-dto/subscribe.dto';
 import { Public } from 'src/common/decorators/public.decorator';
 
-@Controller('subscription')
+@Controller('plans')
 export class SubscriptionController {
   constructor(private readonly subscriptionService: SubscriptionService) {}
 

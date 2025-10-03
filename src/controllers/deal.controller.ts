@@ -10,7 +10,7 @@ import { UpdateDealDto } from 'src/dtos/deal-dto/update-deal.dto';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @Roles(Role.Admin, Role.SalesRep, Role.Manager)
-@Controller('deal')
+@Controller('deals')
 export class DealController {
   constructor(private readonly dealService: DealService) {}
 
