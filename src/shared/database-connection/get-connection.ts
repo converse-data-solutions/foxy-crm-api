@@ -1,3 +1,4 @@
+import { ServiceUnavailableException } from '@nestjs/common';
 import { coreDataSource } from 'src/database/datasources/core-app-data-source';
 import { DataSource, DataSourceOptions, EntityTarget, ObjectLiteral, Repository } from 'typeorm';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
@@ -5,21 +6,33 @@ import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConne
 interface CachedDataSource {
   dataSource: DataSource;
   lastAccess: number;
+  initializing?: Promise<DataSource>;
 }
 
 const IDLE_TIMEOUT_MS = 10 * 60 * 1000;
 const connections: Record<string, CachedDataSource> = {};
+const MAX_CONNECTIONS = 50;
+let cleanupInterval: NodeJS.Timeout | null = null;
 
 export async function getConnection(schemaName: string): Promise<DataSource> {
   const now = Date.now();
 
+  const activeConnections = Object.keys(connections).length;
+  if (activeConnections >= MAX_CONNECTIONS) {
+    throw new ServiceUnavailableException('Maximum tenant connection limit reached ');
+  }
   if (connections[schemaName]?.dataSource.isInitialized) {
     connections[schemaName].lastAccess = now;
     return connections[schemaName].dataSource;
   }
 
-  const baseOptions = coreDataSource.options as PostgresConnectionOptions;
+  if (connections[schemaName]?.initializing) {
+    await connections[schemaName].initializing;
+    connections[schemaName].lastAccess = now;
+    return connections[schemaName].dataSource;
+  }
 
+  const baseOptions = coreDataSource.options as PostgresConnectionOptions;
   const dynamicOptions: DataSourceOptions = {
     ...baseOptions,
     name: schemaName,
@@ -27,22 +40,54 @@ export async function getConnection(schemaName: string): Promise<DataSource> {
   };
 
   const dataSource = new DataSource(dynamicOptions);
-  await dataSource.initialize();
 
-  connections[schemaName] = { dataSource, lastAccess: now };
+  connections[schemaName] = {
+    dataSource,
+    lastAccess: now,
+    initializing: dataSource.initialize(),
+  };
+
+  try {
+    await connections[schemaName].initializing;
+    delete connections[schemaName].initializing;
+  } catch (err) {
+    delete connections[schemaName]; // cleanup on failure
+    throw err;
+  }
+
+  if (!cleanupInterval) startCleanupInterval();
+
   return dataSource;
 }
 
-//terminate connection for every 1 min
-setInterval(async () => {
-  const now = Date.now();
-  for (const [schema, cached] of Object.entries(connections)) {
-    if (cached.dataSource.isInitialized && now - cached.lastAccess > IDLE_TIMEOUT_MS) {
-      await cached.dataSource.destroy();
-      delete connections[schema];
+function startCleanupInterval(): void {
+  cleanupInterval = setInterval(async () => {
+    const now = Date.now();
+    const schemasToClean: string[] = [];
+
+    for (const [schema, cached] of Object.entries(connections)) {
+      if (cached.dataSource.isInitialized && now - cached.lastAccess > IDLE_TIMEOUT_MS) {
+        schemasToClean.push(schema);
+      }
     }
-  }
-}, 60 * 1000);
+
+    for (const schema of schemasToClean) {
+      try {
+        await connections[schema].dataSource.destroy();
+        delete connections[schema];
+        console.log(`[TenantDB] Closed idle connection for schema: ${schema}`);
+      } catch (err) {
+        console.error(`[TenantDB] Failed to close connection for ${schema}:`, err);
+      }
+    }
+
+    // Stop interval if no active connections
+    if (Object.keys(connections).length === 0 && cleanupInterval) {
+      clearInterval(cleanupInterval);
+      cleanupInterval = null;
+    }
+  }, 60 * 1000);
+}
 
 export async function getRepo<T extends ObjectLiteral>(
   entity: EntityTarget<T>,

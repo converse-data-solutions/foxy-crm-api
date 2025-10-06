@@ -4,6 +4,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { JwtPayload } from 'src/common/dtos/jwt-payload.dto';
 import { Request } from 'express';
 import { UserService } from 'src/services/user.service';
+import { JWT_CONFIG } from '../constant/config.constants';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -13,7 +14,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         (request: Request) => request?.cookies?.access_token || null,
       ]),
       ignoreExpiration: false,
-      secretOrKey: process.env.SECRET_KEY!,
+      secretOrKey: JWT_CONFIG.SECRET_KEY!,
       passReqToCallback: true,
     });
   }

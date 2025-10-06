@@ -10,6 +10,7 @@ import { UpdateDealDto } from 'src/dtos/deal-dto/update-deal.dto';
 import { Role } from 'src/enums/core-app.enum';
 import { DealStage, TaskStatus } from 'src/enums/status.enum';
 import { getRepo } from 'src/shared/database-connection/get-connection';
+import { paginationParams } from 'src/shared/utils/pagination-params.util';
 
 @Injectable()
 export class DealService {
@@ -45,13 +46,7 @@ export class DealService {
     const dealRepo = await getRepo<Deal>(Deal, tenantId);
     const qb = dealRepo.createQueryBuilder('deal');
 
-    const page = Math.max(1, Number(dealQuery.page ?? 1));
-    const defaultLimit = Number(dealQuery.limit ?? 10);
-    const limit =
-      Number.isFinite(defaultLimit) && defaultLimit > 0
-        ? Math.min(100, Math.floor(defaultLimit))
-        : 10;
-    const skip = (page - 1) * limit;
+    const { limit, page, skip } = paginationParams(dealQuery.page, dealQuery.limit);
 
     for (const [key, value] of Object.entries(dealQuery)) {
       if (value == null || key === 'page' || key === 'limit') continue;

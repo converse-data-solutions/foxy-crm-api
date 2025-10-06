@@ -5,7 +5,6 @@ import { User } from 'src/database/entities/core-app-entities/user.entity';
 import { Tenant } from 'src/database/entities/base-app-entities/tenant.entity';
 import { Repository } from 'typeorm';
 import { getRepo } from 'src/shared/database-connection/get-connection';
-import { generateOtp } from 'src/shared/functions/generate-otp';
 import { ForgotAndVerifyMail } from 'src/templates/forgot-and-verify-mail.template';
 import { plainToInstance } from 'class-transformer';
 import { JwtPayload } from 'src/common/dtos/jwt-payload.dto';
@@ -18,6 +17,8 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Subscription } from 'src/database/entities/base-app-entities/subscription.entity';
 import { Queue } from 'bullmq';
 import { EmailTemplateType } from 'src/enums/email-teamplate.enum';
+import { generateOtp } from 'src/shared/utils/generate-otp.util';
+import { JWT_CONFIG } from 'src/common/constant/config.constants';
 
 @Injectable()
 export class OtpService {
@@ -77,7 +78,7 @@ export class OtpService {
       userExist = tenant;
       tenantAccessToken = this.jwtService.sign(
         { id: tenant.id, email: tenant.email },
-        { secret: process.env.SECRET_KEY },
+        { secret: JWT_CONFIG.SECRET_KEY },
       );
     } else {
       repo = await getRepo<User>(User, tenant.schemaName);
@@ -118,7 +119,7 @@ export class OtpService {
           {
             ...payload,
           },
-          { secret: process.env.SECRET_KEY },
+          { secret: JWT_CONFIG.SECRET_KEY },
         );
     const role = userExist instanceof Tenant ? Role.Admin : userExist.role;
     return { tenantAccessToken, accessToken, role, xTenantId: tenant.schemaName };

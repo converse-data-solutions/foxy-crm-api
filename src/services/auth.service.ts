@@ -9,6 +9,7 @@ import { plainToInstance } from 'class-transformer';
 import { TenantService } from './tenant.service';
 import { ForgotPasswordDto, ResetPasswordDto } from 'src/dtos/password-dto/reset-password.dto';
 import { APIResponse } from 'src/common/dtos/response.dto';
+import { JWT_CONFIG, SALT_ROUNDS } from 'src/common/constant/config.constants';
 
 @Injectable()
 export class AuthService {
@@ -26,7 +27,7 @@ export class AuthService {
       }
       tenantAccessToken = this.jwtService.sign(
         { id: tenant.id, email: tenant.email },
-        { secret: process.env.SECRET_KEY },
+        { secret: JWT_CONFIG.SECRET_KEY },
       );
     }
     let repo = await getRepo(User, tenant.schemaName);
@@ -59,7 +60,7 @@ export class AuthService {
           {
             ...payload,
           },
-          { secret: process.env.SECRET_KEY },
+          { secret: JWT_CONFIG.SECRET_KEY },
         );
         return {
           tenantAccessToken,
@@ -87,10 +88,7 @@ export class AuthService {
     if (!validPassword) {
       throw new BadRequestException({ message: 'Invalid password please enter correct password' });
     }
-    const hashedPassword = await bcrypt.hash(
-      resetPasswordDto.newPassword,
-      Number(process.env.SALT),
-    );
+    const hashedPassword = await bcrypt.hash(resetPasswordDto.newPassword, SALT_ROUNDS);
     userExist.password = hashedPassword;
     await userRepo.save(userExist);
     return {
@@ -112,7 +110,7 @@ export class AuthService {
         message: 'Otp is not verified please verify otp and reset the password',
       });
     }
-    const hashedPassword = await bcrypt.hash(forgotPassword.password, Number(process.env.SALT));
+    const hashedPassword = await bcrypt.hash(forgotPassword.password, SALT_ROUNDS);
     userExist.password = hashedPassword;
     userExist.otpVerified = false;
     await userRepo.save(userExist);

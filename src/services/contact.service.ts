@@ -15,6 +15,7 @@ import { GetContactDto } from 'src/dtos/contact-dto/get-contact.dto';
 import { UpdateContactDto } from 'src/dtos/contact-dto/update-contact.dto';
 import { Role } from 'src/enums/core-app.enum';
 import { getRepo } from 'src/shared/database-connection/get-connection';
+import { paginationParams } from 'src/shared/utils/pagination-params.util';
 
 @Injectable()
 export class ContactService {
@@ -49,7 +50,7 @@ export class ContactService {
     });
 
     return {
-      success: false,
+      success: true,
       statusCode: HttpStatus.CREATED,
       message: 'Contact created successfully',
     };
@@ -66,13 +67,7 @@ export class ContactService {
       .leftJoinAndSelect('contact.accountId', 'account')
       .leftJoinAndSelect('contact.notes', 'note');
 
-    const page = Math.max(1, Number(contactQuery.page ?? 1));
-    const defaultLimit = Number(contactQuery.limit ?? 10);
-    const limit =
-      Number.isFinite(defaultLimit) && defaultLimit > 0
-        ? Math.min(100, Math.floor(defaultLimit))
-        : 10;
-    const skip = (page - 1) * limit;
+    const { limit, page, skip } = paginationParams(contactQuery.page, contactQuery.limit);
 
     for (const [key, value] of Object.entries(contactQuery)) {
       if (value == null || key === 'page' || key === 'limit') {
@@ -123,7 +118,7 @@ export class ContactService {
       }
     }
     if (updateContactDto.account) {
-      accountId = await accountRepo.findOne({ where: { name: updateContactDto.name } });
+      accountId = await accountRepo.findOne({ where: { name: updateContactDto.account } });
       if (!accountId) {
         throw new NotFoundException({ message: 'Account not found' });
       }
