@@ -14,6 +14,7 @@ import { CreateContactDto } from 'src/dtos/contact-dto/create-contact.dto';
 import { GetContactDto } from 'src/dtos/contact-dto/get-contact.dto';
 import { UpdateContactDto } from 'src/dtos/contact-dto/update-contact.dto';
 import { Role } from 'src/enums/core-app.enum';
+import { LeadActivityType, NotesEntityName } from 'src/enums/lead-activity.enum';
 import { getRepo } from 'src/shared/database-connection/get-connection';
 import { paginationParams } from 'src/shared/utils/pagination-params.util';
 
@@ -62,11 +63,10 @@ export class ContactService {
     contactQuery: GetContactDto,
   ): Promise<APIResponse<Contact[]>> {
     const contactRepo = await getRepo<Contact>(Contact, tenantId);
+    const noteRepo = await getRepo<Note>(Note, tenantId);
     const qb = contactRepo
       .createQueryBuilder('contact')
-      .leftJoinAndSelect('contact.accountId', 'account')
-      .leftJoinAndSelect('contact.notes', 'note');
-
+      .leftJoinAndSelect('contact.accountId', 'account');
     const { limit, page, skip } = paginationParams(contactQuery.page, contactQuery.limit);
 
     for (const [key, value] of Object.entries(contactQuery)) {
@@ -80,11 +80,20 @@ export class ContactService {
     }
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
+    let contactData: Contact[] = [];
+    for (const contact of data) {
+      const notes = await noteRepo.find({
+        where: { entityId: contact.id, entityName: NotesEntityName.CONTACT },
+        relations: ['createdBy'],
+      });
+      contact['notes'] = notes;
+      contactData.push(contact);
+    }
     return {
       success: true,
       statusCode: HttpStatus.OK,
       message: 'Contact details fetched based on filter',
-      data,
+      data: contactData,
       pageInfo: {
         total,
         limit,
@@ -132,7 +141,8 @@ export class ContactService {
     const updatedContact = await contactRepo.save(contact);
     if (note) {
       await noteRepo.save({
-        contact: updatedContact,
+        entityId: updatedContact.id,
+        entityName: NotesEntityName.CONTACT,
         content: note,
         createdBy: user,
       });
