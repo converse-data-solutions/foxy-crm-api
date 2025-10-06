@@ -25,6 +25,8 @@ import { LeadStatus } from 'src/enums/status.enum';
 import { Readable } from 'stream';
 import { CountryService } from './country.service';
 import { paginationParams } from 'src/shared/utils/pagination-params.util';
+import { Note } from 'src/database/entities/core-app-entities/note.entity';
+import { NotesEntityName } from 'src/enums/lead-activity.enum';
 
 interface SerializedBuffer {
   type: 'Buffer';
@@ -177,7 +179,10 @@ export class LeadService {
 
   async findAllLeads(leadQuery: LeadQueryDto, tenant: string): Promise<APIResponse<Lead[]>> {
     const leadRepo = await getRepo(Lead, tenant);
-    const qb = leadRepo.createQueryBuilder('lead');
+    const noteRepo = await getRepo(Note, tenant);
+    const qb = leadRepo
+      .createQueryBuilder('lead')
+      .leftJoinAndSelect('lead.leadActivities', 'leadActivities');
 
     const { limit, page, skip } = paginationParams(leadQuery.page, leadQuery.limit);
 
@@ -194,12 +199,19 @@ export class LeadService {
     }
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
-
+    let leadData: Lead[] = [];
+    for (const lead of data) {
+      const notes = await noteRepo.find({
+        where: { entityId: lead.id, entityName: NotesEntityName.LEAD },
+      });
+      lead['notes'] = notes;
+      leadData.push(lead);
+    }
     return {
       success: true,
       statusCode: HttpStatus.OK,
       message: 'Lead details fetched based on filter',
-      data,
+      data: leadData,
       pageInfo: {
         total,
         limit,

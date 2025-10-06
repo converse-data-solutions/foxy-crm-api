@@ -1,12 +1,12 @@
 export enum LeadActivityType {
-  EmailSent = 'email_sent',
-  CallMade = 'call_made',
-  MeetingScheduled = 'meeting_scheduled',
-  MeetingAttended = 'meeting_attended',
-  StatusChanged = 'status_changed',
+  EMAIL_SENT = 'EMAIL_SENT',
+  CALL_MADE = 'CALL_MADE',
+  MEETING_SCHEDULED = 'MEETING_SCHEDULED',
+  MEETING_ATTENDED = 'MEETING_ATTENDED',
+  STATUS_CHANGED = 'STATUS_CHANGED',
 }
 
 export enum NotesEntityName {
-  Lead = 'lead',
-  Contact = 'contact',
+  LEAD = 'LEAD',
+  CONTACT = 'CONTACT',
 }

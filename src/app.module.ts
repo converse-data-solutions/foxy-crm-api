@@ -27,6 +27,7 @@ import { GlobalAuthGuard } from './guards/global.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/role.guard';
 import { JWT_CONFIG, REDIS_CONFIG, SMTP_CONFIG } from './common/constant/config.constants';
+import { LeadActivityModule } from './modules/lead-activity.module';
 
 @Module({
   imports: [
@@ -81,6 +82,7 @@ import { JWT_CONFIG, REDIS_CONFIG, SMTP_CONFIG } from './common/constant/config.
     TaskModule,
     OtpModule,
     CountryModule,
+    LeadActivityModule,
   ],
   providers: [
     JwtAuthGuard,

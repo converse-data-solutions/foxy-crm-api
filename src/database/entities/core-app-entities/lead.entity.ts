@@ -4,6 +4,7 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -12,6 +13,7 @@ import { User } from './user.entity';
 import { LeadStatus } from 'src/enums/status.enum';
 import { LeadSource } from 'src/enums/core-app.enum';
 import { Contact } from './contact.entity';
+import { LeadActivity } from './lead-activity.entity';
 
 @Entity({ name: 'leads' })
 export class Lead {
@@ -61,6 +63,9 @@ export class Lead {
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'converted_by' })
   convertedBy?: User;
+
+  @OneToMany(() => LeadActivity, (leadActivity) => leadActivity.leadId)
+  leadActivities: LeadActivity[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
