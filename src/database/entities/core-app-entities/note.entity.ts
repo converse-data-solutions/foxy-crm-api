@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { Contact } from './contact.entity';
 import { User } from './user.entity';
+import { NotesEntityName } from 'src/enums/lead-activity.enum';
 
 @Entity({ name: 'notes' })
 export class Note {
@@ -17,9 +18,11 @@ export class Note {
   @Column({ type: 'text' })
   content: string;
 
-  @ManyToOne(() => Contact, (contact) => contact.notes, { nullable: true })
-  @JoinColumn({ name: 'contact_id' })
-  contact?: Contact;
+  @Column({ name: 'entity_name', type: 'enum', enum: NotesEntityName })
+  entityName: NotesEntityName;
+
+  @Column({ name: 'entity_id', type: 'varchar', length: 40 })
+  entityId: string;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'created_by' })
