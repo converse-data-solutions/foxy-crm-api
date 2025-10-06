@@ -17,11 +17,8 @@ import { Role } from 'src/enums/core-app.enum';
 import { NotesEntityName } from 'src/enums/lead-activity.enum';
 import { getRepo } from 'src/shared/database-connection/get-connection';
 import { paginationParams } from 'src/shared/utils/pagination-params.util';
-<<<<<<< HEAD
 import { MetricService } from './metric.service';
 import { MetricDto } from 'src/dtos/metric-dto/metric.dto';
-=======
->>>>>>> 91efc4d (logger)
 
 @Injectable()
 export class ContactService {
@@ -82,8 +79,9 @@ export class ContactService {
     const noteRepo = await getRepo<Note>(Note, tenantId);
     const qb = contactRepo
       .createQueryBuilder('contact')
-      .leftJoinAndSelect('contact.assignedTo', 'user')
-      .leftJoinAndSelect('contact.accountId', 'account');
+      .leftJoinAndSelect('contact.accountId', 'account')
+      .leftJoinAndSelect('contact.notes', 'note');
+
     const { limit, page, skip } = paginationParams(contactQuery.page, contactQuery.limit);
 
     for (const [key, value] of Object.entries(contactQuery)) {
@@ -100,22 +98,17 @@ export class ContactService {
     }
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
-    const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };
-    const contactData: Contact[] = [];
-    for (const contact of data) {
-      const notes = await noteRepo.find({
-        where: { entityId: contact.id, entityName: NotesEntityName.Contact },
-      });
-      contact['notes'] = notes;
-      contact;
-      contactData.push(contact);
-    }
     return {
       success: true,
       statusCode: HttpStatus.OK,
       message: 'Contact details fetched based on filter',
-      data: contactData,
-      pageInfo,
+      data,
+      pageInfo: {
+        total,
+        limit,
+        page,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 
@@ -156,8 +149,7 @@ export class ContactService {
     const updatedContact = await contactRepo.save(contact);
     if (note) {
       await noteRepo.save({
-        entityId: updatedContact.id,
-        entityName: NotesEntityName.Contact,
+        contact: updatedContact,
         content: note,
         createdBy: user,
       });
