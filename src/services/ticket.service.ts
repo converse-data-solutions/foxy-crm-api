@@ -11,7 +11,7 @@ import { UpdateTicketDto } from 'src/dtos/ticket-dto/update-ticket.dto';
 import { Role } from 'src/enums/core-app.enum';
 import { DealStage, TaskStatus, TicketStatus } from 'src/enums/status.enum';
 import { getRepo } from 'src/shared/database-connection/get-connection';
-
+import { paginationParams } from 'src/shared/utils/pagination-params.util';
 @Injectable()
 export class TicketService {
   async createTicket(
@@ -56,13 +56,7 @@ export class TicketService {
     const ticketRepo = await getRepo(Ticket, tenantId);
     const qb = ticketRepo.createQueryBuilder('ticket').leftJoin('ticket.dealId', 'deal');
 
-    const page = Math.max(1, Number(ticketQuery.page ?? 1));
-    const defaultLimit = Number(ticketQuery.limit ?? 10);
-    const limit =
-      Number.isFinite(defaultLimit) && defaultLimit > 0
-        ? Math.min(100, Math.floor(defaultLimit))
-        : 10;
-    const skip = (page - 1) * limit;
+    const { limit, page, skip } = paginationParams(ticketQuery.page, ticketQuery.limit);
 
     for (const [key, value] of Object.entries(ticketQuery)) {
       if (value == null || key === 'page' || key === 'limit') {

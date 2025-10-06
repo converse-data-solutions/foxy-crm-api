@@ -20,6 +20,7 @@ import { TenantSignupDto } from 'src/dtos/tenant-dto/tenant-signup.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { OtpService } from './otp.service';
 import { CountryService } from './country.service';
+import { SALT_ROUNDS } from 'src/common/constant/config.constants';
 
 @Injectable()
 export class TenantService {
@@ -84,7 +85,7 @@ export class TenantService {
         message: 'The Organization or email with this domain is already registered',
       });
     } else {
-      const hashPassword = await bcrypt.hash(tenant.password, Number(process.env.SALT));
+      const hashPassword = await bcrypt.hash(tenant.password, SALT_ROUNDS);
       const { country, ...tenantData } = tenant;
       let tenantCountry: string | undefined;
       if (country) {
