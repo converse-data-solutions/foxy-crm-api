@@ -25,12 +25,6 @@ export class UpdateUserDto {
   @Length(5, 20, { message: 'Phone must be between 6 and 20 characters' })
   phone?: string;
 
-  @ApiPropertyOptional({ example: 'pa$w0rd$' })
-  @IsOptional()
-  @IsString({ message: 'Password must be a string' })
-  @Length(7, 15, { message: 'Password must be between 7 and 15 characters' })
-  password?: string;
-
   @ApiPropertyOptional({
     enum: Role,
     description: 'Role of the user',

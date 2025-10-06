@@ -11,6 +11,7 @@ import { getRepo } from 'src/shared/database-connection/get-connection';
 import { Lead } from 'src/database/entities/core-app-entities/lead.entity';
 import { User } from 'src/database/entities/core-app-entities/user.entity';
 import { Queue } from 'bullmq';
+import csv from 'csv-parser';
 import { InjectQueue } from '@nestjs/bullmq';
 import { LeadQueryDto } from 'src/dtos/lead-dto/lead-query.dto';
 import { APIResponse } from 'src/common/dtos/response.dto';
@@ -22,8 +23,8 @@ import { LeadToContactDto } from 'src/dtos/lead-dto/lead-to-contact.dto';
 import { Role } from 'src/enums/core-app.enum';
 import { LeadStatus } from 'src/enums/status.enum';
 import { Readable } from 'stream';
-import * as csv from 'csv-parser';
 import { CountryService } from './country.service';
+import { paginationParams } from 'src/shared/utils/pagination-params.util';
 
 interface SerializedBuffer {
   type: 'Buffer';
@@ -178,13 +179,7 @@ export class LeadService {
     const leadRepo = await getRepo(Lead, tenant);
     const qb = leadRepo.createQueryBuilder('lead');
 
-    const page = Math.max(1, Number(leadQuery.page ?? 1));
-    const defaultLimit = Number(leadQuery.limit ?? 10);
-    const limit =
-      Number.isFinite(defaultLimit) && defaultLimit > 0
-        ? Math.min(100, Math.floor(defaultLimit))
-        : 10;
-    const skip = (page - 1) * limit;
+    const { limit, page, skip } = paginationParams(leadQuery.page, leadQuery.limit);
 
     for (const [key, value] of Object.entries(leadQuery)) {
       if (value == null || key === 'page' || key === 'limit') continue;
@@ -218,11 +213,12 @@ export class LeadService {
     const leadRepo = await getRepo(Lead, tenant);
     const userRepo = await getRepo(User, tenant);
     let assignedUser: User | null = null;
-    if (updateLeadDto.assignedTo && user.role == Role.SalesRep) {
-      throw new UnauthorizedException({
-        message: 'Not have enough authorization to assign a lead',
-      });
-    } else {
+    if (updateLeadDto.assignedTo) {
+      if (user.role === Role.SalesRep) {
+        throw new UnauthorizedException({
+          message: 'Not have enough authorization to assign a lead',
+        });
+      }
       assignedUser = await userRepo.findOne({ where: { id: updateLeadDto.assignedTo } });
       if (!assignedUser) {
         throw new BadRequestException({ message: 'Lead is not assigned to invalid id' });

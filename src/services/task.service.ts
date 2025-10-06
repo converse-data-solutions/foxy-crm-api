@@ -14,6 +14,7 @@ import { UpdateTaskDto } from 'src/dtos/task-dto/update-task.dto';
 import { EntityName, Role, TaskPriority } from 'src/enums/core-app.enum';
 import { DealStage, TicketStatus } from 'src/enums/status.enum';
 import { getRepo } from 'src/shared/database-connection/get-connection';
+import { paginationParams } from 'src/shared/utils/pagination-params.util';
 import { taskAssignmentTemplate } from 'src/templates/task-assignment.template';
 import { Repository } from 'typeorm';
 
@@ -77,13 +78,7 @@ export class TaskService {
     const taskRepo = await getRepo(Task, tenantId);
     const qb = taskRepo.createQueryBuilder('task').leftJoin('task.assignedTo', 'user');
 
-    const page = Math.max(1, Number(taskQuery.page ?? 1));
-    const defaultLimit = Number(taskQuery.limit ?? 10);
-    const limit =
-      Number.isFinite(defaultLimit) && defaultLimit > 0
-        ? Math.min(100, Math.floor(defaultLimit))
-        : 10;
-    const skip = (page - 1) * limit;
+    const { limit, page, skip } = paginationParams(taskQuery.page, taskQuery.limit);
 
     for (const [key, value] of Object.entries(taskQuery)) {
       if (value == null || key === 'page' || key === 'limit') {

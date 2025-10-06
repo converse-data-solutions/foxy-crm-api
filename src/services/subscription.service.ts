@@ -11,6 +11,7 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Queue } from 'bullmq';
 import { Request } from 'express';
+import { JWT_CONFIG } from 'src/common/constant/config.constants';
 import { JwtPayload } from 'src/common/dtos/jwt-payload.dto';
 import { APIResponse } from 'src/common/dtos/response.dto';
 import { Plan } from 'src/database/entities/base-app-entities/plan.entity';
@@ -89,7 +90,7 @@ export class SubscriptionService {
 
   private async validateToken(token: string) {
     const verifyToken: JwtPayload = await this.jwtService.verifyAsync(token, {
-      secret: process.env.SECRET_KEY,
+      secret: JWT_CONFIG.SECRET_KEY,
     });
     return verifyToken;
   }

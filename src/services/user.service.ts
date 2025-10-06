@@ -19,6 +19,8 @@ import { JwtPayload } from 'src/common/dtos/jwt-payload.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Subscription } from 'src/database/entities/base-app-entities/subscription.entity';
 import { Repository } from 'typeorm';
+import { paginationParams } from 'src/shared/utils/pagination-params.util';
+import { Environment, SALT_ROUNDS } from 'src/common/constant/config.constants';
 
 @Injectable()
 export class UserService {
@@ -60,15 +62,12 @@ export class UserService {
         }
       }
     }
-    const { country, password, ...userData } = updateUser;
+    const { country, ...userData } = updateUser;
     if (country) {
       const countryExist = this.countryService.getCountry(country);
       existUser.country = countryExist;
     }
-    const hashedPassword = password
-      ? await bcrypt.hash(password, Number(process.env.SALT))
-      : undefined;
-    await userRepo.save({ ...existUser, password: hashedPassword, ...userData });
+    await userRepo.save({ ...existUser, ...userData });
     return {
       success: true,
       statusCode: HttpStatus.OK,
@@ -80,13 +79,7 @@ export class UserService {
     const userRepo = await getRepo(User, tenantId);
     const qb = userRepo.createQueryBuilder('user');
 
-    const page = Math.max(1, Number(userQuery.page ?? 1));
-    const defaultLimit = Number(userQuery.limit ?? 10);
-    const limit =
-      Number.isFinite(defaultLimit) && defaultLimit > 0
-        ? Math.min(100, Math.floor(defaultLimit))
-        : 10;
-    const skip = (page - 1) * limit;
+    const { limit, page, skip } = paginationParams(userQuery.page, userQuery.limit);
 
     for (const [key, value] of Object.entries(userQuery)) {
       if (value == null || key === 'page' || key === 'limit') {
@@ -120,18 +113,18 @@ export class UserService {
   async userSignup(user: UserSignupDto) {
     const tenant = await this.tenantService.getTenant(user.email);
     const userRepo = await getRepo<User>(User, tenant.schemaName);
-    const users = await userRepo.find();
+    const userCount = await userRepo.count();
     const subscription = await this.subscriptionRepo.findOne({
       where: { id: tenant.subscription.id },
       relations: { plan: true },
     });
-    console.log(subscription?.plan);
-
     if (!subscription?.plan && !subscription?.status) {
       throw new BadRequestException({ message: 'No subscription found. Please subscribe.' });
     }
 
-    if (users.length < subscription.plan.userCount) {
+    if (userCount >= subscription.plan.userCount) {
+      throw new BadRequestException({ message: 'User limit exceeded for your plan' });
+    } else {
       const isUser = await userRepo.findOne({
         where: [{ email: user.email }, { phone: user.phone }],
       });
@@ -144,7 +137,7 @@ export class UserService {
         if (user.country) {
           country = this.countryService.getCountry(user.country);
         }
-        const hashPassword = await bcrypt.hash(user.password, Number(process.env.SALT || 5));
+        const hashPassword = await bcrypt.hash(user.password, SALT_ROUNDS);
         const newUser = userRepo.create({
           name: user.name,
           password: hashPassword,
@@ -159,8 +152,6 @@ export class UserService {
           message: 'User account created successfully',
         };
       }
-    } else {
-      throw new BadRequestException({ message: 'User limit exceeded for your plan' });
     }
   }
 
@@ -172,7 +163,7 @@ export class UserService {
     if (!subscriptionExist) {
       throw new BadRequestException({ message: 'Invalid schema name' });
     }
-    if (subscriptionExist.status === false && process.env.DEVELOPMENT == 'prod') {
+    if (subscriptionExist.status === false && Environment.NODE_ENV === 'prod') {
       throw new BadRequestException({ message: 'Subscription got expired please subscribe' });
     }
 

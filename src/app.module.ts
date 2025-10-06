@@ -6,11 +6,9 @@ import { dataSource } from './database/datasources/base-app-data-source';
 import { BullModule } from '@nestjs/bullmq';
 import { ScheduleModule } from '@nestjs/schedule';
 import { JwtModule } from '@nestjs/jwt';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { LeadModule } from './modules/lead.module';
-import { APP_GUARD } from '@nestjs/core';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { RolesGuard } from './guards/role.guard';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ContactModule } from './modules/contact.module';
 import { AccountModule } from './modules/account.module';
 import { DealModule } from './modules/deal.module';
@@ -23,39 +21,47 @@ import { TaskModule } from './modules/task.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { OtpModule } from './modules/otp.module';
 import { CountryModule } from './modules/country.module';
+import { LoggerService } from './common/logger/logger.service';
+import { LoggerInterceptor } from './interceptor/logger.interceptor';
+import { GlobalAuthGuard } from './guards/global.guard';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RolesGuard } from './guards/role.guard';
+import { JWT_CONFIG, REDIS_CONFIG, SMTP_CONFIG } from './common/constant/config.constants';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env ' }),
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
     ScheduleModule.forRoot(),
     TypeOrmModule.forRootAsync({ useFactory: async () => dataSource.options }),
     BullModule.forRoot({
       connection: {
-        host: 'localhost',
-        port: 6379,
+        host: REDIS_CONFIG.host,
+        port: REDIS_CONFIG.port,
       },
       defaultJobOptions: { removeOnComplete: true },
     }),
     JwtModule.registerAsync({
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('SECRET_KEY'),
-        signOptions: { expiresIn: config.get<string>('JWT_EXPIRES_IN') },
+      useFactory: () => ({
+        secret: JWT_CONFIG.SECRET_KEY,
+        signOptions: { expiresIn: JWT_CONFIG.EXPIRES_IN },
       }),
     }),
     MailerModule.forRoot({
       transport: {
-        host: process.env.SMTP_HOST,
-        port: Number(process.env.SMTP_PORT),
+        host: SMTP_CONFIG.host,
+        port: SMTP_CONFIG.port,
         secure: false,
         auth: {
-          user: process.env.CLIENT_MAIL,
-          pass: process.env.CLIENT_SECRET_MAIL,
+          user: SMTP_CONFIG.user,
+          pass: SMTP_CONFIG.pass,
         },
         tls: {
           rejectUnauthorized: false,
         },
         logger: false,
+        pool: true,
+        maxConnections: 5,
+        maxMessages: 100,
       },
       defaults: {
         from: 'Converse Data Solutions',
@@ -77,13 +83,16 @@ import { CountryModule } from './modules/country.module';
     CountryModule,
   ],
   providers: [
+    JwtAuthGuard,
+    RolesGuard,
+    LoggerService,
     {
-      provide: APP_GUARD,
-      useClass: JwtAuthGuard,
+      provide: APP_INTERCEPTOR,
+      useClass: LoggerInterceptor,
     },
     {
       provide: APP_GUARD,
-      useClass: RolesGuard,
+      useClass: GlobalAuthGuard,
     },
   ],
 })
