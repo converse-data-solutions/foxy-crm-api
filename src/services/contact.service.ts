@@ -17,8 +17,11 @@ import { Role } from 'src/enums/core-app.enum';
 import { NotesEntityName } from 'src/enums/lead-activity.enum';
 import { getRepo } from 'src/shared/database-connection/get-connection';
 import { paginationParams } from 'src/shared/utils/pagination-params.util';
+<<<<<<< HEAD
 import { MetricService } from './metric.service';
 import { MetricDto } from 'src/dtos/metric-dto/metric.dto';
+=======
+>>>>>>> 91efc4d (logger)
 
 @Injectable()
 export class ContactService {

@@ -128,7 +128,7 @@ import { LoggerModule } from './modules/logger.module';
     },
     {
       provide: APP_GUARD,
-      useClass: RolesGuard,
+      useClass: GlobalAuthGuard,
     },
   ],
   controllers: [StripePaymentController],
