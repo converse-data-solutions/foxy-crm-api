@@ -61,7 +61,7 @@ export class Tenant {
   @Column({ name: 'otp_expiry_at', type: 'timestamp', nullable: true })
   otpExpiryAt?: Date;
 
-  @Column({ name: 'is_verified', type: 'boolean', default: false })
+  @Column({ name: 'email_verified', type: 'boolean', default: false })
   emailVerified: boolean;
 
   @OneToOne(() => Subscription, (subscription) => subscription.tenant)

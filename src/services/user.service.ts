@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  HttpException,
   HttpStatus,
   Injectable,
   UnauthorizedException,
@@ -164,11 +165,14 @@ export class UserService {
       throw new BadRequestException({ message: 'Invalid schema name' });
     }
     if (subscriptionExist.status === false && Environment.NODE_ENV === 'prod') {
-      throw new BadRequestException({ message: 'Subscription got expired please subscribe' });
+      throw new HttpException(
+        { message: 'Subscription got expired please subscribe' },
+        HttpStatus.PAYMENT_REQUIRED,
+      );
     }
 
     const userRepo = await getRepo(User, schema);
     const user = await userRepo.findOne({ where: { id: payload.id } });
-    return user ? user : null;
+    return user ?? null;
   }
 }

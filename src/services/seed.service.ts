@@ -13,7 +13,6 @@ export class SeedService {
 
   async subscriptionSeed() {
     const filePath = join(__dirname, '../seed/subscription-mock-data.json');
-    console.log(filePath);
 
     if (!fs.existsSync(filePath)) {
       throw new Error(`File not found at path: ${filePath}`);

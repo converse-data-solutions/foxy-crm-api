@@ -24,11 +24,15 @@ import { Role } from 'src/enums/core-app.enum';
 import { LeadToContactDto } from 'src/dtos/lead-dto/lead-to-contact.dto';
 import { User } from 'src/database/entities/core-app-entities/user.entity';
 import { FileValidationPipe } from 'src/common/pipes/file-validation.pipe';
+import { LeadConversionService } from 'src/services/lead-conversion.service';
 
 @Roles(Role.Admin, Role.Manager)
 @Controller('leads')
 export class LeadController {
-  constructor(private readonly leadService: LeadService) {}
+  constructor(
+    private readonly leadService: LeadService,
+    private readonly leadConversionService: LeadConversionService,
+  ) {}
 
   @Post()
   @Roles(Role.Admin, Role.Manager, Role.SalesRep)
@@ -75,7 +79,7 @@ export class LeadController {
     return await this.leadService.importLeads(file, tenantId, user);
   }
 
-  @Post(':id/convert')
+  @Post(':id/conversion')
   @Roles(Role.Admin, Role.Manager, Role.SalesRep)
   @ApiOperation({ summary: 'Convert lead to contact' })
   @ApiResponse({ status: 200, description: 'Lead converted successfully' })
@@ -85,15 +89,15 @@ export class LeadController {
     @CurrentUser() user: User,
     @Body() leadToContact?: LeadToContactDto,
   ) {
-    return await this.leadService.convertLead(tenantId, id, user, leadToContact);
+    return await this.leadConversionService.convertLead(tenantId, id, user, leadToContact);
   }
 
-  @Get(':id/convert-preview')
+  @Get(':id/conversion-preview')
   @ApiOperation({ summary: 'Retrive lead preview' })
   @ApiResponse({ status: 200, description: 'Lead preview fetched successfully' })
   @Roles(Role.Admin, Role.Manager, Role.SalesRep)
   async leadPreview(@Headers('x-tenant-id') tenantId: string, @Param('id') id: string) {
-    return await this.leadService.leadPreview(tenantId, id);
+    return await this.leadConversionService.leadPreview(tenantId, id);
   }
 
   @Get()

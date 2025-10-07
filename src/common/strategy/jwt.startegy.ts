@@ -5,6 +5,7 @@ import { JwtPayload } from 'src/common/dtos/jwt-payload.dto';
 import { Request } from 'express';
 import { UserService } from 'src/services/user.service';
 import { JWT_CONFIG } from '../constant/config.constants';
+import { validate, version } from 'uuid';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -20,11 +21,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(req: Request, payload: JwtPayload) {
-    const tenantId = req?.headers['x-tenant-id'];
+    const tenantHeaders = req?.headers['x-tenant-id'];
+    const tenantId = Array.isArray(tenantHeaders) ? tenantHeaders[0] : tenantHeaders;
     if (!tenantId) {
       throw new BadRequestException({
         message: 'x-tenant-id header is missing',
       });
+    }
+
+    if (!validate(tenantId) || version(tenantId) !== 4) {
+      throw new BadRequestException('Invalid tenant-id.');
     }
     const user = await this.userService.validateUser(
       payload,

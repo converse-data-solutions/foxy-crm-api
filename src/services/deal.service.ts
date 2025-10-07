@@ -36,7 +36,7 @@ export class DealService {
     await dealRepo.save({
       ...createDeal,
       value: dealValue,
-      contactId: contact ? contact : undefined,
+      contactId: contact ?? undefined,
       createdBy: user,
     });
     return { success: true, statusCode: HttpStatus.CREATED, message: 'Deal created successfully' };

@@ -17,39 +17,35 @@ import { LeadStatus } from 'src/enums/status.enum';
 import { getRepo } from 'src/shared/database-connection/get-connection';
 import { ILike } from 'typeorm';
 import { CountryService } from './country.service';
-import { MetricService } from './metric.service';
-import { MetricDto } from 'src/dtos/metric-dto/metric.dto';
 
 @Injectable()
 export class LeadConversionService {
-  constructor(
-    private readonly countryService: CountryService,
-    private readonly metricService: MetricService,
-  ) {}
+  constructor(private readonly countryService: CountryService) {}
   async leadPreview(tenantId: string, id: string): Promise<APIResponse<LeadPreview>> {
     const leadRepo = await getRepo<Lead>(Lead, tenantId);
     const lead = await leadRepo.findOne({ where: { id } });
     const contactRepo = await getRepo<Contact>(Contact, tenantId);
     const accountRepo = await getRepo<Account>(Account, tenantId);
     if (!lead) {
-      throw new NotFoundException('Lead not found or invalid lead id');
+      throw new NotFoundException({ message: 'Lead not found or invalid lead id' });
+    } else {
+      const account = await accountRepo.findOne({ where: { name: ILike(`%${lead.company}%`) } });
+      const contact = await contactRepo.findOne({
+        where: [{ email: lead.email }, { phone: lead.phone }],
+      });
+      const leadPreview: LeadPreview = {
+        createAccount: account ? false : true,
+        createContact: contact ? false : true,
+        accountName: account ? undefined : lead.company,
+        contactName: contact ? undefined : lead.name,
+      };
+      return {
+        success: true,
+        statusCode: HttpStatus.OK,
+        message: 'Lead preview fetched successfully',
+        data: leadPreview,
+      };
     }
-    const account = await accountRepo.findOne({ where: { name: ILike(`%${lead.company}%`) } });
-    const contact = await contactRepo.findOne({
-      where: [{ email: lead.email }, { phone: lead.phone }],
-    });
-    const leadPreview: LeadPreview = {
-      accountExist: account ? true : false,
-      contactExist: contact ? true : false,
-      accountName: account ? undefined : lead.company,
-      contactName: contact ? undefined : lead.name,
-    };
-    return {
-      success: true,
-      statusCode: HttpStatus.OK,
-      message: 'Lead preview fetched successfully',
-      data: leadPreview,
-    };
   }
 
   async convertLead(
@@ -64,30 +60,33 @@ export class LeadConversionService {
     const accountRepo = await getRepo<Account>(Account, tenantId);
 
     if (!lead) {
-      throw new BadRequestException('Invalid lead id or lead not found');
+      throw new BadRequestException({ message: 'Invalid lead id or lead not found' });
     }
     if (!lead.assignedTo && user.role == Role.SalesRep) {
-      throw new UnauthorizedException('Not authorized to convert others lead to contact');
+      throw new UnauthorizedException({
+        message: 'Not authorized to convert others lead to contact',
+      });
     } else if (lead.assignedTo && lead.assignedTo.id != user.id && user.role == Role.SalesRep) {
-      throw new UnauthorizedException('Not authorized to convert others lead to contact');
+      throw new UnauthorizedException({
+        message: 'Not authorized to convert others lead to contact',
+      });
     }
     if (lead.status === LeadStatus.Disqualified) {
-      throw new BadRequestException('Cannot convert disqualified lead first update status');
+      throw new BadRequestException({
+        message: 'Cannot convert disqualified lead first update status',
+      });
     }
 
     const isContact = await contactRepo.findOne({
       where: [{ email: lead.email }, { phone: lead.phone }],
     });
     if (isContact) {
-      throw new BadRequestException('This lead is already converted into contact');
+      throw new BadRequestException({ message: 'This lead is already converted into contact' });
     }
     const isAccount = await accountRepo.findOne({ where: { name: ILike(`%${lead.company}%`) } });
     let newAccount = leadToContact?.account
       ? await accountRepo.findOne({
-          where: [
-            { name: leadToContact?.account?.name },
-            { website: leadToContact.account.website },
-          ],
+          where: { name: leadToContact?.account?.name },
         })
       : null;
 
@@ -113,8 +112,6 @@ export class LeadConversionService {
       createdBy: user,
       accountId: isAccount ?? newAccount ?? undefined,
     });
-    const metric: Partial<MetricDto> = { contacts: 1 };
-    await this.metricService.updateTenantCounts(tenantId, metric);
     lead.contact = newContact;
     lead.status = LeadStatus.Converted;
     lead.convertedBy = user;
