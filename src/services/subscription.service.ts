@@ -1,6 +1,5 @@
 import { BadRequestException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Queue } from 'bullmq';
 import { Request } from 'express';
 import { APIResponse } from 'src/common/dtos/response.dto';
 import { Plan } from 'src/database/entities/base-app-entities/plan.entity';

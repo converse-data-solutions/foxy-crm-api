@@ -29,3 +29,8 @@ export const REDIS_CONFIG = {
 export const Environment = {
   NODE_ENV: process.env.NODE_ENV || 'dev',
 };
+
+export const PAYMENT_URL = {
+  success_url: process.env.PAYMENT_SUCCESS_URL,
+  failure_url: process.env.PAYUMENT_FAILURE_URL,
+};

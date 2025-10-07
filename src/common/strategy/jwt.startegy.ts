@@ -30,6 +30,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!validate(tenantId) || version(tenantId) !== 4) {
       throw new BadRequestException('Invalid tenant-id.');
     }
+
+    if (!validate(tenantId) || version(tenantId) !== 4) {
+      throw new BadRequestException('Invalid tenant-id.');
+    }
     const user = await this.userService.validateUser(
       payload,
       Array.isArray(tenantId) ? tenantId[0] : tenantId,

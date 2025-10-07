@@ -130,6 +130,10 @@ import { LoggerModule } from './modules/logger.module';
       provide: APP_GUARD,
       useClass: GlobalAuthGuard,
     },
+    {
+      provide: APP_FILTER,
+      useClass: CustomExceptionFilter,
+    },
   ],
   controllers: [StripePaymentController],
 })
