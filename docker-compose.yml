@@ -1,0 +1,61 @@
+services:
+  cache:
+    image: 'redis'
+    container_name: 'crm_cache'
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis-data:/data
+
+  crm-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: my-crm-container
+    image: 'my-crm-image'
+    ports:
+      - '8000:8000'
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_NAME=base-app
+      - DB_PASS=admin
+      - SALT=10
+      - SMTP_USER=loggerkey314@gmail.com
+      - SMTP_PASS=wgawvdgvxxscxwjw
+      - SECRET_KEY=a9b3d6e4f82f51e2b4eaa76b94eac1a6f2cde7337d0ad92fd3f4c32f6e6d0d1a6
+      - JWT_EXPIRES_IN=1d
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_PORT=587
+      - NODE_ENV=dev
+      - TZ=Asia/Kolkata
+      - REDIS_HOST=cache
+      - REDIS_PORT=6379
+      - PAYMENT_SUCCESS_URL=https://jen-streetlike-coordinately.ngrok-free.dev/api/v1/plans/session?id={CHECKOUT_SESSION_ID}&key=
+      - PAYUMENT_FAILURE_URL=https://jen-streetlike-coordinately.ngrok-free.dev
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      - cache
+      - db
+
+  db:
+    image: 'postgres:17'
+    container_name: crm_db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_DB=base-app
+    ports:
+      - '5433:5432'
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    depends_on:
+      - cache
+
+volumes:
+  db-data:
+  redis-data:

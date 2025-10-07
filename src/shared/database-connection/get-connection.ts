@@ -75,9 +75,8 @@ function startCleanupInterval(): void {
       try {
         await connections[schema].dataSource.destroy();
         delete connections[schema];
-        console.log(`[TenantDB] Closed idle connection for schema: ${schema}`);
       } catch (err) {
-        console.error(`[TenantDB] Failed to close connection for ${schema}:`, err);
+        throw new Error(`[TenantDB] Failed to close connection for ${schema}:${err}`);
       }
     }
 

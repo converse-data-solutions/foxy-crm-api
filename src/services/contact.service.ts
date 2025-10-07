@@ -14,7 +14,7 @@ import { CreateContactDto } from 'src/dtos/contact-dto/create-contact.dto';
 import { GetContactDto } from 'src/dtos/contact-dto/get-contact.dto';
 import { UpdateContactDto } from 'src/dtos/contact-dto/update-contact.dto';
 import { Role } from 'src/enums/core-app.enum';
-import { LeadActivityType, NotesEntityName } from 'src/enums/lead-activity.enum';
+import { NotesEntityName } from 'src/enums/lead-activity.enum';
 import { getRepo } from 'src/shared/database-connection/get-connection';
 import { paginationParams } from 'src/shared/utils/pagination-params.util';
 
@@ -47,7 +47,7 @@ export class ContactService {
     await contactRepo.save({
       ...contact,
       createdBy: user,
-      accountId: accountExist ? accountExist : undefined,
+      accountId: accountExist ?? undefined,
     });
 
     return {
@@ -135,8 +135,8 @@ export class ContactService {
     contact = {
       ...contact,
       ...updateContact,
-      accountId: accountId ? accountId : undefined,
-      assignedTo: assignedUser ? assignedUser : undefined,
+      accountId: accountId ?? undefined,
+      assignedTo: assignedUser ?? undefined,
     };
     const updatedContact = await contactRepo.save(contact);
     if (note) {

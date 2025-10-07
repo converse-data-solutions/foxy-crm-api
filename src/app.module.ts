@@ -8,7 +8,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule } from '@nestjs/config';
 import { LeadModule } from './modules/lead.module';
-import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ContactModule } from './modules/contact.module';
 import { AccountModule } from './modules/account.module';
 import { DealModule } from './modules/deal.module';
@@ -28,11 +28,23 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/role.guard';
 import { JWT_CONFIG, REDIS_CONFIG, SMTP_CONFIG } from './common/constant/config.constants';
 import { LeadActivityModule } from './modules/lead-activity.module';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { CustomExceptionFilter } from './common/filter/custom-exception.filter';
+import { LeadConversionModule } from './modules/lead-conversion.module';
+import { StripePaymentModule } from './modules/stripe-payment.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
     ScheduleModule.forRoot(),
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          ttl: 60000, // seconds
+          limit: 10, // requests per ttl
+        },
+      ],
+    }),
     TypeOrmModule.forRootAsync({ useFactory: async () => dataSource.options }),
     BullModule.forRoot({
       connection: {
@@ -70,19 +82,21 @@ import { LeadActivityModule } from './modules/lead-activity.module';
     }),
     EventEmitterModule.forRoot(),
     AuthModule,
+    SubscriptionModule,
+    TenantModule,
     UserModule,
     LeadModule,
+    LeadActivityModule,
+    LeadConversionModule,
     ContactModule,
     AccountModule,
     DealModule,
-    SubscriptionModule,
-    SeedModule,
-    TenantModule,
     TicketModule,
     TaskModule,
     OtpModule,
+    SeedModule,
     CountryModule,
-    LeadActivityModule,
+    StripePaymentModule,
   ],
   providers: [
     JwtAuthGuard,
@@ -92,10 +106,21 @@ import { LeadActivityModule } from './modules/lead-activity.module';
       provide: APP_INTERCEPTOR,
       useClass: LoggerInterceptor,
     },
+
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+
     {
       provide: APP_GUARD,
       useClass: GlobalAuthGuard,
     },
+    {
+      provide: APP_FILTER,
+      useClass: CustomExceptionFilter,
+    },
   ],
+  exports: [LoggerService],
 })
 export class AppModule {}

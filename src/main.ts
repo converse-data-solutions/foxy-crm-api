@@ -2,7 +2,6 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DataSource } from 'typeorm';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { CustomExceptionFilter } from './common/filter/custom-exception.filter';
 import cookieParser from 'cookie-parser';
 import { CustomValidationPipe } from './common/pipes/custom-validation.pipe';
 import { SeedService } from './services/seed.service';
@@ -34,7 +33,6 @@ async function bootstrap() {
   await seederService.subscriptionSeed();
 
   app.useGlobalPipes(new CustomValidationPipe());
-  app.useGlobalFilters(new CustomExceptionFilter());
 
   await app.listen(8000);
 }
