@@ -120,4 +120,11 @@ export class AuthService {
       message: 'Password updated successfully',
     };
   }
+
+  async validateToken(token: string) {
+    const verifyToken: JwtPayload = await this.jwtService.verifyAsync(token, {
+      secret: JWT_CONFIG.SECRET_KEY,
+    });
+    return verifyToken;
+  }
 }

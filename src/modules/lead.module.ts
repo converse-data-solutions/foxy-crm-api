@@ -3,10 +3,10 @@ import { LeadService } from '../services/lead.service';
 import { LeadController } from '../controllers/lead.controller';
 import { BullModule } from '@nestjs/bullmq';
 import { FileProcessor } from 'src/processors/file-processor';
-import { CountryModule } from './country.module';
+import { LeadConversionModule } from './lead-conversion.module';
 
 @Module({
-  imports: [BullModule.registerQueue({ name: 'file-import' }), CountryModule],
+  imports: [BullModule.registerQueue({ name: 'file-import' }), LeadConversionModule],
   controllers: [LeadController],
   providers: [LeadService, FileProcessor],
 })

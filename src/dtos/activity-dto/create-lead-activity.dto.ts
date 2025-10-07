@@ -1,13 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsDate,
-  IsDateString,
-  IsDefined,
-  IsEnum,
-  IsOptional,
-  IsString,
-  IsUUID,
-} from 'class-validator';
+import { IsDateString, IsDefined, IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
 import { LeadActivityType } from 'src/enums/lead-activity.enum';
 
 export class CreateLeadActivityDto {
@@ -20,7 +12,11 @@ export class CreateLeadActivityDto {
   @IsEnum(LeadActivityType, {
     message: 'Activity Type must be a valid LeadActivityType enum value',
   })
-  @ApiProperty({ example: 'CALL', enum: LeadActivityType, description: 'Type of activity' })
+  @ApiProperty({
+    example: LeadActivityType.CALL_MADE,
+    enum: LeadActivityType,
+    description: 'Type of activity',
+  })
   activityType: LeadActivityType;
 
   @IsDefined({ message: 'Activity Date is required' })

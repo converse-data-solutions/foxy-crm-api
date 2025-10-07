@@ -1,11 +1,15 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { forwardRef, Inject } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { Subscription } from 'src/database/entities/base-app-entities/subscription.entity';
 import { SubscriptionService } from 'src/services/subscription.service';
 
 @Processor('subscription')
 export class SubscriptionProcessor extends WorkerHost {
-  constructor(private readonly subscriptionService: SubscriptionService) {
+  constructor(
+    @Inject(forwardRef(() => SubscriptionService))
+    private readonly subscriptionService: SubscriptionService,
+  ) {
     super();
   }
   async process(job: Job) {
@@ -18,7 +22,6 @@ export class SubscriptionProcessor extends WorkerHost {
         break;
       case 'change-subscription-plan':
         await this.subscriptionService.changeSubscriptionPlans(job.data as Subscription);
-        console.log(job.data);
         break;
     }
   }

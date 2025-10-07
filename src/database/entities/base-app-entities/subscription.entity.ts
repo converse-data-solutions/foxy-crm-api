@@ -32,6 +32,6 @@ export class Subscription {
   @ManyToOne(() => Plan, (plan) => plan.tenantsSubscription, {
     nullable: true,
   })
-  @JoinColumn({ name: 'subscription_id' })
+  @JoinColumn({ name: 'plan_id' })
   plan: Plan;
 }
