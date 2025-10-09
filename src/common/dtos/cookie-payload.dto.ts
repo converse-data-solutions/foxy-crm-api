@@ -1,8 +1,8 @@
 import { Role } from 'src/enums/core-app.enum';
 
 export class CookiePayload {
+  tenantAccessToken: string | null;
   accessToken: string | null;
-  refreshToken: string | null;
-  role?: Role;
-  xTenantId?: string;
+  role: Role;
+  xTenantId: string;
 }

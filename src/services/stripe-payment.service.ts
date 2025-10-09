@@ -1,6 +1,6 @@
 import { MailerService } from '@nestjs-modules/mailer';
 import { InjectQueue } from '@nestjs/bullmq';
-import { HttpStatus, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { forwardRef, HttpStatus, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Queue } from 'bullmq';
 import { PAYMENT_URL } from 'src/common/constant/config.constants';
@@ -18,6 +18,7 @@ export class StripePaymentService {
     private readonly subscriptionRepo: Repository<Subscription>,
     private readonly mailService: MailerService,
     @InjectQueue('subscription') private readonly subscriptionQueue: Queue,
+    @Inject(forwardRef(() => AuthService))
     private readonly authService: AuthService,
   ) {}
   async getSession(sessionId: string, token: string) {
@@ -27,10 +28,10 @@ export class StripePaymentService {
     const payload = await this.authService.validateToken(token);
     const existingSubscription = await this.subscriptionRepo.findOne({
       where: { tenant: { id: payload.id } },
-      relations: { plan: true, tenant: true },
+      relations: { planPrice: true, tenant: true },
     });
     if (!existingSubscription) {
-      throw new UnauthorizedException({ message: 'Unauthorized access invalid token' });
+      throw new UnauthorizedException('Unauthorized access invalid token');
     }
 
     const stripeSubscription = stripeResponse.subscription as Stripe.Subscription;
@@ -39,7 +40,7 @@ export class StripePaymentService {
 
     const endDate = new Date(stripeSubscription.start_date * 1000);
     const interval_count = stripeSubscription.items.data[0].price.recurring?.interval_count;
-    const month = interval_count ?? Number(existingSubscription.plan.validUpto.split(' ')[0]);
+    const month = interval_count ?? 2;
     endDate.setMonth(endDate.getMonth() + month);
 
     existingSubscription.stripeCustomerId = stripeCustomer.id;
@@ -74,7 +75,7 @@ export class StripePaymentService {
     };
   }
 
-  async createCheckoutSession(customerEmail: string, priceId: string, token: string) {
+  async createCheckoutSession(customerEmail: string, token: string, priceId?: string) {
     return await this.stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],

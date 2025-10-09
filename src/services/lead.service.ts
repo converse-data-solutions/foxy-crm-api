@@ -32,9 +32,7 @@ export class LeadService {
     });
 
     if (leadExist) {
-      throw new BadRequestException({
-        message: 'The lead is already present',
-      });
+      throw new BadRequestException('The lead is already present');
     } else {
       const newLead: Lead = leadRepo.create({
         ...createLeadDto,
@@ -82,10 +80,11 @@ export class LeadService {
     }
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
+    const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };
     let leadData: Lead[] = [];
     for (const lead of data) {
       const notes = await noteRepo.find({
-        where: { entityId: lead.id, entityName: NotesEntityName.LEAD },
+        where: { entityId: lead.id, entityName: NotesEntityName.Lead },
       });
       lead['notes'] = notes;
       leadData.push(lead);
@@ -95,12 +94,7 @@ export class LeadService {
       statusCode: HttpStatus.OK,
       message: 'Lead details fetched based on filter',
       data: leadData,
-      pageInfo: {
-        total,
-        limit,
-        page,
-        totalPages: Math.ceil(total / limit),
-      },
+      pageInfo,
     };
   }
 
@@ -110,24 +104,20 @@ export class LeadService {
     let assignedUser: User | null = null;
     if (updateLeadDto.assignedTo) {
       if (user.role === Role.SalesRep) {
-        throw new UnauthorizedException({
-          message: 'Not have enough authorization to assign a lead',
-        });
+        throw new UnauthorizedException('Not have enough authorization to assign a lead');
       }
       assignedUser = await userRepo.findOne({ where: { id: updateLeadDto.assignedTo } });
       if (!assignedUser) {
-        throw new BadRequestException({ message: 'Lead is not assigned to invalid id' });
+        throw new BadRequestException('Lead is not assigned to invalid id');
       }
     }
 
     const lead = await leadRepo.findOne({ where: { id } });
     if (!lead) {
-      throw new BadRequestException({
-        message: 'Lead not found or invalid lead id',
-      });
+      throw new BadRequestException('Lead not found or invalid lead id');
     } else {
       if (lead.status == LeadStatus.Converted) {
-        throw new BadRequestException({ message: 'Lead is already converted cannot update' });
+        throw new BadRequestException('Lead is already converted cannot update');
       }
 
       const { assignedTo, ...other } = updateLeadDto;

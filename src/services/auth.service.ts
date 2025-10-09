@@ -3,70 +3,65 @@ import * as bcrypt from 'bcrypt';
 import { Signin } from 'src/dtos/user-dto/user-signup.dto';
 import { getRepo } from 'src/shared/database-connection/get-connection';
 import { User } from 'src/database/entities/core-app-entities/user.entity';
-import { JwtService } from '@nestjs/jwt';
 import { JwtPayload } from 'src/common/dtos/jwt-payload.dto';
 import { plainToInstance } from 'class-transformer';
 import { TenantService } from './tenant.service';
 import { ForgotPasswordDto, ResetPasswordDto } from 'src/dtos/password-dto/reset-password.dto';
 import { APIResponse } from 'src/common/dtos/response.dto';
-import { JWT_CONFIG, SALT_ROUNDS } from 'src/common/constant/config.constants';
+import { SALT_ROUNDS } from 'src/common/constant/config.constants';
+import { CookiePayload } from 'src/common/dtos/cookie-payload.dto';
+import { TokenService } from './token.service';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly jwtService: JwtService,
+    private readonly tokenService: TokenService,
     private readonly tenantService: TenantService,
   ) {}
 
-  async signin(user: Signin) {
+  async signin(user: Signin): Promise<APIResponse<CookiePayload>> {
     const tenant = await this.tenantService.getTenant(user.email);
     let tenantAccessToken: string | null = null;
     if (tenant.email === user.email) {
       if (!tenant.emailVerified) {
-        throw new BadRequestException({ message: 'Please verify the email then login' });
+        throw new BadRequestException('Please verify the email then login');
       }
-      tenantAccessToken = this.jwtService.sign(
-        { id: tenant.id, email: tenant.email },
-        { secret: JWT_CONFIG.SECRET_KEY },
-      );
+      tenantAccessToken = this.tokenService.generateAccessToken({
+        id: tenant.id,
+        email: tenant.email,
+      });
     }
     let repo = await getRepo(User, tenant.schemaName);
 
     const userExist = await repo.findOne({ where: { email: user.email } });
     if (!userExist) {
-      throw new NotFoundException({
-        message: 'User email not found please signup',
-      });
+      throw new NotFoundException('User email not found please signup');
     } else {
       const validPassword = await bcrypt.compare(user.password, userExist.password);
       if (!validPassword) {
-        throw new BadRequestException({
-          message: 'Invalid password please enter correct password',
-        });
+        throw new BadRequestException('Invalid password please enter correct password');
       } else {
         if (!userExist.status) {
-          throw new BadRequestException({
-            message: 'Your account is disabled please contact the admin',
-          });
+          throw new BadRequestException('Your account is disabled please contact the admin');
         }
         if (!userExist.emailVerified) {
-          throw new BadRequestException({ message: 'Please verify the email then login' });
+          throw new BadRequestException('Please verify the email then login');
         }
         const payload = plainToInstance(JwtPayload, userExist, {
           excludeExtraneousValues: true,
         });
 
-        const accessToken = this.jwtService.sign(
-          {
-            ...payload,
-          },
-          { secret: JWT_CONFIG.SECRET_KEY },
-        );
+        const accessToken = this.tokenService.generateAccessToken({ ...payload });
         return {
-          tenantAccessToken,
-          accessToken,
-          role: userExist.role,
-          xTenantId: tenant.schemaName,
+          success: true,
+          statusCode: HttpStatus.OK,
+          message: 'Signin successfull',
+          data: {
+            tenantAccessToken,
+            accessToken,
+            role: userExist.role,
+            xTenantId: tenant.schemaName,
+          },
         };
       }
     }
@@ -77,16 +72,14 @@ export class AuthService {
     const userRepo = await getRepo(User, tenant.schemaName);
     const userExist = await userRepo.findOne({ where: { email: resetPasswordDto.email } });
     if (!userExist) {
-      throw new NotFoundException({ message: 'User not found or invalid email' });
+      throw new NotFoundException('User not found or invalid email');
     }
     if (resetPasswordDto.password === resetPasswordDto.newPassword) {
-      throw new BadRequestException({
-        message: 'Old password and current password should not be same',
-      });
+      throw new BadRequestException('Old password and current password should not be same');
     }
     const validPassword = await bcrypt.compare(resetPasswordDto.password, userExist.password);
     if (!validPassword) {
-      throw new BadRequestException({ message: 'Invalid password please enter correct password' });
+      throw new BadRequestException('Invalid password please enter correct password');
     }
     const hashedPassword = await bcrypt.hash(resetPasswordDto.newPassword, SALT_ROUNDS);
     userExist.password = hashedPassword;
@@ -103,12 +96,10 @@ export class AuthService {
     const userRepo = await getRepo(User, tenant.schemaName);
     const userExist = await userRepo.findOne({ where: { email: forgotPassword.email } });
     if (!userExist) {
-      throw new NotFoundException({ message: 'User not found or invalid email' });
+      throw new NotFoundException('User not found or invalid email');
     }
     if (!userExist.otpVerified) {
-      throw new BadRequestException({
-        message: 'Otp is not verified please verify otp and reset the password',
-      });
+      throw new BadRequestException('Otp is not verified please verify otp and reset the password');
     }
     const hashedPassword = await bcrypt.hash(forgotPassword.password, SALT_ROUNDS);
     userExist.password = hashedPassword;
@@ -122,9 +113,7 @@ export class AuthService {
   }
 
   async validateToken(token: string) {
-    const verifyToken: JwtPayload = await this.jwtService.verifyAsync(token, {
-      secret: JWT_CONFIG.SECRET_KEY,
-    });
+    const verifyToken: JwtPayload = await this.tokenService.verifyToken(token);
     return verifyToken;
   }
 }

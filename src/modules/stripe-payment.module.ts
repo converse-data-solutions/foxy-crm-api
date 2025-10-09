@@ -12,7 +12,7 @@ import { SubscriptionScheduler } from 'src/schedulers/subscription.scheduler';
 
 @Module({
   imports: [
-    AuthModule,
+    forwardRef(() => AuthModule),
     TypeOrmModule.forFeature([Subscription]),
     BullModule.registerQueue({ name: 'subscription' }),
     forwardRef(() => SubscriptionModule),
@@ -31,6 +31,6 @@ import { SubscriptionScheduler } from 'src/schedulers/subscription.scheduler';
       },
     },
   ],
-  exports: [StripePaymentService, SubscriptionProcessor],
+  exports: [StripePaymentService, SubscriptionProcessor, 'STRIPE_CLIENT'],
 })
 export class StripePaymentModule {}

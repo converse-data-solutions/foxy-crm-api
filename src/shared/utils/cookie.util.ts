@@ -22,9 +22,9 @@ export function setCookie(payload: CookiePayload, res: Response) {
   if (payload.accessToken) {
     res.cookie(cookieName, payload.accessToken, defaultOptions);
   }
-  cookieName = 'refresh_token';
-  if (payload.refreshToken) {
-    res.cookie(cookieName, payload.refreshToken, defaultOptions);
+  if (payload.tenantAccessToken) {
+    cookieName = 'tenant_access_token';
+    res.cookie(cookieName, payload.tenantAccessToken, defaultOptions);
   }
   res.status(HttpStatus.OK);
 }

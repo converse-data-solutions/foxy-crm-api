@@ -19,19 +19,22 @@ import { StatusCause } from 'src/enums/status.enum';
 import { getRepo } from 'src/shared/database-connection/get-connection';
 import { subscriptionReminderTemplate } from 'src/templates/subscription-remainder.template';
 import { Repository } from 'typeorm';
-import { StripePaymentService } from './stripe-payment.service';
 import { AuthService } from './auth.service';
+import { PlanPricing } from 'src/database/entities/base-app-entities/plan-pricing.entity';
+import { StripePaymentService } from './stripe-payment.service';
 
 @Injectable()
 export class SubscriptionService {
   constructor(
     @InjectRepository(Plan) private readonly planRepo: Repository<Plan>,
+    @InjectRepository(PlanPricing) private readonly planPriceRepo: Repository<PlanPricing>,
     @InjectRepository(Subscription)
     private readonly subscriptionRepo: Repository<Subscription>,
     @InjectRepository(Tenant) private readonly tenantRepo: Repository<Tenant>,
     private readonly mailService: MailerService,
-    private readonly stripeService: StripePaymentService,
+    @Inject(forwardRef(() => AuthService))
     private readonly authService: AuthService,
+    private readonly stripeService: StripePaymentService,
   ) {}
 
   async createSubscription(
@@ -39,45 +42,52 @@ export class SubscriptionService {
     token: string | undefined,
   ): Promise<APIResponse> {
     if (!token) {
-      throw new UnauthorizedException({ message: 'Unauthorized access token not found' });
+      throw new UnauthorizedException('Unauthorized access token not found');
     }
     const payload = await this.authService.validateToken(token);
-    const plan = await this.planRepo.findOne({ where: { id: subscribe.id } });
-    const tenant = await this.tenantRepo.findOne({ where: { id: payload.id } });
-    if (!plan) {
-      throw new BadRequestException({ message: 'Invalid subscription id' });
-    }
-    if (!tenant) {
-      throw new UnauthorizedException({ message: 'Unauthorized access invalid tenant' });
-    }
-    const tenantSubscription = await this.subscriptionRepo.findOne({
-      where: { tenant: { id: payload.id } },
+    const planPrice = await this.planPriceRepo.findOne({
+      where: { id: subscribe.planId },
       relations: { plan: true },
     });
+    const tenant = await this.tenantRepo.findOne({ where: { id: payload.id } });
+    if (!planPrice) {
+      throw new BadRequestException('Invalid subscription plan');
+    }
+    if (!tenant) {
+      throw new UnauthorizedException('Unauthorized access invalid tenant');
+    }
+
+    const tenantSubscription = await this.subscriptionRepo
+      .createQueryBuilder('subscription')
+      .leftJoin('subscription.tenant', 'tenant')
+      .leftJoinAndSelect('subscription.planPrice', 'planPrice')
+      .leftJoinAndSelect('planPrice.plan', 'plan')
+      .andWhere('tenant.id = :id', { id: payload.id })
+      .getOne();
 
     if (tenantSubscription) {
-      if (
-        tenantSubscription.endDate &&
-        tenantSubscription.endDate > new Date() &&
-        tenantSubscription.plan.price > plan.price
-      ) {
-        throw new BadRequestException('Cannot downgrade subscription while an active plan exists');
-      } else {
-        tenantSubscription.plan = plan;
-        await this.subscriptionRepo.save(tenantSubscription);
+      if (tenantSubscription && tenantSubscription.endDate) {
+        if (
+          Number(tenantSubscription.planPrice.plan.userCount) > Number(planPrice.plan.userCount) &&
+          tenantSubscription.status === true
+        ) {
+          throw new BadRequestException(
+            'Cannot downgrade subscription while an active plan exists',
+          );
+        }
       }
-    } else {
-      await this.subscriptionRepo.save({ plan, tenant });
+      tenantSubscription.planPrice = planPrice;
+      await this.subscriptionRepo.save(tenantSubscription);
     }
 
     const session = await this.stripeService.createCheckoutSession(
       payload.email,
-      plan.priceId,
       token,
+      planPrice.stripePriceId,
     );
     return {
       success: true,
-      statusCode: HttpStatus.ACCEPTED,
+      statusCode: HttpStatus.OK,
       message: 'Payment link is retrived successfully',
       paymentUrl: session.url,
     };
@@ -86,10 +96,10 @@ export class SubscriptionService {
   async findAllPlans(request: Request): Promise<APIResponse<Plan[]>> {
     const token: string | undefined = request?.cookies['tenant_access_token'];
     if (!token) {
-      throw new UnauthorizedException({ message: 'Unauthorized access token not found' });
+      throw new UnauthorizedException('Unauthorized access token not found');
     }
     await this.authService.validateToken(token);
-    const plans = await this.planRepo.find();
+    const plans = await this.planRepo.find({ relations: { planPricings: true } });
 
     return {
       success: true,
@@ -99,31 +109,24 @@ export class SubscriptionService {
     };
   }
 
-  async findCurrentPlan(
-    request: Request,
-  ): Promise<APIResponse<Omit<Subscription, 'plan'> & { plan: Partial<Plan> }>> {
+  async findCurrentPlan(request: Request) {
     const token: string | undefined = request?.cookies['tenant_access_token'];
     if (!token) {
-      throw new UnauthorizedException({ message: 'Unauthorized access token not found' });
+      throw new UnauthorizedException('Unauthorized access token not found');
     }
     const payload = await this.authService.validateToken(token);
-    const subscription = await this.subscriptionRepo.findOne({
-      where: { tenant: { id: payload.id }, status: true },
-      relations: { plan: true },
+    const subscription = await this.planPriceRepo.findOne({
+      where: { tenantsSubscription: { tenant: { id: payload.id } } },
+      relations: { tenantsSubscription: true, plan: true },
     });
     if (!subscription) {
-      throw new BadRequestException({ message: 'There is no active or current subscription' });
+      throw new BadRequestException('There is no active or current subscription');
     }
-    const {
-      plan: { priceId, id, ...planDetails },
-      ...subscriptionDetails
-    } = subscription;
-    const data = { plan: { ...planDetails }, ...subscriptionDetails };
     return {
       success: true,
       statusCode: HttpStatus.OK,
       message: 'Fetched the current plan',
-      data,
+      data: subscription,
     };
   }
 
@@ -155,20 +158,25 @@ export class SubscriptionService {
   }
 
   async changeSubscriptionPlans(subscription: Subscription) {
-    const userCount = subscription.plan.userCount;
+    const planPriceId = subscription.planPrice.id;
+    const plan = await this.planRepo.findOne({
+      where: { planPricings: { id: planPriceId } },
+    });
     const schemaName = subscription.tenant.schemaName;
     const userRepo = await getRepo(User, schemaName);
     const users = await userRepo.find({
       order: { createdAt: 'ASC' },
     });
     for (let i = 0; i < users.length; i++) {
-      if (i + 1 > userCount) {
-        users[i].status = false;
-        users[i].statusCause = StatusCause.Plan_Limit;
-      } else {
-        if (users[i].status === false) {
-          users[i].status = true;
-          users[i].statusCause = null;
+      if (plan?.userCount) {
+        if (i + 1 > plan.userCount) {
+          users[i].status = false;
+          users[i].statusCause = StatusCause.Plan_Limit;
+        } else {
+          if (users[i].status === false && users[i].statusCause === StatusCause.Plan_Limit) {
+            users[i].status = true;
+            users[i].statusCause = null;
+          }
         }
       }
     }

@@ -23,7 +23,7 @@ export class Signin {
 export class UserSignupDto extends Signin {
   @IsDefined({ message: 'Name is required' })
   @IsString({ message: 'Name must be a string' })
-  @Length(2, 30, { message: 'Name must be between 2 and 30 characters' })
+  @Length(3, 30, { message: 'Name must be between 3 and 30 characters' })
   @ApiProperty({ example: 'john' })
   name: string;
 
@@ -37,11 +37,13 @@ export class UserSignupDto extends Signin {
 
   @IsOptional()
   @IsString({ message: 'Please provide a valid address' })
+  @Length(5, 50, { message: 'Address must be between 5 and 50 characters' })
   @ApiPropertyOptional({ example: '11/2 Abc street' })
   address?: string;
 
   @IsOptional()
   @IsString({ message: 'City should be string' })
+  @Length(3, 40, { message: 'City must be between 3 and 40 characters' })
   @ApiPropertyOptional({ example: 'Gobi' })
   city?: string;
 

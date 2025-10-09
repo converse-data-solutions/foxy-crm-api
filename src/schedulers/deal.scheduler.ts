@@ -27,8 +27,8 @@ export class DealScheduler {
 
     const tenants = await this.tenantSubscriptionRepo.find({
       select: { tenant: { schemaName: true } },
-      where: { status: true, plan: { planName: 'Platinum' } },
-      relations: { plan: true, tenant: true },
+      where: { status: true },
+      relations: { planPrice: true, tenant: true },
     });
     const schemas = tenants.map((tenant) => tenant.tenant.schemaName);
 

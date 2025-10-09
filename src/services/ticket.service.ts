@@ -25,14 +25,17 @@ export class TicketService {
     const { dealId, contactId, ...createTicket } = createTicketDto;
     const dealExist = await dealRepo.findOne({ where: { id: dealId } });
     if (!dealExist) {
-      throw new BadRequestException({ message: 'Invalid deal id or deal not found' });
+      throw new BadRequestException('Invalid deal id or deal not found');
     }
-    if (dealExist.stage !== DealStage.Accepted && dealExist.stage !== DealStage.Completed) {
-      throw new BadRequestException({ message: 'Cannot raise ticket for unaccepted deal' });
+    if (dealExist.stage === DealStage.Declined) {
+      throw new BadRequestException('Cannot raise ticket for unaccepted deal');
+    }
+    if (dealExist.stage === DealStage.Accepted) {
+      throw new BadRequestException('Cannot raise ticket for incomplete deal');
     }
     const contactExist = await contactRepo.findOne({ where: { id: contactId } });
     if (!contactExist && contactId) {
-      throw new BadRequestException({ message: 'Invalid contact id or contact not found' });
+      throw new BadRequestException('Invalid contact id or contact not found');
     }
     const ticket = ticketRepo.create({
       dealId: dealExist,
@@ -75,17 +78,13 @@ export class TicketService {
     }
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
+    const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };
     return {
       success: true,
       statusCode: HttpStatus.OK,
       message: 'Ticket details fetched based on filter',
       data,
-      pageInfo: {
-        total,
-        limit,
-        page,
-        totalPages: Math.ceil(total / limit),
-      },
+      pageInfo,
     };
   }
 
@@ -100,7 +99,7 @@ export class TicketService {
     const ticketTasks = await taskRepo.find({ where: { entityId: id } });
     const existTicket = await ticketRepo.findOne({ where: { id } });
     if (!existTicket) {
-      throw new BadRequestException({ message: 'Invalid ticket id or ticket not found' });
+      throw new BadRequestException('Invalid ticket id or ticket not found');
     }
 
     if (updateTicketDto.status) {
@@ -110,16 +109,12 @@ export class TicketService {
           ticketTasks.length === 0 &&
           [TicketStatus.Closed, TicketStatus.Resolved].includes(updateTicketDto.status)
         ) {
-          throw new BadRequestException({
-            message: 'Cannot close or resolve a ticket without any tasks',
-          });
+          throw new BadRequestException('Cannot close or resolve a ticket without any tasks');
         }
 
         for (const task of ticketTasks) {
           if (task.status !== TaskStatus.Completed) {
-            throw new BadRequestException({
-              message: 'Cannot close or resolve a ticket with pending tasks',
-            });
+            throw new BadRequestException('Cannot close or resolve a ticket with pending tasks');
           }
         }
 
@@ -128,18 +123,14 @@ export class TicketService {
           user.role !== Role.Manager &&
           updateTicketDto.status === TicketStatus.Closed
         ) {
-          throw new UnauthorizedException({
-            message: 'Not authorized to close the ticket',
-          });
+          throw new UnauthorizedException('Not authorized to close the ticket');
         }
 
         if (
           existTicket.status !== TicketStatus.Resolved &&
           updateTicketDto.status === TicketStatus.Closed
         ) {
-          throw new BadRequestException({
-            message: 'Cannot close a ticket without resolving it first',
-          });
+          throw new BadRequestException('Cannot close a ticket without resolving it first');
         }
 
         //  Apply Resolved/Closed update
@@ -155,9 +146,7 @@ export class TicketService {
       (updateTicketDto.title || updateTicketDto.description) &&
       ![Role.Admin, Role.Manager].includes(user.role)
     ) {
-      throw new UnauthorizedException({
-        message: 'Not have authorization to update ticket details',
-      });
+      throw new UnauthorizedException('Not have authorization to update ticket details');
     }
     await ticketRepo.save({
       ...existTicket,

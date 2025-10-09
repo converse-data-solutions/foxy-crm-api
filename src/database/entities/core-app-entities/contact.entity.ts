@@ -4,13 +4,11 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
-  OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Account } from './account.entity';
 import { Lead } from './lead.entity';
-import { Note } from './note.entity';
 import { User } from './user.entity';
 
 @Entity({ name: 'contacts' })

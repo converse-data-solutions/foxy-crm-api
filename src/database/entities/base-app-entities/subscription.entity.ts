@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, OneToOne, JoinColumn, ManyToOne, Column } from 'typeorm';
 import { Tenant } from './tenant.entity';
-import { Plan } from './plan.entity';
+import { PlanPricing } from './plan-pricing.entity';
 
 @Entity({ name: 'subscriptions' })
 export class Subscription {
@@ -29,9 +29,9 @@ export class Subscription {
   @JoinColumn({ name: 'tenant_id' })
   tenant: Tenant;
 
-  @ManyToOne(() => Plan, (plan) => plan.tenantsSubscription, {
+  @ManyToOne(() => PlanPricing, (planPrice) => planPrice.tenantsSubscription, {
     nullable: true,
   })
-  @JoinColumn({ name: 'plan_id' })
-  plan: Plan;
+  @JoinColumn({ name: 'plan_price_id' })
+  planPrice: PlanPricing;
 }

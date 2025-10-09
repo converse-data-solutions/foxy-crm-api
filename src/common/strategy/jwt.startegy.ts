@@ -15,7 +15,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         (request: Request) => request?.cookies?.access_token || null,
       ]),
       ignoreExpiration: false,
-      secretOrKey: JWT_CONFIG.SECRET_KEY!,
+      secretOrKey: JWT_CONFIG.ACCESS_SECRET_KEY!,
       passReqToCallback: true,
     });
   }
@@ -24,9 +24,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const tenantHeaders = req?.headers['x-tenant-id'];
     const tenantId = Array.isArray(tenantHeaders) ? tenantHeaders[0] : tenantHeaders;
     if (!tenantId) {
-      throw new BadRequestException({
-        message: 'x-tenant-id header is missing',
-      });
+      throw new BadRequestException('x-tenant-id header is missing');
     }
 
     if (!validate(tenantId) || version(tenantId) !== 4) {
@@ -36,7 +34,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       payload,
       Array.isArray(tenantId) ? tenantId[0] : tenantId,
     );
-    if (!user) throw new UnauthorizedException({ message: 'Unauthorized Access' });
+    if (!user) throw new UnauthorizedException('Unauthorized Access invalid token');
     return user; // attached to req.user
   }
 }

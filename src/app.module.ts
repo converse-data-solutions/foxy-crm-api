@@ -5,7 +5,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { dataSource } from './database/datasources/base-app-data-source';
 import { BullModule } from '@nestjs/bullmq';
 import { ScheduleModule } from '@nestjs/schedule';
-import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule } from '@nestjs/config';
 import { LeadModule } from './modules/lead.module';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
@@ -26,22 +25,26 @@ import { LoggerInterceptor } from './interceptor/logger.interceptor';
 import { GlobalAuthGuard } from './guards/global.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/role.guard';
-import { JWT_CONFIG, REDIS_CONFIG, SMTP_CONFIG } from './common/constant/config.constants';
+import { Environment, REDIS_CONFIG, SMTP_CONFIG } from './common/constant/config.constants';
 import { LeadActivityModule } from './modules/lead-activity.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { CustomExceptionFilter } from './common/filter/custom-exception.filter';
 import { LeadConversionModule } from './modules/lead-conversion.module';
 import { StripePaymentModule } from './modules/stripe-payment.module';
+import { TokenModule } from './modules/token.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: Environment.NODE_ENV !== 'dev' ? '.env.docker' : '.env',
+    }),
     ScheduleModule.forRoot(),
     ThrottlerModule.forRoot({
       throttlers: [
         {
-          ttl: 60000, // seconds
-          limit: 10, // requests per ttl
+          ttl: 60000,
+          limit: 10,
         },
       ],
     }),
@@ -52,12 +55,6 @@ import { StripePaymentModule } from './modules/stripe-payment.module';
         port: REDIS_CONFIG.port,
       },
       defaultJobOptions: { removeOnComplete: true },
-    }),
-    JwtModule.registerAsync({
-      useFactory: () => ({
-        secret: JWT_CONFIG.SECRET_KEY,
-        signOptions: { expiresIn: JWT_CONFIG.EXPIRES_IN },
-      }),
     }),
     MailerModule.forRoot({
       transport: {
@@ -97,6 +94,7 @@ import { StripePaymentModule } from './modules/stripe-payment.module';
     SeedModule,
     CountryModule,
     StripePaymentModule,
+    TokenModule,
   ],
   providers: [
     JwtAuthGuard,

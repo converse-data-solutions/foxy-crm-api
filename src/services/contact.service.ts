@@ -32,7 +32,7 @@ export class ContactService {
       where: [{ email: createContactDto.email }, { phone: createContactDto.phone }],
     });
     if (contactExist) {
-      throw new BadRequestException({ message: 'Contact is alredy exist' });
+      throw new BadRequestException('Contact is alredy exist');
     }
     const { account, ...contact } = createContactDto;
     let accountExist: Account | null = null;
@@ -40,7 +40,7 @@ export class ContactService {
     if (account) {
       accountExist = await accountRepo.findOne({ where: { name: account } });
       if (!accountExist) {
-        throw new NotFoundException({ message: 'Account not found' });
+        throw new NotFoundException('Account not found');
       }
     }
 
@@ -80,10 +80,11 @@ export class ContactService {
     }
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
+    const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };
     let contactData: Contact[] = [];
     for (const contact of data) {
       const notes = await noteRepo.find({
-        where: { entityId: contact.id, entityName: NotesEntityName.CONTACT },
+        where: { entityId: contact.id, entityName: NotesEntityName.Contact },
         relations: ['createdBy'],
       });
       contact['notes'] = notes;
@@ -94,12 +95,7 @@ export class ContactService {
       statusCode: HttpStatus.OK,
       message: 'Contact details fetched based on filter',
       data: contactData,
-      pageInfo: {
-        total,
-        limit,
-        page,
-        totalPages: Math.ceil(total / limit),
-      },
+      pageInfo,
     };
   }
 
@@ -114,22 +110,20 @@ export class ContactService {
     let contact = await contactRepo.findOne({ where: { id } });
     const { account, assignedTo, note, ...updateContact } = updateContactDto;
     if (!contact) {
-      throw new NotFoundException({ message: 'Contact not found or invalid contact id' });
+      throw new NotFoundException('Contact not found or invalid contact id');
     }
     if (updateContactDto.assignedTo && user.role == Role.SalesRep) {
-      throw new UnauthorizedException({
-        message: 'Not have enough authorization to assign a contact',
-      });
+      throw new UnauthorizedException('Not have enough authorization to assign a contact');
     } else {
       assignedUser = await userRepo.findOne({ where: { id: updateContactDto.assignedTo } });
       if (!assignedUser) {
-        throw new BadRequestException({ message: 'Contact is not assigned to invalid id' });
+        throw new BadRequestException('Contact is not assigned to invalid id');
       }
     }
     if (updateContactDto.account) {
       accountId = await accountRepo.findOne({ where: { name: updateContactDto.account } });
       if (!accountId) {
-        throw new NotFoundException({ message: 'Account not found' });
+        throw new NotFoundException('Account not found');
       }
     }
     contact = {
@@ -142,7 +136,7 @@ export class ContactService {
     if (note) {
       await noteRepo.save({
         entityId: updatedContact.id,
-        entityName: NotesEntityName.CONTACT,
+        entityName: NotesEntityName.Contact,
         content: note,
         createdBy: user,
       });

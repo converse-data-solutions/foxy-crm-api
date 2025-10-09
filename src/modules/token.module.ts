@@ -1,8 +1,7 @@
-import { forwardRef, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { TokenService } from '../services/token.service';
-import { JWT_CONFIG } from 'src/shared/utils/config.util';
+import { JWT_CONFIG } from 'src/common/constant/config.constants';
 import { JwtModule } from '@nestjs/jwt';
-import { TenantModule } from './tenant.module';
 
 @Module({
   imports: [
@@ -12,7 +11,6 @@ import { TenantModule } from './tenant.module';
         signOptions: { expiresIn: JWT_CONFIG.JWT_ACCESS_EXPIRES_IN },
       }),
     }),
-    forwardRef(() => TenantModule),
   ],
   providers: [TokenService],
   exports: [TokenService],
