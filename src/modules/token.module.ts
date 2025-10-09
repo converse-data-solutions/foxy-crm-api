@@ -1,0 +1,18 @@
+import { Module } from '@nestjs/common';
+import { TokenService } from '../services/token.service';
+import { JWT_CONFIG } from 'src/common/constant/config.constants';
+import { JwtModule } from '@nestjs/jwt';
+
+@Module({
+  imports: [
+    JwtModule.registerAsync({
+      useFactory: () => ({
+        secret: JWT_CONFIG.ACCESS_SECRET_KEY,
+        signOptions: { expiresIn: JWT_CONFIG.JWT_ACCESS_EXPIRES_IN },
+      }),
+    }),
+  ],
+  providers: [TokenService],
+  exports: [TokenService],
+})
+export class TokenModule {}

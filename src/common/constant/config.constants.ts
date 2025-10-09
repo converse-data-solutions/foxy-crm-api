@@ -18,8 +18,10 @@ export const SMTP_CONFIG = {
 export const SALT_ROUNDS = Number(process.env.SALT) || 12;
 
 export const JWT_CONFIG = {
-  SECRET_KEY: process.env.SECRET_KEY,
-  EXPIRES_IN: process.env.JWT_EXPIRES_IN || '1d',
+  ACCESS_SECRET_KEY: process.env.ACCESS_SECRET_KEY,
+  JWT_ACCESS_EXPIRES_IN: process.env.JWT_ACCESS_EXPIRES_IN,
+  REFRESH_SECRETE_KEY: process.env.REFRESH_SECRETE_KEY,
+  JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN,
 };
 export const REDIS_CONFIG = {
   host: process.env.REDIS_HOST || 'localhost',
@@ -32,5 +34,5 @@ export const Environment = {
 
 export const PAYMENT_URL = {
   success_url: process.env.PAYMENT_SUCCESS_URL,
-  failure_url: process.env.PAYUMENT_FAILURE_URL,
+  failure_url: process.env.PAYMENT_FAILURE_URL,
 };

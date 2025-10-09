@@ -68,9 +68,7 @@ export class TenantService {
     try {
       await this.mailService.sendMail(mailOptions);
     } catch (error: unknown) {
-      throw new InternalServerErrorException({
-        message: `Error occured while sending mail ${error}`,
-      });
+      throw new InternalServerErrorException(`Error occured while sending mail ${error}`);
     }
   }
 
@@ -81,9 +79,9 @@ export class TenantService {
       where: [{ organizationName: tenant.organizationName }, { email: tenant.email }, { domain }],
     });
     if (isTenant != null) {
-      throw new ConflictException({
-        message: 'The Organization or email with this domain is already registered',
-      });
+      throw new ConflictException(
+        'The Organization or email with this domain is already registered',
+      );
     } else {
       const hashPassword = await bcrypt.hash(tenant.password, SALT_ROUNDS);
       const { country, ...tenantData } = tenant;
@@ -113,7 +111,7 @@ export class TenantService {
       relations: { subscription: true },
     });
     if (!domainExist) {
-      throw new BadRequestException({ message: 'Please provide registered email address' });
+      throw new BadRequestException('Please provide registered email address');
     }
     return domainExist;
   }

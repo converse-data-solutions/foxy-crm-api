@@ -3,6 +3,7 @@ import { BadRequestException, HttpStatus, Injectable, UnauthorizedException } fr
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
 import { APIResponse } from 'src/common/dtos/response.dto';
+import { Plan } from 'src/database/entities/base-app-entities/plan.entity';
 import { Subscription } from 'src/database/entities/base-app-entities/subscription.entity';
 import { Deal } from 'src/database/entities/core-app-entities/deal.entity';
 import { Task } from 'src/database/entities/core-app-entities/task.entity';
@@ -25,6 +26,8 @@ export class TaskService {
     @InjectRepository(Subscription)
     private readonly subscriptionRepo: Repository<Subscription>,
     private readonly mailService: MailerService,
+    @InjectRepository(Plan)
+    private readonly planRepo: Repository<Plan>,
   ) {}
   async createTask(
     tenantId: string,
@@ -39,25 +42,23 @@ export class TaskService {
 
     const userExist = await userRepo.findOne({ where: { id: assignedTo } });
     if (!userExist) {
-      throw new BadRequestException({ message: 'Invalid user id' });
+      throw new BadRequestException('Invalid user id');
     }
     if (createTaskDto.entityName == EntityName.Deal) {
       const dealExist = await dealRepo.findOne({ where: { id: entityId } });
       if (!dealExist) {
-        throw new BadRequestException({
-          message: 'Invalid entity id or id not found in deal entity',
-        });
+        throw new BadRequestException('Invalid entity id or id not found in deal entity');
+      } else if (dealExist.stage === DealStage.Completed) {
+        throw new BadRequestException('Task is not created for completed deal');
       } else if (dealExist.stage != DealStage.Accepted) {
-        throw new BadRequestException({ message: 'Deal not accepted unable to create task' });
+        throw new BadRequestException('Deal not accepted unable to create task');
       }
     } else {
       const ticketExist = await ticketRepo.findOne({ where: { id: entityId } });
       if (!ticketExist) {
-        throw new BadRequestException({
-          message: 'Invalid entity id or id not found in ticket entity',
-        });
+        throw new BadRequestException('Invalid entity id or id not found in ticket entity');
       } else if (ticketExist.status == TicketStatus.Closed) {
-        throw new BadRequestException({ message: 'Cannot create task on closed ticket' });
+        throw new BadRequestException('Cannot create task on closed ticket');
       }
     }
     const newTask: Task = await taskRepo.save({
@@ -98,17 +99,13 @@ export class TaskService {
     }
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
+    const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };
     return {
       success: true,
       statusCode: HttpStatus.OK,
       message: 'Task details fetched based on filter',
       data,
-      pageInfo: {
-        total,
-        limit,
-        page,
-        totalPages: Math.ceil(total / limit),
-      },
+      pageInfo,
     };
   }
 
@@ -123,27 +120,27 @@ export class TaskService {
     const taskExist = await taskRepo.findOne({ where: { id }, relations: { assignedTo: true } });
     const { status, assignedTo, ...updateTask } = updateTaskDto;
     if (!taskExist) {
-      throw new BadRequestException({ message: 'Invalid task id or task not exist' });
+      throw new BadRequestException('Invalid task id or task not exist');
     }
     if (status) {
       if (user.id !== taskExist.assignedTo.id && ![Role.Admin, Role.Manager].includes(user.role)) {
-        throw new UnauthorizedException({ message: 'Not authorized to update task details' });
+        throw new UnauthorizedException('Not authorized to update task details');
       }
       taskExist.status = status;
     }
     for (const [key, value] of Object.entries(updateTask)) {
       if (value && ![Role.Admin, Role.Manager].includes(user.role)) {
-        throw new UnauthorizedException({ message: 'Not authorized to update task details' });
+        throw new UnauthorizedException('Not authorized to update task details');
       }
     }
     taskRepo.merge(taskExist, updateTask);
     if (assignedTo) {
       if (![Role.Admin, Role.Manager].includes(user.role)) {
-        throw new UnauthorizedException({ message: 'Not authorized to update task details' });
+        throw new UnauthorizedException('Not authorized to update task details');
       }
       const existUser = await userRepo.findOne({ where: { id: assignedTo } });
       if (!existUser) {
-        throw new BadRequestException({ message: 'Not assign to invalid user' });
+        throw new BadRequestException('Not assign to invalid user');
       }
       taskExist.assignedTo = existUser;
     }
@@ -158,14 +155,20 @@ export class TaskService {
 
   async taskMailer(tenantId: string, task: Task) {
     const userRepo = await getRepo(User, tenantId);
-    const tenantDetails = await this.subscriptionRepo.findOne({
+    const subscriptionDetails = await this.subscriptionRepo.findOne({
       where: { tenant: { schemaName: tenantId } },
-      relations: { tenant: true, plan: true },
+      relations: { tenant: true, planPrice: true },
     });
     const user = await userRepo.findOne({ where: { id: task.assignedTo.id } });
+
     let html: null | string = null;
-    if (tenantDetails && user) {
-      if (tenantDetails.plan.planName === 'Platinum') {
+    const plan = await this.planRepo.findOne({
+      where: { planPricings: { id: subscriptionDetails?.planPrice.id } },
+      relations: { planPricings: true },
+    });
+
+    if (subscriptionDetails && user) {
+      if (plan?.planName === 'Enterprise') {
         if (user) {
           html = taskAssignmentTemplate(user.name, task.name, task.entityName, task.priority);
         }

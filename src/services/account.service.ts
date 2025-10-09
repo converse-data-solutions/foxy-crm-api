@@ -21,7 +21,7 @@ export class AccountService {
     const accountExist = await accountRepo.findOne({ where: { name: createAccountDto.name } });
 
     if (accountExist) {
-      throw new BadRequestException({ message: 'Account already registered' });
+      throw new BadRequestException('Account already registered');
     }
     const { country, ...createAccount } = createAccountDto;
     let accountCountry: string | undefined;
@@ -54,17 +54,13 @@ export class AccountService {
     }
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
+    const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };
     return {
       success: true,
       statusCode: HttpStatus.OK,
       message: 'Account details fetched based on filter',
       data,
-      pageInfo: {
-        total,
-        limit,
-        page,
-        totalPages: Math.ceil(total / limit),
-      },
+      pageInfo,
     };
   }
 
@@ -77,7 +73,7 @@ export class AccountService {
 
     const account = await accountRepo.findOne({ where: { id } });
     if (!account) {
-      throw new BadRequestException({ message: 'Invalid account id' });
+      throw new BadRequestException('Invalid account id');
     }
     const { country, ...updateAccount } = updateAccountDto;
     let accountCountry: string | undefined;

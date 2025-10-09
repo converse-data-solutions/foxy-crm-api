@@ -5,9 +5,16 @@ import { CountryModule } from './country.module';
 import { TenantModule } from './tenant.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Subscription } from 'src/database/entities/base-app-entities/subscription.entity';
+import { PlanPricing } from 'src/database/entities/base-app-entities/plan-pricing.entity';
+import { TaskModule } from './task.module';
 
 @Module({
-  imports: [CountryModule, TenantModule, TypeOrmModule.forFeature([Subscription])],
+  imports: [
+    CountryModule,
+    TenantModule,
+    TypeOrmModule.forFeature([Subscription, PlanPricing]),
+    TaskModule,
+  ],
   controllers: [UserController],
   providers: [UserService],
   exports: [UserService],

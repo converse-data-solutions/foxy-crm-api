@@ -27,25 +27,24 @@ export class LeadConversionService {
     const contactRepo = await getRepo<Contact>(Contact, tenantId);
     const accountRepo = await getRepo<Account>(Account, tenantId);
     if (!lead) {
-      throw new NotFoundException({ message: 'Lead not found or invalid lead id' });
-    } else {
-      const account = await accountRepo.findOne({ where: { name: ILike(`%${lead.company}%`) } });
-      const contact = await contactRepo.findOne({
-        where: [{ email: lead.email }, { phone: lead.phone }],
-      });
-      const leadPreview: LeadPreview = {
-        createAccount: account ? false : true,
-        createContact: contact ? false : true,
-        accountName: account ? undefined : lead.company,
-        contactName: contact ? undefined : lead.name,
-      };
-      return {
-        success: true,
-        statusCode: HttpStatus.OK,
-        message: 'Lead preview fetched successfully',
-        data: leadPreview,
-      };
+      throw new NotFoundException('Lead not found or invalid lead id');
     }
+    const account = await accountRepo.findOne({ where: { name: ILike(`%${lead.company}%`) } });
+    const contact = await contactRepo.findOne({
+      where: [{ email: lead.email }, { phone: lead.phone }],
+    });
+    const leadPreview: LeadPreview = {
+      createAccount: account ? false : true,
+      createContact: contact ? false : true,
+      accountName: account ? undefined : lead.company,
+      contactName: contact ? undefined : lead.name,
+    };
+    return {
+      success: true,
+      statusCode: HttpStatus.OK,
+      message: 'Lead preview fetched successfully',
+      data: leadPreview,
+    };
   }
 
   async convertLead(
@@ -60,28 +59,22 @@ export class LeadConversionService {
     const accountRepo = await getRepo<Account>(Account, tenantId);
 
     if (!lead) {
-      throw new BadRequestException({ message: 'Invalid lead id or lead not found' });
+      throw new BadRequestException('Invalid lead id or lead not found');
     }
     if (!lead.assignedTo && user.role == Role.SalesRep) {
-      throw new UnauthorizedException({
-        message: 'Not authorized to convert others lead to contact',
-      });
+      throw new UnauthorizedException('Not authorized to convert others lead to contact');
     } else if (lead.assignedTo && lead.assignedTo.id != user.id && user.role == Role.SalesRep) {
-      throw new UnauthorizedException({
-        message: 'Not authorized to convert others lead to contact',
-      });
+      throw new UnauthorizedException('Not authorized to convert others lead to contact');
     }
     if (lead.status === LeadStatus.Disqualified) {
-      throw new BadRequestException({
-        message: 'Cannot convert disqualified lead first update status',
-      });
+      throw new BadRequestException('Cannot convert disqualified lead first update status');
     }
 
     const isContact = await contactRepo.findOne({
       where: [{ email: lead.email }, { phone: lead.phone }],
     });
     if (isContact) {
-      throw new BadRequestException({ message: 'This lead is already converted into contact' });
+      throw new BadRequestException('This lead is already converted into contact');
     }
     const isAccount = await accountRepo.findOne({ where: { name: ILike(`%${lead.company}%`) } });
     let newAccount = leadToContact?.account

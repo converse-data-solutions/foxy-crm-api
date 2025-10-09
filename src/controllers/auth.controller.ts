@@ -1,4 +1,4 @@
-import { Body, Controller, HttpStatus, Post, Res } from '@nestjs/common';
+import { Body, Controller, Post, Res } from '@nestjs/common';
 import { AuthService } from '../services/auth.service';
 import { TenantSignupDto } from 'src/dtos/tenant-dto/tenant-signup.dto';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
@@ -10,6 +10,7 @@ import { TenantService } from 'src/services/tenant.service';
 import { OtpService } from 'src/services/otp.service';
 import { UserService } from 'src/services/user.service';
 import { ForgotPasswordDto, ResetPasswordDto } from 'src/dtos/password-dto/reset-password.dto';
+import { setCookie } from 'src/shared/utils/cookie.util';
 
 @Public()
 @Controller('auth')
@@ -38,32 +39,10 @@ export class AuthController {
   @Post('signin')
   @ApiOperation({ summary: 'Signin user and access token is generated' })
   @ApiResponse({ status: 200, description: 'Signin successfully' })
-  async userSignin(@Body() user: Signin, @Res() response: Response) {
+  async userSignin(@Body() user: Signin, @Res({ passthrough: true }) response: Response) {
     const payload = await this.authService.signin(user);
-
-    let cookieName = 'tenant_access_token';
-    if (payload.tenantAccessToken) {
-      response.cookie(cookieName, payload.tenantAccessToken, {
-        httpOnly: true,
-        sameSite: 'lax',
-        maxAge: 24 * 60 * 60 * 1000,
-      });
-    }
-    cookieName = 'access_token';
-    response.cookie(cookieName, payload.accessToken, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: false,
-      path: '/',
-      maxAge: 24 * 60 * 60 * 1000,
-    });
-    response.status(HttpStatus.OK);
-    response.json({
-      success: true,
-      statusCode: HttpStatus.OK,
-      message: 'Signin successfull',
-      payload,
-    });
+    setCookie(payload.data!, response);
+    return payload;
   }
 
   @Post('verify-email/send-otp')
@@ -76,34 +55,10 @@ export class AuthController {
   @Post('verify-email/confirm')
   @ApiOperation({ summary: 'Verify the otp' })
   @ApiResponse({ status: 200, description: 'Otp verified successfully' })
-  async emailVerifyOtp(@Body() data: OtpDto, @Res() response: Response) {
+  async emailVerifyOtp(@Body() data: OtpDto, @Res({ passthrough: true }) response: Response) {
     const payload = await this.otpService.emailVerifyOtp(data);
-    let cookieName = 'tenant_access_token';
-    if (payload.tenantAccessToken) {
-      response.cookie(cookieName, payload.tenantAccessToken, {
-        httpOnly: true,
-        sameSite: 'lax',
-        secure: false,
-        path: '/',
-        maxAge: 24 * 60 * 60 * 1000,
-      });
-    } else {
-      cookieName = 'access_token';
-      response.cookie(cookieName, payload.accessToken, {
-        httpOnly: true,
-        sameSite: 'lax',
-        secure: false,
-        path: '/',
-        maxAge: 24 * 60 * 60 * 1000,
-      });
-    }
-    response.status(HttpStatus.OK);
-    response.json({
-      success: true,
-      statusCode: HttpStatus.OK,
-      message: 'Email verified successfully',
-      payload,
-    });
+    setCookie(payload.data!, response);
+    return payload;
   }
 
   @Post('reset-password')
