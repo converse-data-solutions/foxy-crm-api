@@ -120,7 +120,6 @@ export class OtpService {
     } else {
       otpFor = 'userSignup';
     }
-
     const role = userExist instanceof Tenant ? Role.Admin : userExist.role;
     return {
       success: true,

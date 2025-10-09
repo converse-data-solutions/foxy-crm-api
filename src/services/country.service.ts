@@ -7,11 +7,7 @@ export class CountryService {
       (code) => countries[code].name.toLowerCase() === name.toLowerCase(),
     );
     if (!isoCode) {
-<<<<<<< HEAD
       throw new NotFoundException('Country not found or invalid country');
-=======
-      throw new NotFoundException({ message: 'Country not found or invalid country' });
->>>>>>> da3c435 (reset-password)
     }
     const data: ICountry = countries[isoCode];
     return data.name;
