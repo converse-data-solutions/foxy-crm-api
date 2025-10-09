@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { Subscription } from './subscription.entity';
 import { UserCount } from 'src/enums/user-count.enum';
+import { PlanPricing } from './plan-pricing.entity';
 
 @Entity({ name: 'plans' })
 export class Plan {
@@ -10,18 +10,12 @@ export class Plan {
   @Column({ name: 'plan_name', type: 'varchar', length: 20 })
   planName: string;
 
-  @Column({ type: 'int' })
-  price: number;
+  @Column({ name: 'stripe_product_id', type: 'varchar', length: 100, nullable: true })
+  stripeProductId?: string;
 
-  @Column({ type: 'varchar', name: 'price_id', length: 50 })
-  priceId: string;
-
-  @Column({ type: 'varchar', name: 'valid_upto', length: 20 })
-  validUpto: string;
+  @OneToMany(() => PlanPricing, (pricing) => pricing.plan, { cascade: true })
+  planPricings: PlanPricing[];
 
   @Column({ name: 'user_count', type: 'enum', enum: UserCount })
   userCount: UserCount;
-
-  @OneToMany(() => Subscription, (subscription) => subscription.plan)
-  tenantsSubscription: Subscription[];
 }

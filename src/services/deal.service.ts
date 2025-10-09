@@ -23,7 +23,7 @@ export class DealService {
     if (value !== undefined && value !== null && String(value).trim() !== '') {
       dealValue = Number(value);
       if (Number.isNaN(dealValue)) {
-        throw new BadRequestException({ message: 'Invalid deal value' });
+        throw new BadRequestException('Invalid deal value');
       }
     }
 
@@ -31,7 +31,7 @@ export class DealService {
       where: { id: contactId },
     });
     if (contactId && !contact) {
-      throw new BadRequestException({ message: 'Invalid contact id' });
+      throw new BadRequestException('Invalid contact id');
     }
     await dealRepo.save({
       ...createDeal,
@@ -69,18 +69,13 @@ export class DealService {
     }
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
-
+    const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };
     return {
       success: true,
       statusCode: HttpStatus.OK,
       message: 'Deal fetched based on filter',
       data,
-      pageInfo: {
-        total,
-        limit,
-        page,
-        totalPages: Math.ceil(total / limit),
-      },
+      pageInfo,
     };
   }
 
@@ -95,31 +90,30 @@ export class DealService {
     const dealExist = await dealRepo.findOne({ where: { id } });
     const { value, ...deals } = updateDeal;
     if (!dealExist) {
-      throw new BadRequestException({ message: 'Invalid deal id or deal not found' });
+      throw new BadRequestException('Invalid deal id or deal not found');
+    }
+    if (dealExist.stage === DealStage.Completed && deals.stage !== DealStage.Accepted) {
+      throw new BadRequestException('Cannot update a deal after it is completed');
     }
 
     if (updateDeal.stage === DealStage.Completed) {
       if (user.role !== Role.Admin && user.role !== Role.Manager) {
-        throw new UnauthorizedException({
-          message: 'Admin or manager only can update the deal status',
-        });
+        throw new UnauthorizedException('Admin or manager only can update the deal status');
       }
 
       const dealTasks = await taskRepo.find({ where: { entityId: id } });
       if (dealTasks.length === 0) {
-        throw new BadRequestException({ message: 'Cannot complete the deal without doing task' });
+        throw new BadRequestException('Cannot complete the deal without doing task');
       }
       const hasPending = dealTasks.some((t) => t.status !== TaskStatus.Completed);
       if (hasPending) {
-        throw new BadRequestException({
-          message: 'Cannot complete the deal while there are pending tasks',
-        });
+        throw new BadRequestException('Cannot complete the deal while there are pending tasks');
       }
     }
 
     if (value !== undefined && value !== null) {
       const numeric = Number(value);
-      if (Number.isNaN(numeric)) throw new BadRequestException({ message: 'Invalid value' });
+      if (Number.isNaN(numeric)) throw new BadRequestException('Invalid value');
       dealExist.value = numeric;
     }
 

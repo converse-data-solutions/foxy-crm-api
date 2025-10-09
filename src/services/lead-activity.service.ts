@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { APIResponse } from 'src/common/dtos/response.dto';
 import { LeadActivity } from 'src/database/entities/core-app-entities/lead-activity.entity';
 import { Lead } from 'src/database/entities/core-app-entities/lead.entity';
@@ -7,6 +7,7 @@ import { User } from 'src/database/entities/core-app-entities/user.entity';
 import { CreateLeadActivityDto } from 'src/dtos/activity-dto/create-lead-activity.dto';
 import { Role } from 'src/enums/core-app.enum';
 import { NotesEntityName } from 'src/enums/lead-activity.enum';
+import { LeadStatus } from 'src/enums/status.enum';
 import { getRepo } from 'src/shared/database-connection/get-connection';
 
 @Injectable()
@@ -23,12 +24,15 @@ export class LeadActivityService {
     if (!lead) {
       throw new NotFoundException('Lead not found or invalid lead ID');
     }
+    if (lead.status === LeadStatus.Converted) {
+      throw new BadRequestException('Not create lead activity after lead is converted');
+    }
     const { notes, leadId, ...leadActivity } = createLeadActivityDto;
     if (notes) {
       await noteRepo.save({
         content: notes,
         entityId: lead.id,
-        entityName: NotesEntityName.LEAD,
+        entityName: NotesEntityName.Lead,
         createdBy: user,
       });
     }
@@ -50,7 +54,7 @@ export class LeadActivityService {
     const lead = await leadRepo.findOne({ where: { id: leadId } });
     const noteRepo = await getRepo(Note, tenantId);
     const notes = await noteRepo.find({
-      where: { entityId: leadId, entityName: NotesEntityName.LEAD },
+      where: { entityId: leadId, entityName: NotesEntityName.Lead },
       order: { createdAt: 'ASC' },
     });
     if (!lead) {

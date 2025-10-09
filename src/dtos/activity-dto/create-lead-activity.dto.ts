@@ -13,7 +13,7 @@ export class CreateLeadActivityDto {
     message: 'Activity Type must be a valid LeadActivityType enum value',
   })
   @ApiProperty({
-    example: LeadActivityType.CALL_MADE,
+    example: LeadActivityType.CallMade,
     enum: LeadActivityType,
     description: 'Type of activity',
   })
