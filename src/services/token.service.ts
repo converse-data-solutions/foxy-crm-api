@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { forwardRef, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { JWT_CONFIG, SALT_ROUNDS } from 'src/shared/utils/config.util';
@@ -16,16 +15,6 @@ export class TokenService {
     @Inject(forwardRef(() => TenantService))
     private readonly tenantService: TenantService,
   ) {}
-=======
-import { Injectable } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { JWT_CONFIG } from 'src/common/constant/config.constants';
-import { JwtPayload } from 'src/common/dtos/jwt-payload.dto';
-
-@Injectable()
-export class TokenService {
-  constructor(private readonly jwtService: JwtService) {}
->>>>>>> 90be837 (update-subscriptions)
 
   generateAccessToken(payload: JwtPayload): string {
     return this.jwtService.sign(payload, {
@@ -41,7 +30,6 @@ export class TokenService {
     });
   }
 
-<<<<<<< HEAD
   async verifyAccessToken(token: string, isSocketValidation?: boolean): Promise<JwtPayload> {
     try {
       const payload: JwtPayload = this.jwtService.verify(token, {
@@ -88,10 +76,5 @@ export class TokenService {
     user.refreshToken = hashedToken;
     await userRepo.save(user);
     return { accessToken, refreshToken };
-=======
-  verifyToken(token: string): JwtPayload {
-    const secret = JWT_CONFIG.ACCESS_SECRET_KEY;
-    return this.jwtService.verify(token, { secret });
->>>>>>> 90be837 (update-subscriptions)
   }
 }

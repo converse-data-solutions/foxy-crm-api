@@ -14,7 +14,7 @@ import { STRIPE } from 'src/shared/utils/config.util';
 import { Public } from 'src/common/decorators/public.decorator';
 import { Request, Response } from 'express';
 import { SkipThrottle } from '@nestjs/throttler';
-import { SkipSerializationInterceptor } from 'src/interceptor/skip-serialization.interceptor';
+import { SkipSerializationInterceptor } from 'src/interceptors/skip-serialization.interceptor';
 
 @Controller('stripe')
 export class StripePaymentController {
