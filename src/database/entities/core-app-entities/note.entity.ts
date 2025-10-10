@@ -6,7 +6,6 @@ import {
   CreateDateColumn,
   JoinColumn,
 } from 'typeorm';
-import { Contact } from './contact.entity';
 import { User } from './user.entity';
 import { NotesEntityName } from 'src/enums/lead-activity.enum';
 

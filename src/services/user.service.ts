@@ -21,7 +21,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Subscription } from 'src/database/entities/base-app-entities/subscription.entity';
 import { Repository } from 'typeorm';
 import { paginationParams } from 'src/shared/utils/pagination-params.util';
-import { Environment, SALT_ROUNDS } from 'src/common/constant/config.constants';
+import { Environment, SALT_ROUNDS } from 'src/shared/utils/config.util';
 import { PlanPricing } from 'src/database/entities/base-app-entities/plan-pricing.entity';
 import { TaskService } from './task.service';
 

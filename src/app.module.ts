@@ -25,13 +25,14 @@ import { LoggerInterceptor } from './interceptor/logger.interceptor';
 import { GlobalAuthGuard } from './guards/global.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/role.guard';
-import { Environment, REDIS_CONFIG, SMTP_CONFIG } from './common/constant/config.constants';
+import { Environment, REDIS_CONFIG, SMTP_CONFIG } from './shared/utils/config.util';
 import { LeadActivityModule } from './modules/lead-activity.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { CustomExceptionFilter } from './common/filter/custom-exception.filter';
 import { LeadConversionModule } from './modules/lead-conversion.module';
 import { StripePaymentModule } from './modules/stripe-payment.module';
 import { TokenModule } from './modules/token.module';
+import { StripePaymentController } from './controllers/stripe-payment.controller';
 
 @Module({
   imports: [
@@ -120,5 +121,6 @@ import { TokenModule } from './modules/token.module';
     },
   ],
   exports: [LoggerService],
+  controllers: [StripePaymentController],
 })
 export class AppModule {}

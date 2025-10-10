@@ -42,44 +42,44 @@ if (error) {
 }
 
 export const DB_CONSTANTS = {
-  HOST: envVars.DB_HOST as string,
+  HOST: envVars.DB_HOST,
   PORT: Number(envVars.DB_PORT),
-  USER: envVars.DB_USER as string,
-  PASSWORD: envVars.DB_PASS as string,
-  NAME: envVars.DB_NAME as string,
+  USER: envVars.DB_USER,
+  PASSWORD: envVars.DB_PASS,
+  NAME: envVars.DB_NAME,
 };
 
 export const SMTP_CONFIG = {
-  host: envVars.SMTP_HOST as string,
+  host: envVars.SMTP_HOST,
   port: Number(envVars.SMTP_PORT),
-  user: envVars.SMTP_USER as string,
-  pass: envVars.SMTP_PASS as string,
+  user: envVars.SMTP_USER,
+  pass: envVars.SMTP_PASS,
 };
 
 export const SALT_ROUNDS = Number(envVars.SALT);
 
 export const JWT_CONFIG = {
-  ACCESS_SECRET_KEY: envVars.ACCESS_SECRET_KEY as string,
-  JWT_ACCESS_EXPIRES_IN: envVars.JWT_ACCESS_EXPIRES_IN as string,
-  REFRESH_SECRETE_KEY: envVars.REFRESH_SECRETE_KEY as string,
-  JWT_REFRESH_EXPIRES_IN: envVars.JWT_REFRESH_EXPIRES_IN as string,
+  ACCESS_SECRET_KEY: envVars.ACCESS_SECRET_KEY,
+  JWT_ACCESS_EXPIRES_IN: envVars.JWT_ACCESS_EXPIRES_IN,
+  REFRESH_SECRETE_KEY: envVars.REFRESH_SECRETE_KEY,
+  JWT_REFRESH_EXPIRES_IN: envVars.JWT_REFRESH_EXPIRES_IN,
 };
 
 export const REDIS_CONFIG = {
-  host: envVars.REDIS_HOST as string,
+  host: envVars.REDIS_HOST,
   port: Number(envVars.REDIS_PORT),
 };
 
 export const Environment = {
-  NODE_ENV: envVars.NODE_ENV as 'dev' | 'prod',
+  NODE_ENV: envVars.NODE_ENV,
 };
 
 export const PAYMENT_URL = {
-  successUrl: envVars.PAYMENT_SUCCESS_URL as string,
-  failureUrl: envVars.PAYMENT_FAILURE_URL as string,
+  successUrl: envVars.PAYMENT_SUCCESS_URL,
+  failureUrl: envVars.PAYMENT_FAILURE_URL,
 };
 
 export const STRIPE = {
-  stripeSecreteKey: envVars.STRIPE_SECRET_KEY as string,
-  stripeWebhookSecret: envVars.STRIPE_WEBHOOK_SECRET as string,
+  stripeSecreteKey: envVars.STRIPE_SECRET_KEY,
+  stripeWebhookSecret: envVars.STRIPE_WEBHOOK_SECRET,
 };

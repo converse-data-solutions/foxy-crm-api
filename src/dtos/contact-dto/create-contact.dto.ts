@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDefined, IsOptional, IsString, Length, Matches } from 'class-validator';
+import { IsDefined, IsOptional, IsString, IsUUID, Length, Matches } from 'class-validator';
 
 export class CreateContactDto {
   @ApiProperty({ example: 'John Doe' })
@@ -28,4 +28,9 @@ export class CreateContactDto {
   @IsOptional()
   @IsString({ message: 'Account should be string' })
   account?: string;
+
+  @ApiPropertyOptional({ example: '10495caf-7023-40cf-be93-dc26f62569de' })
+  @IsOptional()
+  @IsUUID('4', { message: 'Assigned should be UUID' })
+  assignedTo?: string;
 }

@@ -25,8 +25,9 @@ export class ContactService {
     user: User,
     createContactDto: CreateContactDto,
   ): Promise<APIResponse> {
-    const contactRepo = await getRepo<Contact>(Contact, tenantId);
-    const accountRepo = await getRepo<Account>(Account, tenantId);
+    const contactRepo = await getRepo(Contact, tenantId);
+    const accountRepo = await getRepo(Account, tenantId);
+    const userRepo = await getRepo(User, tenantId);
 
     const contactExist = await contactRepo.findOne({
       where: [{ email: createContactDto.email }, { phone: createContactDto.phone }],
@@ -34,7 +35,7 @@ export class ContactService {
     if (contactExist) {
       throw new BadRequestException('Contact is alredy exist');
     }
-    const { account, ...contact } = createContactDto;
+    const { account, assignedTo, ...contact } = createContactDto;
     let accountExist: Account | null = null;
 
     if (account) {
@@ -43,11 +44,19 @@ export class ContactService {
         throw new NotFoundException('Account not found');
       }
     }
+    let existingUser: User | null = null;
+    if (assignedTo) {
+      existingUser = await userRepo.findOne({ where: { id: assignedTo } });
+      if (!existingUser) {
+        throw new NotFoundException('User not found');
+      }
+    }
 
     await contactRepo.save({
       ...contact,
       createdBy: user,
       accountId: accountExist ?? undefined,
+      assignedTo: existingUser ?? undefined,
     });
 
     return {
@@ -66,6 +75,7 @@ export class ContactService {
     const noteRepo = await getRepo<Note>(Note, tenantId);
     const qb = contactRepo
       .createQueryBuilder('contact')
+      .leftJoin('contact.assignedTo', 'user')
       .leftJoinAndSelect('contact.accountId', 'account');
     const { limit, page, skip } = paginationParams(contactQuery.page, contactQuery.limit);
 
@@ -77,6 +87,9 @@ export class ContactService {
       } else if (key === 'accountName') {
         qb.andWhere('account.name ILIKE :accountName', { accountName: `%${value}%` });
       }
+    }
+    if (![Role.Admin, Role.Manager].includes(user.role)) {
+      qb.andWhere(`user.id =:id`, { id: user.id });
     }
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();

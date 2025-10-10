@@ -1,4 +1,10 @@
-import { BadRequestException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { CreateLeadDto } from '../dtos/lead-dto/create-lead.dto';
 import { UpdateLeadDto } from '../dtos/lead-dto/update-lead.dto';
 import { getRepo } from 'src/shared/database-connection/get-connection';
@@ -27,16 +33,28 @@ export class LeadService {
 
   async createLead(createLeadDto: CreateLeadDto, tenantId: string, user: User) {
     const leadRepo = await getRepo(Lead, tenantId);
+    const userRepo = await getRepo(User, tenantId);
     const leadExist = await leadRepo.findOne({
       where: [{ email: createLeadDto.email }, { phone: createLeadDto.phone }],
     });
-
+    const { assignedTo, ...createLead } = createLeadDto;
+    let existingUser: User | null = null;
+    if (assignedTo) {
+      if (![Role.Admin, Role.Manager].includes(user.role)) {
+        throw new UnauthorizedException('Admin or manger only can assign a user to the lead');
+      }
+      existingUser = await userRepo.findOne({ where: { id: assignedTo } });
+      if (!existingUser) {
+        throw new NotFoundException('Assigned user not found');
+      }
+    }
     if (leadExist) {
       throw new BadRequestException('The lead is already present');
     } else {
       const newLead: Lead = leadRepo.create({
-        ...createLeadDto,
+        ...createLead,
         createdBy: user,
+        assignedTo: existingUser ?? undefined,
       });
 
       await leadRepo.save(newLead);
@@ -58,11 +76,16 @@ export class LeadService {
     };
   }
 
-  async findAllLeads(leadQuery: LeadQueryDto, tenant: string): Promise<APIResponse<Lead[]>> {
+  async findAllLeads(
+    leadQuery: LeadQueryDto,
+    tenant: string,
+    user: User,
+  ): Promise<APIResponse<Lead[]>> {
     const leadRepo = await getRepo(Lead, tenant);
     const noteRepo = await getRepo(Note, tenant);
     const qb = leadRepo
       .createQueryBuilder('lead')
+      .leftJoin('lead.assignedTo', 'user')
       .leftJoinAndSelect('lead.leadActivities', 'leadActivities');
 
     const { limit, page, skip } = paginationParams(leadQuery.page, leadQuery.limit);
@@ -77,6 +100,9 @@ export class LeadService {
       } else {
         qb.andWhere(`lead.${key} = :${key}`, { [key]: value });
       }
+    }
+    if (![Role.Admin, Role.Manager].includes(user.role)) {
+      qb.andWhere(`user.id =:id`, { id: user.id });
     }
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
