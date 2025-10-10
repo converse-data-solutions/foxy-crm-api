@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { JWT_CONFIG } from 'src/common/constant/config.constants';
+import { JWT_CONFIG } from 'src/shared/utils/config.util';
 import { JwtPayload } from 'src/common/dtos/jwt-payload.dto';
 
 @Injectable()

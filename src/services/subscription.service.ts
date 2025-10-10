@@ -82,7 +82,7 @@ export class SubscriptionService {
 
     const session = await this.stripeService.createCheckoutSession(
       payload.email,
-      token,
+      tenant.schemaName,
       planPrice.stripePriceId,
     );
     return {

@@ -53,6 +53,7 @@
     "countries-list": "^3.1.1",
     "csv-parser": "^3.2.0",
     "dotenv": "^17.2.2",
+    "joi": "^18.0.1",
     "nodemailer": "^7.0.6",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
