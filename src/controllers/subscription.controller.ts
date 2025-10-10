@@ -4,15 +4,10 @@ import { Request } from 'express';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { SubscribeDto } from 'src/dtos/subscribe-dto/subscribe.dto';
 import { Public } from 'src/common/decorators/public.decorator';
-import { SkipThrottle } from '@nestjs/throttler';
-import { StripePaymentService } from 'src/services/stripe-payment.service';
 
 @Controller('plans')
 export class SubscriptionController {
-  constructor(
-    private readonly subscriptionService: SubscriptionService,
-    private readonly stripeService: StripePaymentService,
-  ) {}
+  constructor(private readonly subscriptionService: SubscriptionService) {}
 
   @Post()
   @Public()
@@ -35,10 +30,9 @@ export class SubscriptionController {
     return this.subscriptionService.findCurrentPlan(request);
   }
 
-  @SkipThrottle()
-  @Get('session')
+  @Get('success')
   @Public()
-  async getSession(@Query('id') id: string, @Query('key') token: string) {
-    return this.stripeService.getSession(id, token);
+  async paymentSuccess() {
+    return { success: true, message: 'Payment done' };
   }
 }

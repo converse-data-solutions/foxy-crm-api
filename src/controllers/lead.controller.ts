@@ -103,8 +103,12 @@ export class LeadController {
   @Get()
   @ApiOperation({ summary: 'Retrive lead based on query' })
   @ApiResponse({ status: 200, description: 'Lead fetched successfully' })
-  async findAllLeads(@Query() leadQuery: LeadQueryDto, @Headers('x-tenant-id') tenantId: string) {
-    return this.leadService.findAllLeads(leadQuery, tenantId);
+  async findAllLeads(
+    @Query() leadQuery: LeadQueryDto,
+    @Headers('x-tenant-id') tenantId: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.leadService.findAllLeads(leadQuery, tenantId, user);
   }
 
   @Put(':id')

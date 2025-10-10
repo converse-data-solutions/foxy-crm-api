@@ -5,12 +5,15 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import { CustomValidationPipe } from './common/pipes/custom-validation.pipe';
 import { SeedService } from './services/seed.service';
+import * as express from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.use(cookieParser());
   app.setGlobalPrefix('api/v1');
+  app.use('/api/v1/stripe-payment/webhook', express.raw({ type: 'application/json' }));
+
+  app.use(cookieParser());
 
   app.enableCors({
     origin: 'http://localhost:3000',

@@ -1,5 +1,5 @@
 import { DataSource } from 'typeorm';
-import { DB_CONSTANTS } from 'src/common/constant/config.constants';
+import { DB_CONSTANTS } from 'src/shared/utils/config.util';
 
 export const dataSource = new DataSource({
   type: 'postgres',

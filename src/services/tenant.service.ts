@@ -20,7 +20,7 @@ import { TenantSignupDto } from 'src/dtos/tenant-dto/tenant-signup.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { OtpService } from './otp.service';
 import { CountryService } from './country.service';
-import { SALT_ROUNDS } from 'src/common/constant/config.constants';
+import { SALT_ROUNDS } from 'src/shared/utils/config.util';
 
 @Injectable()
 export class TenantService {
@@ -73,7 +73,7 @@ export class TenantService {
   }
 
   async tenantSignup(tenant: TenantSignupDto) {
-    const domain = tenant.email.split('@')[1].split('.')[0];
+    const domain = tenant.email.split('@')[1];
 
     const isTenant = await this.tenantRepo.findOne({
       where: [{ organizationName: tenant.organizationName }, { email: tenant.email }, { domain }],
@@ -105,7 +105,7 @@ export class TenantService {
   }
 
   async getTenant(email: string) {
-    const domain = email.split('@')[1].split('.')[0];
+    const domain = email.split('@')[1];
     const domainExist = await this.tenantRepo.findOne({
       where: { domain },
       relations: { subscription: true },
