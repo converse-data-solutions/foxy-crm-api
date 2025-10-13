@@ -101,6 +101,10 @@ export class AuthService {
     if (!userExist.otpVerified) {
       throw new BadRequestException('Otp is not verified please verify otp and reset the password');
     }
+    const isExistingPassword = await bcrypt.compare(forgotPassword.password, userExist.password);
+    if (isExistingPassword) {
+      throw new BadRequestException('Old password and current password should not be same');
+    }
     const hashedPassword = await bcrypt.hash(forgotPassword.password, SALT_ROUNDS);
     userExist.password = hashedPassword;
     userExist.otpVerified = false;

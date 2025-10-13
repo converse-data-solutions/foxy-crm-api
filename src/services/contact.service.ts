@@ -17,9 +17,12 @@ import { Role } from 'src/enums/core-app.enum';
 import { NotesEntityName } from 'src/enums/lead-activity.enum';
 import { getRepo } from 'src/shared/database-connection/get-connection';
 import { paginationParams } from 'src/shared/utils/pagination-params.util';
+import { MetricService } from './metric.service';
+import { MetricDto } from 'src/dtos/metric-dto/metric.dto';
 
 @Injectable()
 export class ContactService {
+  constructor(private metricService: MetricService) {}
   async create(
     tenantId: string,
     user: User,
@@ -58,7 +61,8 @@ export class ContactService {
       accountId: accountExist ?? undefined,
       assignedTo: existingUser ?? undefined,
     });
-
+    const metric: Partial<MetricDto> = { contacts: 1 };
+    await this.metricService.updateTenantCounts(tenantId, metric);
     return {
       success: true,
       statusCode: HttpStatus.CREATED,
