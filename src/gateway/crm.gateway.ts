@@ -69,7 +69,6 @@ export class CrmGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
     @MessageBody() data: { tenantId: string },
   ) {
     const metricData = await this.metricService.getTenantCounts(data.tenantId);
-
     client.join(data.tenantId);
     client.emit('metricUpdates', metricData);
   }
