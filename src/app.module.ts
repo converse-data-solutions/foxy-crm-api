@@ -33,6 +33,7 @@ import { LeadConversionModule } from './modules/lead-conversion.module';
 import { StripePaymentModule } from './modules/stripe-payment.module';
 import { TokenModule } from './modules/token.module';
 import { StripePaymentController } from './controllers/stripe-payment.controller';
+import { MetricModule } from './modules/metric.module';
 
 @Module({
   imports: [
@@ -96,6 +97,7 @@ import { StripePaymentController } from './controllers/stripe-payment.controller
     CountryModule,
     StripePaymentModule,
     TokenModule,
+    MetricModule,
   ],
   providers: [
     JwtAuthGuard,

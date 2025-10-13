@@ -17,10 +17,15 @@ import { LeadStatus } from 'src/enums/status.enum';
 import { getRepo } from 'src/shared/database-connection/get-connection';
 import { ILike } from 'typeorm';
 import { CountryService } from './country.service';
+import { MetricService } from './metric.service';
+import { MetricDto } from 'src/dtos/metric-dto/metric.dto';
 
 @Injectable()
 export class LeadConversionService {
-  constructor(private readonly countryService: CountryService) {}
+  constructor(
+    private readonly countryService: CountryService,
+    private readonly metricService: MetricService,
+  ) {}
   async leadPreview(tenantId: string, id: string): Promise<APIResponse<LeadPreview>> {
     const leadRepo = await getRepo<Lead>(Lead, tenantId);
     const lead = await leadRepo.findOne({ where: { id } });
@@ -105,6 +110,8 @@ export class LeadConversionService {
       createdBy: user,
       accountId: isAccount ?? newAccount ?? undefined,
     });
+    const metric: Partial<MetricDto> = { leads: 1 };
+    await this.metricService.updateTenantCounts(tenantId, metric);
     lead.contact = newContact;
     lead.status = LeadStatus.Converted;
     lead.convertedBy = user;

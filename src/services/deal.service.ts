@@ -11,9 +11,12 @@ import { Role } from 'src/enums/core-app.enum';
 import { DealStage, TaskStatus } from 'src/enums/status.enum';
 import { getRepo } from 'src/shared/database-connection/get-connection';
 import { paginationParams } from 'src/shared/utils/pagination-params.util';
+import { MetricService } from './metric.service';
+import { MetricDto } from 'src/dtos/metric-dto/metric.dto';
 
 @Injectable()
 export class DealService {
+  constructor(private readonly metricService: MetricService) {}
   async createDeal(tenantId: string, user: User, createDealDto: CreateDealDto) {
     const dealRepo = await getRepo(Deal, tenantId);
     const contactRepo = await getRepo(Contact, tenantId);
@@ -39,6 +42,9 @@ export class DealService {
       contactId: contact ?? undefined,
       createdBy: user,
     });
+
+    const metric: Partial<MetricDto> = { deals: 1 };
+    await this.metricService.updateTenantCounts(tenantId, metric);
     return { success: true, statusCode: HttpStatus.CREATED, message: 'Deal created successfully' };
   }
 

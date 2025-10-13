@@ -5,6 +5,7 @@ import { Deal } from 'src/database/entities/core-app-entities/deal.entity';
 import { Task } from 'src/database/entities/core-app-entities/task.entity';
 import { Ticket } from 'src/database/entities/core-app-entities/ticket.entity';
 import { User } from 'src/database/entities/core-app-entities/user.entity';
+import { MetricDto } from 'src/dtos/metric-dto/metric.dto';
 import { CreateTicketDto } from 'src/dtos/ticket-dto/create-ticket.dto';
 import { GetTicketDto } from 'src/dtos/ticket-dto/get-ticket.dto';
 import { UpdateTicketDto } from 'src/dtos/ticket-dto/update-ticket.dto';
@@ -12,8 +13,10 @@ import { Role } from 'src/enums/core-app.enum';
 import { DealStage, TaskStatus, TicketStatus } from 'src/enums/status.enum';
 import { getRepo } from 'src/shared/database-connection/get-connection';
 import { paginationParams } from 'src/shared/utils/pagination-params.util';
+import { MetricService } from './metric.service';
 @Injectable()
 export class TicketService {
+  constructor(private readonly metricService: MetricService) {}
   async createTicket(
     tenantId: string,
     user: User,
@@ -44,6 +47,8 @@ export class TicketService {
       ...createTicket,
     });
     await ticketRepo.save(ticket);
+    const metric: Partial<MetricDto> = { tickets: 1 };
+    await this.metricService.updateTenantCounts(tenantId, metric);
     return {
       success: true,
       statusCode: HttpStatus.CREATED,
