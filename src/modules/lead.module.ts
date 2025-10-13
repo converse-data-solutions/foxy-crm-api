@@ -4,9 +4,10 @@ import { LeadController } from '../controllers/lead.controller';
 import { BullModule } from '@nestjs/bullmq';
 import { FileProcessor } from 'src/processors/file-processor';
 import { LeadConversionModule } from './lead-conversion.module';
+import { MetricModule } from './metric.module';
 
 @Module({
-  imports: [BullModule.registerQueue({ name: 'file-import' }), LeadConversionModule],
+  imports: [BullModule.registerQueue({ name: 'file-import' }), LeadConversionModule, MetricModule],
   controllers: [LeadController],
   providers: [LeadService, FileProcessor],
 })

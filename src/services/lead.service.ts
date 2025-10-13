@@ -21,6 +21,8 @@ import { Readable } from 'stream';
 import { paginationParams } from 'src/shared/utils/pagination-params.util';
 import { Note } from 'src/database/entities/core-app-entities/note.entity';
 import { NotesEntityName } from 'src/enums/lead-activity.enum';
+import { MetricService } from './metric.service';
+import { MetricDto } from 'src/dtos/metric-dto/metric.dto';
 
 interface SerializedBuffer {
   type: 'Buffer';
@@ -29,7 +31,10 @@ interface SerializedBuffer {
 
 @Injectable()
 export class LeadService {
-  constructor(@InjectQueue('file-import') private readonly fileQueue: Queue) {}
+  constructor(
+    @InjectQueue('file-import') private readonly fileQueue: Queue,
+    private readonly metricService: MetricService,
+  ) {}
 
   async createLead(createLeadDto: CreateLeadDto, tenantId: string, user: User) {
     const leadRepo = await getRepo(Lead, tenantId);
@@ -58,6 +63,8 @@ export class LeadService {
       });
 
       await leadRepo.save(newLead);
+      const metric: Partial<MetricDto> = { leads: 1 };
+      await this.metricService.updateTenantCounts(tenantId, metric);
       return {
         success: true,
         statusCode: HttpStatus.CREATED,
@@ -191,7 +198,9 @@ export class LeadService {
           );
           if (finalLead.length > 0) {
             const newLeads = leadRepo.create(finalLead);
-            await leadRepo.save(newLeads);
+            const leads = await leadRepo.insert(newLeads);
+            const metric: Partial<MetricDto> = { leads: leads.identifiers.length };
+            await this.metricService.updateTenantCounts(tenant, metric);
           }
           resolve(results as Lead[]);
         })

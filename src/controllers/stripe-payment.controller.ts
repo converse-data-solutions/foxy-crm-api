@@ -15,7 +15,7 @@ import { Public } from 'src/common/decorators/public.decorator';
 import { Request, Response } from 'express';
 import { SkipThrottle } from '@nestjs/throttler';
 
-@Controller('stripe-payment')
+@Controller('stripe')
 export class StripePaymentController {
   constructor(
     private readonly stripeWebhookService: StripePaymentService,
