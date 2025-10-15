@@ -10,7 +10,6 @@ import { plainToInstance } from 'class-transformer';
 import { JwtPayload } from 'src/common/dtos/jwt-payload.dto';
 import { Role } from 'src/enums/core-app.enum';
 import { InjectRepository } from '@nestjs/typeorm';
-import { MailerService } from '@nestjs-modules/mailer';
 import { OtpDto } from 'src/dtos/otp-dto/otp.dto';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Subscription } from 'src/database/entities/base-app-entities/subscription.entity';
@@ -19,6 +18,7 @@ import { EmailTemplateType } from 'src/enums/email-teamplate.enum';
 import { generateOtp } from 'src/shared/utils/generate-otp.util';
 import { CookiePayload } from 'src/common/dtos/cookie-payload.dto';
 import { TokenService } from './token.service';
+import { EmailService } from './email.service';
 
 @Injectable()
 export class OtpService {
@@ -26,7 +26,7 @@ export class OtpService {
     @Inject(forwardRef(() => TenantService))
     private readonly tenantService: TenantService,
     private readonly tokenService: TokenService,
-    private readonly mailService: MailerService,
+    private readonly emailService: EmailService,
     @InjectRepository(Tenant)
     private readonly tenantRepo: Repository<Tenant>,
     @InjectRepository(Subscription)
@@ -60,7 +60,7 @@ export class OtpService {
       subject = 'Your One-Time Password (OTP) for Password Reset';
     }
     const html = ForgotAndVerifyMail(name, otp, emailType);
-    this.mailService.sendMail({
+    await this.emailService.sendMail({
       to: existUser.email,
       html,
       subject,

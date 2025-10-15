@@ -1,22 +1,11 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
+import { IsEnum, IsOptional } from 'class-validator';
 import { TicketStatus } from 'src/enums/status.enum';
+import { CreateTicketDto } from './create-ticket.dto';
 
-export class UpdateTicketDto {
-  @ApiPropertyOptional({
-    example: 'Login issue on mobile app',
-  })
-  @IsOptional()
-  @IsString()
-  title?: string;
-
-  @ApiPropertyOptional({
-    example: 'User unable to login using Google OAuth on Android app.',
-  })
-  @IsOptional()
-  @IsString()
-  description?: string;
-
+export class UpdateTicketDto extends PartialType(
+  OmitType(CreateTicketDto, ['dealId', 'contactId']),
+) {
   @ApiPropertyOptional({
     description: 'Updated status of the ticket',
     enum: TicketStatus,

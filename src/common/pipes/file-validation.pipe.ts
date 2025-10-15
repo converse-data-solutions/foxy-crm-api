@@ -15,6 +15,6 @@ export class FileValidationPipe extends FileValidator<Record<string, any>, Expre
   }
 
   buildErrorMessage(): string {
-    return 'Only CSV files are allowed';
+    return 'Please upload CSV files only';
   }
 }

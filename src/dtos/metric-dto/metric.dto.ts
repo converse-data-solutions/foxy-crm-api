@@ -3,4 +3,5 @@ export class MetricDto {
   contacts: number;
   deals: number;
   tickets: number;
+  leadConversionRate?: number;
 }

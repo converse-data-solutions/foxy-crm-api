@@ -1,54 +1,17 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDefined, IsOptional, IsString, Length, Matches } from 'class-validator';
+import { ApiProperty, OmitType, PickType } from '@nestjs/swagger';
+import { IsDefined, IsString, Length, Matches } from 'class-validator';
+import { TenantSignupDto } from '../tenant-dto/tenant-signup.dto';
 
-export class Signin {
-  @IsDefined({ message: 'Email is required' })
-  @Matches(/^[^\s@]+@[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/, {
-    message: 'Email must be a valid email address',
-  })
-  @ApiProperty({ example: 'john@example.com' })
-  @Length(5, 50, { message: 'Email must be between 5 and 50 characters' })
-  email: string;
+export class SignIn extends PickType(TenantSignupDto, ['email', 'password'] as const) {}
 
-  @IsDefined({ message: 'Password must be required' })
-  @Length(7, 15, { message: 'Password must be between 7 and 15 characters' })
-  @ApiProperty({ example: 'StrongP@ssw0rd' })
-  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{7,15}$/, {
-    message:
-      'Password must be 7-15 characters long, include at least one uppercase letter, one lowercase letter, one number, and one special character',
-  })
-  password: string;
-}
-
-export class UserSignupDto extends Signin {
+export class UserSignupDto extends OmitType(TenantSignupDto, [
+  'organizationName',
+  'userName',
+  'url',
+]) {
   @IsDefined({ message: 'Name is required' })
   @IsString({ message: 'Name must be a string' })
   @Length(3, 30, { message: 'Name must be between 3 and 30 characters' })
   @ApiProperty({ example: 'john' })
   name: string;
-
-  @IsDefined({ message: 'Phone number is required' })
-  @Matches(/^\+?[0-9\- ]{7,20}$/, {
-    message: 'Phone must be a valid number and may include country code',
-  })
-  @Length(6, 20, { message: 'Phone number must be between 6 and 20 characters' })
-  @ApiProperty({ example: '9876532458' })
-  phone: string;
-
-  @IsOptional()
-  @IsString({ message: 'Please provide a valid address' })
-  @Length(5, 50, { message: 'Address must be between 5 and 50 characters' })
-  @ApiPropertyOptional({ example: '11/2 Abc street' })
-  address?: string;
-
-  @IsOptional()
-  @IsString({ message: 'City should be string' })
-  @Length(3, 40, { message: 'City must be between 3 and 40 characters' })
-  @ApiPropertyOptional({ example: 'Gobi' })
-  city?: string;
-
-  @IsOptional()
-  @IsString({ message: 'Country should be string' })
-  @ApiPropertyOptional({ example: 'India' })
-  country?: string;
 }

@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { User } from './user.entity';
 import { NotesEntityName } from 'src/enums/lead-activity.enum';
+import { Exclude } from 'class-transformer';
 
 @Entity({ name: 'notes' })
 export class Note {
@@ -17,9 +18,11 @@ export class Note {
   @Column({ type: 'text' })
   content: string;
 
+  @Exclude()
   @Column({ name: 'entity_name', type: 'enum', enum: NotesEntityName })
   entityName: NotesEntityName;
 
+  @Exclude()
   @Column({ name: 'entity_id', type: 'varchar', length: 40 })
   entityId: string;
 

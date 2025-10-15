@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { Contact } from 'src/database/entities/core-app-entities/contact.entity';
 import { Deal } from 'src/database/entities/core-app-entities/deal.entity';
 import { Lead } from 'src/database/entities/core-app-entities/lead.entity';
@@ -7,12 +7,12 @@ import { MetricDto } from 'src/dtos/metric-dto/metric.dto';
 import { getRepo } from 'src/shared/database-connection/get-connection';
 import Redis from 'ioredis';
 import { REDIS_CONFIG } from 'src/shared/utils/config.util';
+import { CrmGateway } from 'src/gateway/crm.gateway';
 
 @Injectable()
 export class MetricService {
-  private tenantCountMap = new Map<string, MetricDto>();
   private redis: Redis;
-  constructor() {
+  constructor(@Inject(forwardRef(() => CrmGateway)) private readonly crmGateway: CrmGateway) {
     this.redis = new Redis({
       host: REDIS_CONFIG.host,
       port: REDIS_CONFIG.port,
@@ -36,20 +36,25 @@ export class MetricService {
       deals: await dealCount.count(),
       tickets: await ticketCount.count(),
     };
+    counts.leadConversionRate = (counts.contacts / counts.leads) * 100; //percentage
     this.redis.set(tenantId, JSON.stringify(counts), 'EX', 300);
     return counts;
   }
   async updateTenantCounts(tenantId: string, metrics: Partial<MetricDto>) {
-    const metricData = this.tenantCountMap.get(tenantId);
-    if (metricData) {
-      for (const key in metrics) {
-        const k = key as keyof MetricDto;
-        if (metrics[k] !== undefined) {
-          metricData[k] = metricData[k] + metrics[k];
+    const stringData = await this.redis.get(tenantId);
+    if (stringData) {
+      const metricData = JSON.parse(stringData);
+      if (metricData) {
+        for (const key in metrics) {
+          const k = key as keyof MetricDto;
+          if (metrics[k] !== undefined) {
+            metricData[k] = metricData[k] + metrics[k];
+          }
         }
+        metricData.leadConversionRate = (metricData.contacts / metricData.leads) * 100;
+        this.redis.set(tenantId, JSON.stringify(metricData), 'EX', 300);
+        await this.crmGateway.emitMetricUpdate(tenantId);
       }
-      this.redis.set(tenantId, JSON.stringify(metricData), 'EX', 300);
-      // await this.crmGateway.emitMetricUpdate(tenantId);
     }
   }
 }

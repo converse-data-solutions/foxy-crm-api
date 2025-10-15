@@ -1,6 +1,6 @@
 import { BadRequestException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { Signin } from 'src/dtos/user-dto/user-signup.dto';
+import { SignIn } from 'src/dtos/user-dto/user-signup.dto';
 import { getRepo } from 'src/shared/database-connection/get-connection';
 import { User } from 'src/database/entities/core-app-entities/user.entity';
 import { JwtPayload } from 'src/common/dtos/jwt-payload.dto';
@@ -19,7 +19,7 @@ export class AuthService {
     private readonly tenantService: TenantService,
   ) {}
 
-  async signin(user: Signin): Promise<APIResponse<CookiePayload>> {
+  async signin(user: SignIn): Promise<APIResponse<CookiePayload>> {
     const tenant = await this.tenantService.getTenant(user.email);
     let tenantAccessToken: string | null = null;
     if (tenant.email === user.email) {
@@ -114,10 +114,5 @@ export class AuthService {
       statusCode: HttpStatus.OK,
       message: 'Password updated successfully',
     };
-  }
-
-  async validateToken(token: string) {
-    const verifyToken: JwtPayload = await this.tokenService.verifyToken(token);
-    return verifyToken;
   }
 }

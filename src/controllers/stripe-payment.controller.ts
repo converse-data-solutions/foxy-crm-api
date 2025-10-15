@@ -6,7 +6,7 @@ import {
   Res,
   Req,
   HttpStatus,
-  InternalServerErrorException,
+  UseInterceptors,
 } from '@nestjs/common';
 import { StripePaymentService } from 'src/services/stripe-payment.service';
 import Stripe from 'stripe';
@@ -14,6 +14,7 @@ import { STRIPE } from 'src/shared/utils/config.util';
 import { Public } from 'src/common/decorators/public.decorator';
 import { Request, Response } from 'express';
 import { SkipThrottle } from '@nestjs/throttler';
+import { SkipSerializationInterceptor } from 'src/interceptor/skip-serialization.interceptor';
 
 @Controller('stripe')
 export class StripePaymentController {
@@ -22,6 +23,7 @@ export class StripePaymentController {
     @Inject('STRIPE_CLIENT') private stripe: Stripe,
   ) {}
 
+  @UseInterceptors(SkipSerializationInterceptor)
   @Post('webhook')
   @SkipThrottle()
   @Public()
@@ -29,19 +31,22 @@ export class StripePaymentController {
     @Req() req: Request,
     @Res() res: Response,
     @Headers('stripe-signature') sig: string,
-  ) {
+  ): Promise<void> {
     const endpointSecret = STRIPE.stripeWebhookSecret;
-    let event: Stripe.Event;
     if (!endpointSecret) {
-      throw new InternalServerErrorException({ message: 'Stripe webhook secrete key is missing' });
+      res
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .json({ message: 'Stripe webhook secret is missing' });
     }
-    const rawBody = req.body;
 
-    event = this.stripe.webhooks.constructEvent(rawBody, sig, endpointSecret);
+    let event: Stripe.Event;
+    try {
+      event = this.stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+      await this.stripeWebhookService.processEvent(event);
+    } catch (err) {
+      console.error('Stripe webhook processing error:', err);
+    }
 
-    // Pass to service for business logic
-    await this.stripeWebhookService.processEvent(event);
-
-    return res.status(HttpStatus.OK).json({ received: true });
+    res.status(HttpStatus.OK).send({ received: true });
   }
 }

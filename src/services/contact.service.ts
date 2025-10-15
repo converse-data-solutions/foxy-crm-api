@@ -79,7 +79,7 @@ export class ContactService {
     const noteRepo = await getRepo<Note>(Note, tenantId);
     const qb = contactRepo
       .createQueryBuilder('contact')
-      .leftJoin('contact.assignedTo', 'user')
+      .leftJoinAndSelect('contact.assignedTo', 'user')
       .leftJoinAndSelect('contact.accountId', 'account');
     const { limit, page, skip } = paginationParams(contactQuery.page, contactQuery.limit);
 
@@ -102,9 +102,9 @@ export class ContactService {
     for (const contact of data) {
       const notes = await noteRepo.find({
         where: { entityId: contact.id, entityName: NotesEntityName.Contact },
-        relations: ['createdBy'],
       });
       contact['notes'] = notes;
+      contact;
       contactData.push(contact);
     }
     return {
@@ -129,7 +129,7 @@ export class ContactService {
     if (!contact) {
       throw new NotFoundException('Contact not found or invalid contact id');
     }
-    if (updateContactDto.assignedTo && user.role == Role.SalesRep) {
+    if (updateContactDto.assignedTo && ![Role.Admin, Role.Manager].includes(user.role)) {
       throw new UnauthorizedException('Not have enough authorization to assign a contact');
     } else {
       assignedUser = await userRepo.findOne({ where: { id: updateContactDto.assignedTo } });
@@ -148,6 +148,7 @@ export class ContactService {
       ...updateContact,
       accountId: accountId ?? undefined,
       assignedTo: assignedUser ?? undefined,
+      updatedBy: user,
     };
     const updatedContact = await contactRepo.save(contact);
     if (note) {

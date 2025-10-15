@@ -23,7 +23,6 @@ import { Repository } from 'typeorm';
 import { paginationParams } from 'src/shared/utils/pagination-params.util';
 import { Environment, SALT_ROUNDS } from 'src/shared/utils/config.util';
 import { PlanPricing } from 'src/database/entities/base-app-entities/plan-pricing.entity';
-import { TaskService } from './task.service';
 
 @Injectable()
 export class UserService {
@@ -34,7 +33,6 @@ export class UserService {
     private readonly subscriptionRepo: Repository<Subscription>,
     @InjectRepository(PlanPricing)
     private readonly planPriceRepo: Repository<PlanPricing>,
-    private readonly taskService: TaskService,
   ) {}
   async updateUser(
     tenantId: string,
@@ -52,6 +50,12 @@ export class UserService {
     }
     if (!existUser) {
       throw new BadRequestException('Invalid user id or user not found');
+    }
+    if (updateUser.email) {
+      if (existUser.role === Role.Admin) {
+        throw new UnauthorizedException('Not able to update admin mail');
+      }
+      await this.tenantService.getTenant(updateUser.email);
     }
 
     const mailOrPhoneExist = await userRepo.find({
@@ -81,7 +85,10 @@ export class UserService {
     };
   }
 
-  async getUser(tenantId: string, userQuery: GetUserDto) {
+  async getUser(
+    tenantId: string,
+    userQuery: GetUserDto,
+  ): Promise<APIResponse<Omit<User, 'password' | 'otp'>[]>> {
     const userRepo = await getRepo(User, tenantId);
     const qb = userRepo.createQueryBuilder('user');
 
@@ -102,17 +109,18 @@ export class UserService {
     }
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
+    const usersData = data.map(({ password, otp, ...rest }) => rest);
     const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };
     return {
       success: true,
       statusCode: HttpStatus.OK,
       message: 'User details fetched based on filter',
-      data,
+      data: usersData,
       pageInfo,
     };
   }
 
-  async userSignup(user: UserSignupDto) {
+  async userSignup(user: UserSignupDto): Promise<APIResponse> {
     const tenant = await this.tenantService.getTenant(user.email);
     const userRepo = await getRepo<User>(User, tenant.schemaName);
     const userCount = await userRepo.count();
@@ -174,7 +182,9 @@ export class UserService {
     }
 
     const userRepo = await getRepo(User, schema);
-    const user = await userRepo.findOne({ where: { id: payload.id } });
+    const user = await userRepo.findOne({
+      where: { id: payload.id, role: payload.role, email: payload.email },
+    });
     return user ?? null;
   }
 }

@@ -1,10 +1,4 @@
-import {
-  BadRequestException,
-  HttpStatus,
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { BadRequestException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 import { CreateLeadDto } from '../dtos/lead-dto/create-lead.dto';
 import { UpdateLeadDto } from '../dtos/lead-dto/update-lead.dto';
 import { getRepo } from 'src/shared/database-connection/get-connection';
@@ -13,7 +7,7 @@ import { User } from 'src/database/entities/core-app-entities/user.entity';
 import { Queue } from 'bullmq';
 import csv from 'csv-parser';
 import { InjectQueue } from '@nestjs/bullmq';
-import { LeadQueryDto } from 'src/dtos/lead-dto/lead-query.dto';
+import { LeadQueryDto } from 'src/dtos/lead-dto/get-lead.dto';
 import { APIResponse } from 'src/common/dtos/response.dto';
 import { Role } from 'src/enums/core-app.enum';
 import { LeadStatus } from 'src/enums/status.enum';
@@ -46,11 +40,11 @@ export class LeadService {
     let existingUser: User | null = null;
     if (assignedTo) {
       if (![Role.Admin, Role.Manager].includes(user.role)) {
-        throw new UnauthorizedException('Admin or manger only can assign a user to the lead');
+        throw new UnauthorizedException('Admin or manger only can assign a lead to the user');
       }
       existingUser = await userRepo.findOne({ where: { id: assignedTo } });
       if (!existingUser) {
-        throw new NotFoundException('Assigned user not found');
+        throw new BadRequestException('Invalid user id for lead assignment');
       }
     }
     if (leadExist) {
@@ -100,9 +94,9 @@ export class LeadService {
     for (const [key, value] of Object.entries(leadQuery)) {
       if (value == null || key === 'page' || key === 'limit') continue;
 
-      if (key === 'source') {
+      if (['source', 'email', 'phone'].includes(key)) {
         qb.andWhere(`lead.${key} = :${key}`, { [key]: value });
-      } else if (['name', 'email', 'phone', 'company'].includes(key)) {
+      } else if (['name', 'company'].includes(key)) {
         qb.andWhere(`lead.${key} ILIKE :${key}`, { [key]: `%${value}%` });
       } else {
         qb.andWhere(`lead.${key} = :${key}`, { [key]: value });

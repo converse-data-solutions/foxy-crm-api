@@ -55,7 +55,7 @@ export class LeadActivityService {
     const noteRepo = await getRepo(Note, tenantId);
     const notes = await noteRepo.find({
       where: { entityId: leadId, entityName: NotesEntityName.Lead },
-      order: { createdAt: 'ASC' },
+      order: { createdAt: 'DESC' },
     });
     if (!lead) {
       throw new NotFoundException('Lead not found or invalid lead ID');
@@ -70,7 +70,6 @@ export class LeadActivityService {
     }
     const leadActivities = await leadActivityRepo.find({
       where: { leadId: { id: leadId } },
-      relations: ['createdBy'],
     });
     if (leadActivities.length === 0) {
       throw new NotFoundException('No lead activities found for the given lead ID');

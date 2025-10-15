@@ -1,4 +1,4 @@
-import { NestFactory } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DataSource } from 'typeorm';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -6,14 +6,17 @@ import cookieParser from 'cookie-parser';
 import { CustomValidationPipe } from './common/pipes/custom-validation.pipe';
 import { SeedService } from './services/seed.service';
 import * as express from 'express';
+import helmet from 'helmet';
+import { ClassSerializerInterceptor } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.setGlobalPrefix('api/v1');
-  app.use('/api/v1/stripe-payment/webhook', express.raw({ type: 'application/json' }));
+  app.use('/api/v1/stripe/webhook', express.raw({ type: 'application/json' }));
 
   app.use(cookieParser());
+  app.use(helmet());
 
   app.enableCors({
     origin: 'http://localhost:3000',
@@ -36,6 +39,7 @@ async function bootstrap() {
   await seederService.subscriptionSeed();
 
   app.useGlobalPipes(new CustomValidationPipe());
+  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
   await app.listen(8000);
 }

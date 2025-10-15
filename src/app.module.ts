@@ -34,6 +34,8 @@ import { StripePaymentModule } from './modules/stripe-payment.module';
 import { TokenModule } from './modules/token.module';
 import { StripePaymentController } from './controllers/stripe-payment.controller';
 import { MetricModule } from './modules/metric.module';
+import { EmailModule } from './modules/email.module';
+import { SubscriptionHistoryModule } from './modules/subscription-history.module';
 
 @Module({
   imports: [
@@ -79,7 +81,6 @@ import { MetricModule } from './modules/metric.module';
         from: 'Converse Data Solutions',
       },
     }),
-    EventEmitterModule.forRoot(),
     AuthModule,
     SubscriptionModule,
     TenantModule,
@@ -98,6 +99,9 @@ import { MetricModule } from './modules/metric.module';
     StripePaymentModule,
     TokenModule,
     MetricModule,
+    EmailModule,
+    SubscriptionHistoryModule,
+    EventEmitterModule.forRoot(),
   ],
   providers: [
     JwtAuthGuard,

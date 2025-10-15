@@ -10,13 +10,17 @@ import { SubscriptionModule } from './subscription.module';
 import { SubscriptionScheduler } from 'src/schedulers/subscription.scheduler';
 import { STRIPE } from 'src/shared/utils/config.util';
 import { StripePaymentController } from 'src/controllers/stripe-payment.controller';
+import { EmailModule } from './email.module';
+import { SubscriptionHistoryModule } from './subscription-history.module';
 
 @Module({
   imports: [
     forwardRef(() => AuthModule),
     TypeOrmModule.forFeature([Subscription]),
-    BullModule.registerQueue({ name: 'subscription' }),
+    BullModule.registerQueue({ name: 'subscription-queue' }),
+    EmailModule,
     forwardRef(() => SubscriptionModule),
+    SubscriptionHistoryModule,
   ],
   controllers: [StripePaymentController],
   providers: [

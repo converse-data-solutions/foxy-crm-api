@@ -26,10 +26,15 @@ export class DealController {
   }
 
   @Get()
+  @Roles(Role.Admin, Role.Manager, Role.SalesRep)
   @ApiOperation({ summary: 'Get deal info' })
   @ApiResponse({ status: 200, description: 'Deal info retrived successfully' })
-  async findAllDeals(@Headers('x-tenant-id') tenantId: string, @Query() dealQuery: GetDealDto) {
-    return await this.dealService.findAllDeals(tenantId, dealQuery);
+  async findAllDeals(
+    @Headers('x-tenant-id') tenantId: string,
+    @Query() dealQuery: GetDealDto,
+    @CurrentUser() user: User,
+  ) {
+    return await this.dealService.findAllDeals(tenantId, dealQuery, user);
   }
 
   @Put(':id')

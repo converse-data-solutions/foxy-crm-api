@@ -3,7 +3,7 @@ import { AuthService } from '../services/auth.service';
 import { TenantSignupDto } from 'src/dtos/tenant-dto/tenant-signup.dto';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Response } from 'express';
-import { Signin, UserSignupDto } from 'src/dtos/user-dto/user-signup.dto';
+import { SignIn, UserSignupDto } from 'src/dtos/user-dto/user-signup.dto';
 import { Public } from 'src/common/decorators/public.decorator';
 import { EmailDto, OtpDto } from 'src/dtos/otp-dto/otp.dto';
 import { TenantService } from 'src/services/tenant.service';
@@ -39,7 +39,7 @@ export class AuthController {
   @Post('signin')
   @ApiOperation({ summary: 'Signin user and access token is generated' })
   @ApiResponse({ status: 200, description: 'Signin successfully' })
-  async userSignin(@Body() user: Signin, @Res({ passthrough: true }) response: Response) {
+  async userSignin(@Body() user: SignIn, @Res({ passthrough: true }) response: Response) {
     const payload = await this.authService.signin(user);
     setCookie(payload.data!, response);
     return payload;

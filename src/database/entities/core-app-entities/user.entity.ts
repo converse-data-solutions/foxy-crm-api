@@ -9,6 +9,7 @@ import {
 import { Lead } from './lead.entity';
 import { Role } from 'src/enums/core-app.enum';
 import { StatusCause } from 'src/enums/status.enum';
+import { Exclude } from 'class-transformer';
 
 @Entity({ name: 'users' })
 export class User {
@@ -24,6 +25,7 @@ export class User {
   @Column({ name: 'phone', type: 'varchar', length: 20, unique: true })
   phone: string;
 
+  @Exclude()
   @Column({ type: 'varchar', length: 100 })
   password: string;
 
@@ -45,15 +47,19 @@ export class User {
   @Column({ name: 'status_cause', type: 'enum', enum: StatusCause, nullable: true })
   statusCause?: StatusCause | null;
 
+  @Exclude()
   @Column({ name: 'otp', type: 'int', nullable: true })
   otp?: number;
 
+  @Exclude()
   @Column({ name: 'otp_expiry_at', type: 'timestamp', nullable: true })
   otpExpiryAt?: Date;
 
+  @Exclude()
   @Column({ name: 'email_verified', type: 'boolean', default: false })
   emailVerified: boolean;
 
+  @Exclude()
   @Column({ name: 'otp_verified', type: 'boolean', default: false })
   otpVerified: boolean;
 
