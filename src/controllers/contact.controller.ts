@@ -26,6 +26,7 @@ export class ContactController {
   }
 
   @Get()
+  @Roles(Role.Admin, Role.Manager, Role.SalesRep)
   @ApiOperation({ summary: 'Get the existing contact' })
   @ApiResponse({ status: 200, description: 'Contact fetched successfully' })
   findAll(
@@ -37,6 +38,7 @@ export class ContactController {
   }
 
   @Put(':id')
+  @Roles(Role.Admin, Role.Manager, Role.SalesRep)
   @ApiOperation({ summary: 'Update existing contact' })
   @ApiResponse({ status: 200, description: 'Contact updated successfully' })
   async update(

@@ -6,14 +6,14 @@ import { Subscription } from 'src/database/entities/base-app-entities/subscripti
 import { getRepo } from 'src/shared/database-connection/get-connection';
 import { Deal } from 'src/database/entities/core-app-entities/deal.entity';
 import { dealRemainderTemplate } from 'src/templates/deal-remainder.template';
-import { MailerService } from '@nestjs-modules/mailer';
+import { EmailService } from 'src/services/email.service';
 
 @Injectable()
 export class DealScheduler {
   constructor(
     @InjectRepository(Subscription)
     private readonly tenantSubscriptionRepo: Repository<Subscription>,
-    private readonly mailService: MailerService,
+    private readonly emailService: EmailService,
   ) {}
 
   @Cron(CronExpression.EVERY_DAY_AT_9AM)
@@ -43,7 +43,7 @@ export class DealScheduler {
 
       for (const deal of deals) {
         const html = dealRemainderTemplate(deal.createdBy.name, deal.name, deal.expectedCloseDate!);
-        await this.mailService.sendMail({
+        await this.emailService.sendMail({
           to: deal.createdBy.email,
           html,
           subject: `Reminder: Deal "${deal.name}" Expected to Close Within 24 Hours`,

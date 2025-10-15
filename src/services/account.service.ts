@@ -1,4 +1,4 @@
-import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, HttpStatus, Injectable } from '@nestjs/common';
 import { APIResponse } from 'src/common/dtos/response.dto';
 import { Account } from 'src/database/entities/core-app-entities/account.entity';
 import { User } from 'src/database/entities/core-app-entities/user.entity';
@@ -18,10 +18,12 @@ export class AccountService {
     createAccountDto: CreateAccountDto,
   ): Promise<APIResponse> {
     const accountRepo = await getRepo<Account>(Account, tenantId);
-    const accountExist = await accountRepo.findOne({ where: { name: createAccountDto.name } });
+    const accountExist = await accountRepo.findOne({
+      where: [{ name: createAccountDto.name }, { website: createAccountDto.website }],
+    });
 
     if (accountExist) {
-      throw new BadRequestException('Account already registered');
+      throw new ConflictException('Account with this websitye or name is already present');
     }
     const { country, ...createAccount } = createAccountDto;
     let accountCountry: string | undefined;
@@ -79,6 +81,14 @@ export class AccountService {
     let accountCountry: string | undefined;
     if (country) {
       accountCountry = this.countryService.getCountry(country);
+    }
+    if (updateAccount.name || updateAccount.website) {
+      const accounts = await accountRepo.find({
+        where: [{ name: updateAccount.name }, { website: updateAccount.website }],
+      });
+      if (accounts.length > 0) {
+        throw new ConflictException('The account with this name or website is already present');
+      }
     }
     account.country = accountCountry;
     await accountRepo.save({ ...account, ...updateAccount });

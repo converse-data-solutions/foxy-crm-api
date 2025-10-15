@@ -1,4 +1,4 @@
-import { Body, Controller, Put, Headers, Param, Get, Query } from '@nestjs/common';
+import { Body, Controller, Put, Headers, Param, Get, Query, Res } from '@nestjs/common';
 import { UserService } from '../services/user.service';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { User } from 'src/database/entities/core-app-entities/user.entity';
@@ -13,7 +13,7 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get()
-  @Roles(Role.Admin, Role.Manager)
+  @Roles(Role.Admin, Role.Manager, Role.SalesRep)
   @ApiOperation({ summary: 'Retrive user data' })
   @ApiResponse({ status: 200, description: 'Users retrived successfully' })
   async findAllUsers(@Headers('x-tenant-id') tenantId: string, @Query() userQuery: GetUserDto) {

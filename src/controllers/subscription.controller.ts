@@ -20,12 +20,14 @@ export class SubscriptionController {
 
   @Get()
   @Public()
+  @ApiOperation({ summary: 'View all plans' })
   async findAllPlans(@Req() request: Request) {
     return this.subscriptionService.findAllPlans(request);
   }
 
   @Get('current')
   @Public()
+  @ApiOperation({ summary: 'Get current subscription plan' })
   async findCurrentplan(@Req() request: Request) {
     return this.subscriptionService.findCurrentPlan(request);
   }
@@ -33,6 +35,6 @@ export class SubscriptionController {
   @Get('success')
   @Public()
   async paymentSuccess() {
-    return { success: true, message: 'Payment done' };
+    return { success: true, statusCode: 200, message: 'Payment done' };
   }
 }

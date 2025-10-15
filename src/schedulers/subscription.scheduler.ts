@@ -11,10 +11,10 @@ export class SubscriptionScheduler {
   constructor(
     @InjectRepository(Subscription)
     private readonly subscriptionRepo: Repository<Subscription>,
-    @InjectQueue('subscription') private readonly subscriptionQueue: Queue,
+    @InjectQueue('subscription-queue') private readonly subscriptionQueue: Queue,
   ) {}
 
-  @Cron(CronExpression.EVERY_DAY_AT_NOON)
+  @Cron(CronExpression.EVERY_DAY_AT_9AM)
   async expireSubscriptions() {
     const now = new Date();
     const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);

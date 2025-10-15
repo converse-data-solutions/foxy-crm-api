@@ -1,12 +1,4 @@
-import { MailerService } from '@nestjs-modules/mailer';
-import {
-  BadRequestException,
-  forwardRef,
-  HttpStatus,
-  Inject,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { BadRequestException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Request } from 'express';
 import { APIResponse } from 'src/common/dtos/response.dto';
@@ -19,9 +11,12 @@ import { StatusCause } from 'src/enums/status.enum';
 import { getRepo } from 'src/shared/database-connection/get-connection';
 import { subscriptionReminderTemplate } from 'src/templates/subscription-remainder.template';
 import { Repository } from 'typeorm';
-import { AuthService } from './auth.service';
 import { PlanPricing } from 'src/database/entities/base-app-entities/plan-pricing.entity';
 import { StripePaymentService } from './stripe-payment.service';
+import { TokenService } from './token.service';
+import { EmailService } from './email.service';
+import { SubscriptionHistory } from 'src/database/entities/base-app-entities/subscription-history.entity';
+import { JwtPayload } from 'src/common/dtos/jwt-payload.dto';
 
 @Injectable()
 export class SubscriptionService {
@@ -30,11 +25,12 @@ export class SubscriptionService {
     @InjectRepository(PlanPricing) private readonly planPriceRepo: Repository<PlanPricing>,
     @InjectRepository(Subscription)
     private readonly subscriptionRepo: Repository<Subscription>,
+    @InjectRepository(SubscriptionHistory)
+    private readonly subscriptionHistoryRepo: Repository<SubscriptionHistory>,
     @InjectRepository(Tenant) private readonly tenantRepo: Repository<Tenant>,
-    private readonly mailService: MailerService,
-    @Inject(forwardRef(() => AuthService))
-    private readonly authService: AuthService,
+    private readonly emailService: EmailService,
     private readonly stripeService: StripePaymentService,
+    private readonly tokenService: TokenService,
   ) {}
 
   async createSubscription(
@@ -44,17 +40,14 @@ export class SubscriptionService {
     if (!token) {
       throw new UnauthorizedException('Unauthorized access token not found');
     }
-    const payload = await this.authService.validateToken(token);
+    const payload = await this.tokenService.verifyToken(token);
     const planPrice = await this.planPriceRepo.findOne({
       where: { id: subscribe.planId },
       relations: { plan: true },
     });
-    const tenant = await this.tenantRepo.findOne({ where: { id: payload.id } });
+    const tenant = await this.checkTenant(payload);
     if (!planPrice) {
       throw new BadRequestException('Invalid subscription plan');
-    }
-    if (!tenant) {
-      throw new UnauthorizedException('Unauthorized access invalid tenant');
     }
 
     const tenantSubscription = await this.subscriptionRepo
@@ -98,7 +91,8 @@ export class SubscriptionService {
     if (!token) {
       throw new UnauthorizedException('Unauthorized access token not found');
     }
-    await this.authService.validateToken(token);
+    const payload = await this.tokenService.verifyToken(token);
+    await this.checkTenant(payload);
     const plans = await this.planRepo.find({ relations: { planPricings: true } });
 
     return {
@@ -114,9 +108,14 @@ export class SubscriptionService {
     if (!token) {
       throw new UnauthorizedException('Unauthorized access token not found');
     }
-    const payload = await this.authService.validateToken(token);
+    const payload = await this.tokenService.verifyToken(token);
     const subscription = await this.planPriceRepo.findOne({
-      where: { tenantsSubscription: { tenant: { id: payload.id } } },
+      where: {
+        tenantsSubscription: {
+          tenant: { id: payload.id },
+          status: true,
+        },
+      },
       relations: { tenantsSubscription: true, plan: true },
     });
     if (!subscription) {
@@ -133,11 +132,16 @@ export class SubscriptionService {
   async expireSubscription(id: string) {
     const tenantSubscription = await this.subscriptionRepo.findOne({
       where: { id },
+      relations: { tenant: true },
     });
     if (tenantSubscription && tenantSubscription.endDate) {
       tenantSubscription.status = false;
       await this.subscriptionRepo.save(tenantSubscription);
     }
+    await this.subscriptionHistoryRepo.update(
+      { tenant: { id: tenantSubscription?.tenant.id }, status: true },
+      { status: false },
+    );
   }
   async subscriptionRemainder(id: string) {
     const tenantSubscription = await this.subscriptionRepo.findOne({
@@ -149,7 +153,7 @@ export class SubscriptionService {
         tenantSubscription.tenant.userName,
         tenantSubscription.endDate,
       );
-      await this.mailService.sendMail({
+      await this.emailService.sendMail({
         to: tenantSubscription.tenant.email,
         html,
         subject: `Reminder: Subscription Expiry on ${tenantSubscription.endDate.getDate()}`,
@@ -181,5 +185,13 @@ export class SubscriptionService {
       }
     }
     await userRepo.save(users);
+  }
+
+  private async checkTenant(payload: JwtPayload) {
+    const tenant = await this.tenantRepo.findOne({ where: { id: payload.id } });
+    if (!tenant) {
+      throw new UnauthorizedException('Unauthorized access');
+    }
+    return tenant;
   }
 }

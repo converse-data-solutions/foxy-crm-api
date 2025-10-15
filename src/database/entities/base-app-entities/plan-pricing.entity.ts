@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMan
 import { Plan } from './plan.entity';
 import { BillingCycle } from 'src/enums/billing-cycle.enum';
 import { Subscription } from './subscription.entity';
+import { SubscriptionHistory } from './subscription-history.entity';
 
 @Entity({ name: 'plan_pricings' })
 export class PlanPricing {
@@ -27,4 +28,7 @@ export class PlanPricing {
 
   @OneToMany(() => Subscription, (subscription) => subscription.planPrice)
   tenantsSubscription: Subscription[];
+
+  @OneToMany(() => SubscriptionHistory, (subscriptionHistory) => subscriptionHistory.planPrice)
+  subscriptionHistory: SubscriptionHistory[];
 }

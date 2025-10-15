@@ -15,18 +15,18 @@ import { User } from 'src/database/entities/core-app-entities/user.entity';
 import { Role } from 'src/enums/core-app.enum';
 import { basicSetupSuccessTemplate } from 'src/templates/basic-setup-success.template';
 import { basicSetupFailureTemplate } from 'src/templates/basic-setup-failure.template';
-import { MailerService } from '@nestjs-modules/mailer';
 import { TenantSignupDto } from 'src/dtos/tenant-dto/tenant-signup.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { OtpService } from './otp.service';
 import { CountryService } from './country.service';
 import { SALT_ROUNDS } from 'src/shared/utils/config.util';
+import { EmailService } from './email.service';
 
 @Injectable()
 export class TenantService {
   constructor(
     private readonly countryService: CountryService,
-    private readonly mailService: MailerService,
+    private readonly emailService: EmailService,
     @Inject(forwardRef(() => OtpService))
     private readonly otpService: OtpService,
     @InjectRepository(Tenant) private readonly tenantRepo: Repository<Tenant>,
@@ -66,7 +66,7 @@ export class TenantService {
       html: htmlContent,
     };
     try {
-      await this.mailService.sendMail(mailOptions);
+      await this.emailService.sendMail(mailOptions);
     } catch (error: unknown) {
       throw new InternalServerErrorException(`Error occured while sending mail ${error}`);
     }
@@ -111,7 +111,7 @@ export class TenantService {
       relations: { subscription: true },
     });
     if (!domainExist) {
-      throw new BadRequestException('Please provide registered email address');
+      throw new BadRequestException('Please provide work email address');
     }
     return domainExist;
   }
