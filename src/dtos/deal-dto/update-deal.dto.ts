@@ -1,22 +1,12 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
 import { IsOptional, IsString, IsEnum, IsDecimal } from 'class-validator';
 import { DealStage } from 'src/enums/status.enum';
+import { CreateDealDto } from './create-deal.dto';
 
-export class UpdateDealDto {
-  @ApiPropertyOptional({ description: 'Name of the deal', type: String })
-  @IsOptional()
-  @IsString({ message: 'Name must be a string' })
-  name?: string;
-
-  @ApiPropertyOptional({ description: 'Deal value' })
-  @IsOptional()
-  @IsDecimal(
-    { decimal_digits: '0,2' },
-    { message: 'Amount should contain maximum 2 decimal points' },
-  )
-  value?: string;
-
-  @ApiPropertyOptional({ description: 'Stage of the deal', enum: DealStage })
+export class UpdateDealDto extends PartialType(
+  OmitType(CreateDealDto, ['expectedCloseDate', 'contactId']),
+) {
+  @ApiPropertyOptional({ description: 'Stage of the deal', example: DealStage.Accepted })
   @IsOptional()
   @IsEnum(DealStage, { message: 'Stage must be a valid DealStage enum value' })
   stage?: DealStage;

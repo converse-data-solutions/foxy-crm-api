@@ -22,7 +22,7 @@ export class Account {
   @Column({ name: 'industry', type: 'varchar', length: 40 })
   industry: string;
 
-  @Column({ name: 'website', type: 'text' })
+  @Column({ name: 'website', type: 'text', unique: true })
   website: string;
 
   @Column({ name: 'address', type: 'varchar', length: 50, nullable: true })

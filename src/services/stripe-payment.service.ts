@@ -1,4 +1,3 @@
-import { MailerService } from '@nestjs-modules/mailer';
 import { InjectQueue } from '@nestjs/bullmq';
 import {
   HttpStatus,
@@ -14,6 +13,8 @@ import { Subscription } from 'src/database/entities/base-app-entities/subscripti
 import { invoiceTemplate, InvoiceTemplateOptions } from 'src/templates/invoice-template';
 import Stripe from 'stripe';
 import { Repository } from 'typeorm';
+import { EmailService } from './email.service';
+import { SubscriptionHistoryService } from './subscription-history.service';
 
 @Injectable()
 export class StripePaymentService {
@@ -21,8 +22,9 @@ export class StripePaymentService {
     @Inject('STRIPE_CLIENT') private stripe: Stripe,
     @InjectRepository(Subscription)
     private readonly subscriptionRepo: Repository<Subscription>,
-    private readonly mailService: MailerService,
-    @InjectQueue('subscription') private readonly subscriptionQueue: Queue,
+    private readonly emailService: EmailService,
+    private readonly subscriptionHistoryService: SubscriptionHistoryService,
+    @InjectQueue('subscription-queue') private readonly subscriptionQueue: Queue,
   ) {}
 
   async createCheckoutSession(customerEmail: string, tenantId: string, priceId?: string) {
@@ -53,8 +55,6 @@ export class StripePaymentService {
       case 'invoice.payment_failed':
         await this.handlePaymentFailed(event);
         break;
-
-      default:
     }
   }
 
@@ -74,10 +74,17 @@ export class StripePaymentService {
     const tenantId = stripeResponse.metadata?.tenantId;
     if (!tenantId) throw new UnauthorizedException('Missing tenant ID');
 
-    const existingSubscription = await this.subscriptionRepo.findOne({
-      where: { tenant: { schemaName: tenantId } },
-      relations: { planPrice: true, tenant: true },
-    });
+    // const existingSubscription = await this.subscriptionRepo.findOne({
+    //   where: { tenant: { schemaName: tenantId } },
+    //   relations: { planPrice: true, tenant: true },
+    // });
+    const existingSubscription = await this.subscriptionRepo
+      .createQueryBuilder('subscription')
+      .leftJoinAndSelect('subscription.tenant', 'tenant')
+      .leftJoinAndSelect('subscription.planPrice', 'planPrice')
+      .leftJoinAndSelect('planPrice.plan', 'plan')
+      .andWhere('tenant.schemaName = :schemaName', { schemaName: tenantId })
+      .getOne();
 
     if (!existingSubscription) {
       throw new UnauthorizedException('Invalid tenant');
@@ -99,6 +106,7 @@ export class StripePaymentService {
     existingSubscription.endDate = endDate;
 
     const subscription = await this.subscriptionRepo.save(existingSubscription);
+    await this.subscriptionHistoryService.createSubscriptionHistory(subscription);
     await this.subscriptionQueue.add('change-subscription-plan', subscription);
 
     // Send invoice mail
@@ -116,7 +124,7 @@ export class StripePaymentService {
     };
     const html = invoiceTemplate(option);
     const to = stripeCustomer.email ?? existingSubscription.tenant.email;
-    await this.mailService.sendMail({ to, html, subject: `Invoice ${stripeInvoice.number}` });
+    await this.emailService.sendMail({ to, html, subject: `Invoice ${stripeInvoice.number}` });
 
     return {
       success: true,

@@ -39,8 +39,8 @@ export class LeadConversionService {
       where: [{ email: lead.email }, { phone: lead.phone }],
     });
     const leadPreview: LeadPreview = {
-      createAccount: account ? false : true,
-      createContact: contact ? false : true,
+      accountExist: account ? true : false,
+      contactExist: contact ? true : false,
       accountName: account ? undefined : lead.company,
       contactName: contact ? undefined : lead.name,
     };
@@ -110,7 +110,7 @@ export class LeadConversionService {
       createdBy: user,
       accountId: isAccount ?? newAccount ?? undefined,
     });
-    const metric: Partial<MetricDto> = { leads: 1 };
+    const metric: Partial<MetricDto> = { contacts: 1 };
     await this.metricService.updateTenantCounts(tenantId, metric);
     lead.contact = newContact;
     lead.status = LeadStatus.Converted;

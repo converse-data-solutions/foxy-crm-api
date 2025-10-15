@@ -1,4 +1,10 @@
-import { BadRequestException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  HttpStatus,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { APIResponse } from 'src/common/dtos/response.dto';
 import { Contact } from 'src/database/entities/core-app-entities/contact.entity';
 import { Deal } from 'src/database/entities/core-app-entities/deal.entity';
@@ -29,7 +35,10 @@ export class DealService {
         throw new BadRequestException('Invalid deal value');
       }
     }
-
+    const dealExist = await dealRepo.findOne({ where: { name: createDealDto.name } });
+    if (dealExist) {
+      throw new ConflictException('Deal with this name is already created');
+    }
     const contact = await contactRepo.findOne({
       where: { id: contactId },
     });
@@ -48,7 +57,7 @@ export class DealService {
     return { success: true, statusCode: HttpStatus.CREATED, message: 'Deal created successfully' };
   }
 
-  async findAllDeals(tenantId: string, dealQuery: GetDealDto) {
+  async findAllDeals(tenantId: string, dealQuery: GetDealDto, user: User) {
     const dealRepo = await getRepo<Deal>(Deal, tenantId);
     const qb = dealRepo.createQueryBuilder('deal');
 
@@ -57,12 +66,12 @@ export class DealService {
     for (const [key, value] of Object.entries(dealQuery)) {
       if (value == null || key === 'page' || key === 'limit') continue;
       if (key === 'name') qb.andWhere('deal.name ILIKE :name', { name: `%${String(value)}%` });
-      else if (key === 'greaterValue') {
+      else if (key === 'maxValue') {
         const nv = Number(value);
-        if (!Number.isNaN(nv)) qb.andWhere('deal.value >= :greaterValue', { greaterValue: nv });
-      } else if (key === 'lesserValue') {
+        if (!Number.isNaN(nv)) qb.andWhere('deal.value >= :maxValue', { maxValue: nv });
+      } else if (key === 'minValue') {
         const nv = Number(value);
-        if (!Number.isNaN(nv)) qb.andWhere('deal.value <= :lesserValue', { lesserValue: nv });
+        if (!Number.isNaN(nv)) qb.andWhere('deal.value <= :minValue', { minValue: nv });
       } else if (key === 'fromDate') {
         const d = new Date(String(value));
         if (!Number.isNaN(d.getTime()))
@@ -76,11 +85,16 @@ export class DealService {
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
     const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };
+    const deals: Partial<Deal>[] = data.map(({ value, ...deal }) => deal);
+    let dealData: Partial<Deal>[] = data;
+    if (![Role.Admin, Role.Manager].includes(user.role)) {
+      dealData = deals;
+    }
     return {
       success: true,
       statusCode: HttpStatus.OK,
       message: 'Deal fetched based on filter',
-      data,
+      data: dealData,
       pageInfo,
     };
   }
@@ -97,6 +111,12 @@ export class DealService {
     const { value, ...deals } = updateDeal;
     if (!dealExist) {
       throw new BadRequestException('Invalid deal id or deal not found');
+    }
+    if (updateDeal.name) {
+      const dealNameExist = await dealRepo.findOne({ where: { name: updateDeal.name } });
+      if (dealNameExist && dealExist.name !== updateDeal.name) {
+        throw new ConflictException('Deal is already present with this name');
+      }
     }
     if (dealExist.stage === DealStage.Completed && deals.stage !== DealStage.Accepted) {
       throw new BadRequestException('Cannot update a deal after it is completed');

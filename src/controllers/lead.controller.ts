@@ -18,7 +18,7 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { ApiBody, ApiConsumes, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Express } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { LeadQueryDto } from 'src/dtos/lead-dto/lead-query.dto';
+import { LeadQueryDto } from 'src/dtos/lead-dto/get-lead.dto';
 import { Roles } from 'src/common/decorators/role.decorator';
 import { Role } from 'src/enums/core-app.enum';
 import { LeadToContactDto } from 'src/dtos/lead-dto/lead-to-contact.dto';
@@ -39,8 +39,8 @@ export class LeadController {
   @ApiOperation({ summary: 'Insert lead or create lead' })
   @ApiResponse({ status: 201, description: 'Lead created successfully' })
   async createLead(
-    @Body() createLeadDto: CreateLeadDto,
     @Headers('x-tenant-id') tenantId: string,
+    @Body() createLeadDto: CreateLeadDto,
     @CurrentUser() user: User,
   ) {
     return await this.leadService.createLead(createLeadDto, tenantId, user);

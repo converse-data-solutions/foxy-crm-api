@@ -1,5 +1,10 @@
-import { MailerService } from '@nestjs-modules/mailer';
-import { BadRequestException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  HttpStatus,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
 import { APIResponse } from 'src/common/dtos/response.dto';
@@ -17,7 +22,8 @@ import { DealStage, TicketStatus } from 'src/enums/status.enum';
 import { getRepo } from 'src/shared/database-connection/get-connection';
 import { paginationParams } from 'src/shared/utils/pagination-params.util';
 import { taskAssignmentTemplate } from 'src/templates/task-assignment.template';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
+import { EmailService } from './email.service';
 
 @Injectable()
 export class TaskService {
@@ -25,7 +31,7 @@ export class TaskService {
     private readonly eventEmitter: EventEmitter2,
     @InjectRepository(Subscription)
     private readonly subscriptionRepo: Repository<Subscription>,
-    private readonly mailService: MailerService,
+    private readonly emailService: EmailService,
     @InjectRepository(Plan)
     private readonly planRepo: Repository<Plan>,
   ) {}
@@ -60,6 +66,13 @@ export class TaskService {
       } else if (ticketExist.status == TicketStatus.Closed) {
         throw new BadRequestException('Cannot create task on closed ticket');
       }
+    }
+    const taskExist = await taskRepo.findOne({
+      where: { name: createTaskDto.name, entityId: createTaskDto.entityId },
+    });
+
+    if (taskExist) {
+      throw new ConflictException('Task with this name is already present');
     }
     const newTask: Task = await taskRepo.save({
       assignedTo: userExist,
@@ -122,12 +135,6 @@ export class TaskService {
     if (!taskExist) {
       throw new BadRequestException('Invalid task id or task not exist');
     }
-    if (status) {
-      if (user.id !== taskExist.assignedTo.id && ![Role.Admin, Role.Manager].includes(user.role)) {
-        throw new UnauthorizedException('Not authorized to update task details');
-      }
-      taskExist.status = status;
-    }
     for (const [key, value] of Object.entries(updateTask)) {
       if (value && ![Role.Admin, Role.Manager].includes(user.role)) {
         throw new UnauthorizedException('Not authorized to update task details');
@@ -144,6 +151,7 @@ export class TaskService {
       }
       taskExist.assignedTo = existUser;
     }
+    taskExist.status = status ?? taskExist.status;
     const updatedTask = await taskRepo.save(taskExist);
     await this.eventEmitter.emitAsync('task-updated', { tenantId, task: updatedTask });
     return {
@@ -178,7 +186,7 @@ export class TaskService {
         }
       }
       if (html) {
-        await this.mailService.sendMail({
+        await this.emailService.sendMail({
           to: user.email,
           html,
           subject: `New Task "${task.name}" Assigned to You`,

@@ -9,12 +9,12 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { User } from 'src/database/entities/core-app-entities/user.entity';
 import { GetTicketDto } from 'src/dtos/ticket-dto/get-ticket.dto';
 
+@Roles(Role.Admin, Role.Manager, Role.SalesRep, Role.Support)
 @Controller('tickets')
 export class TicketController {
   constructor(private readonly ticketService: TicketService) {}
 
   @Post()
-  @Roles(Role.Admin, Role.Manager, Role.SalesRep, Role.Support)
   @ApiOperation({ summary: 'Create ticket' })
   @ApiResponse({ status: 201, description: 'Ticket created successfully' })
   async createTicket(
@@ -26,7 +26,6 @@ export class TicketController {
   }
 
   @Get()
-  @Roles(Role.Admin, Role.Manager, Role.Support)
   @ApiOperation({ summary: 'Retrive ticket' })
   @ApiResponse({ status: 200, description: 'Ticket details fetched successfully' })
   async findAllTickets(
@@ -38,7 +37,6 @@ export class TicketController {
   }
 
   @Put(':id')
-  @Roles(Role.Admin, Role.Manager, Role.Support)
   @ApiOperation({ summary: 'Update ticket' })
   @ApiResponse({ status: 200, description: 'Ticket updated successfully' })
   async updateTicket(

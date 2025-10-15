@@ -4,7 +4,7 @@ import { Job } from 'bullmq';
 import { Subscription } from 'src/database/entities/base-app-entities/subscription.entity';
 import { SubscriptionService } from 'src/services/subscription.service';
 
-@Processor('subscription')
+@Processor('subscription-queue')
 export class SubscriptionProcessor extends WorkerHost {
   constructor(
     @Inject(forwardRef(() => SubscriptionService))

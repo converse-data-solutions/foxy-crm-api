@@ -1,4 +1,10 @@
-import { BadRequestException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  HttpStatus,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { APIResponse } from 'src/common/dtos/response.dto';
 import { Contact } from 'src/database/entities/core-app-entities/contact.entity';
 import { Deal } from 'src/database/entities/core-app-entities/deal.entity';
@@ -14,6 +20,7 @@ import { DealStage, TaskStatus, TicketStatus } from 'src/enums/status.enum';
 import { getRepo } from 'src/shared/database-connection/get-connection';
 import { paginationParams } from 'src/shared/utils/pagination-params.util';
 import { MetricService } from './metric.service';
+import { Not } from 'typeorm';
 @Injectable()
 export class TicketService {
   constructor(private readonly metricService: MetricService) {}
@@ -35,6 +42,12 @@ export class TicketService {
     }
     if (dealExist.stage === DealStage.Accepted) {
       throw new BadRequestException('Cannot raise ticket for incomplete deal');
+    }
+    const ticketExist = await ticketRepo.findOne({
+      where: { title: createTicketDto.title, dealId: { id: dealExist.id } },
+    });
+    if (ticketExist) {
+      throw new ConflictException('Ticket with this name is already created');
     }
     const contactExist = await contactRepo.findOne({ where: { id: contactId } });
     if (!contactExist && contactId) {
@@ -153,6 +166,15 @@ export class TicketService {
     ) {
       throw new UnauthorizedException('Not have authorization to update ticket details');
     }
+    if (updateTicketDto.title) {
+      const ticketExist = await ticketRepo.findOne({
+        where: { id: Not(existTicket.id), title: updateTicketDto.title },
+      });
+      if (ticketExist) {
+        throw new ConflictException('Ticket with this name is already exist');
+      }
+    }
+
     await ticketRepo.save({
       ...existTicket,
       title: updateTicketDto.title,

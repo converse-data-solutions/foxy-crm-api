@@ -12,7 +12,7 @@ export class SubscriptionHistoryService {
   ) {}
   async createSubscriptionHistory(subscription: Subscription) {
     const { id, ...subscriptionDetails } = subscription;
-    const updateHistories: SubscriptionHistory[] = [];
+    let updateHistories: SubscriptionHistory[] = [];
     const existingSubscription = await this.subscriptionHistoryRepo.findOne({
       where: { tenant: { id: subscription.tenant.id }, status: true },
     });

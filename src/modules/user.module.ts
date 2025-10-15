@@ -7,6 +7,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Subscription } from 'src/database/entities/base-app-entities/subscription.entity';
 import { PlanPricing } from 'src/database/entities/base-app-entities/plan-pricing.entity';
 import { TaskModule } from './task.module';
+import { TokenModule } from './token.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { TaskModule } from './task.module';
     TenantModule,
     TypeOrmModule.forFeature([Subscription, PlanPricing]),
     TaskModule,
+    TokenModule,
   ],
   controllers: [UserController],
   providers: [UserService],
