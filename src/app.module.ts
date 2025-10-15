@@ -81,7 +81,6 @@ import { LoggerModule } from './modules/logger.module';
         from: 'Converse Data Solutions',
       },
     }),
-    EventEmitterModule.forRoot(),
     AuthModule,
     SubscriptionModule,
     TenantModule,

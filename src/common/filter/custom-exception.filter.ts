@@ -7,6 +7,7 @@ import { WsException } from '@nestjs/websockets';
 @Catch()
 export class CustomExceptionFilter implements ExceptionFilter {
   constructor(private readonly logger: LoggerService) {}
+
   catch(exception: unknown, host: ArgumentsHost) {
     const ctxType = host.getType<'http' | 'ws' | 'rpc'>();
 
@@ -27,7 +28,6 @@ export class CustomExceptionFilter implements ExceptionFilter {
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'Internal server error';
     let errors: string[] | null = null;
-    console.log(exception);
 
     console.log(exception);
     if (exception instanceof HttpException) {
@@ -40,12 +40,6 @@ export class CustomExceptionFilter implements ExceptionFilter {
         errors = errorResponse.message;
       }
     }
-    this.logger.logError(
-      `[${request.method}] ${request.url} - Status: ${status} - Error: ${
-        JSON.stringify(message) || message
-      }`,
-      { requestId: request.headers['x-tenant-id']?.toString() || undefined },
-    );
 
     response.status(status).json({
       success: false,

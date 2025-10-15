@@ -109,12 +109,13 @@ export class UserService {
     }
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
+    const usersData = data.map(({ password, otp, ...rest }) => rest);
     const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };
     return {
       success: true,
       statusCode: HttpStatus.OK,
       message: 'User details fetched based on filter',
-      data,
+      data: usersData,
       pageInfo,
     };
   }
