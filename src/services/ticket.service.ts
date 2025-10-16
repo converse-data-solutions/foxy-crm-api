@@ -75,7 +75,10 @@ export class TicketService {
     ticketQuery: GetTicketDto,
   ): Promise<APIResponse> {
     const ticketRepo = await getRepo(Ticket, tenantId);
-    const qb = ticketRepo.createQueryBuilder('ticket').leftJoin('ticket.dealId', 'deal');
+    const qb = ticketRepo
+      .createQueryBuilder('ticket')
+      .leftJoin('ticket.dealId', 'deal')
+      .leftJoin('ticket.createdBy', 'user');
 
     const { limit, page, skip } = paginationParams(ticketQuery.page, ticketQuery.limit);
 
@@ -93,6 +96,9 @@ export class TicketService {
       } else if (key === 'resolvedTo') {
         qb.andWhere(`ticket.resolved_at <=:resolvedTo`, { resolvedTo: value });
       }
+    }
+    if (![Role.Admin, Role.Manager].includes(user.role)) {
+      qb.andWhere(`user.id =:id`, { id: user.id });
     }
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();

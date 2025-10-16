@@ -15,6 +15,7 @@ import * as cookie from 'cookie';
 import { forwardRef, Inject } from '@nestjs/common';
 import { MetricService } from 'src/services/metric.service';
 import { UserService } from 'src/services/user.service';
+import { LoggerService } from 'src/common/logger/logger.service';
 
 @WebSocketGateway({ cors: { origin: '*', credentials: true } })
 export class CrmGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
@@ -25,6 +26,7 @@ export class CrmGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
     @Inject(forwardRef(() => MetricService))
     private readonly metricService: MetricService,
     private readonly userService: UserService,
+    private readonly loggerService: LoggerService,
   ) {}
   afterInit(server: Server) {
     this.server = server;
@@ -39,15 +41,17 @@ export class CrmGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
       if (!schema || !token) {
         throw new WsException('Invalid connection');
       }
-      const payload = await this.tokenService.verifyToken(token, true);
+      const payload = await this.tokenService.verifyAccessToken(token, true);
       await this.userService.validateUser(payload, schema);
       client.emit('metricUpdates', 'Connection established');
     } catch (error) {
-      throw new WsException(error.message);
+      client.emit('error', { message: error.message || 'Unauthorized' });
+      this.loggerService.logError(`${error.message} for client- ${client.id}`);
+      client.disconnect(true);
     }
   }
   handleDisconnect(client: Socket) {
-    console.log(`Connection terminated for id ${client.id}`);
+    this.loggerService.logError(`Connection terminated for client ${client.id}`);
   }
 
   @SubscribeMessage('joinTenantRoom')

@@ -17,6 +17,8 @@ import { Note } from 'src/database/entities/core-app-entities/note.entity';
 import { NotesEntityName } from 'src/enums/lead-activity.enum';
 import { MetricService } from './metric.service';
 import { MetricDto } from 'src/dtos/metric-dto/metric.dto';
+import { bulkLeadFailureTemplate } from 'src/templates/bulk-failure.template';
+import { EmailService } from './email.service';
 
 interface SerializedBuffer {
   type: 'Buffer';
@@ -28,6 +30,7 @@ export class LeadService {
   constructor(
     @InjectQueue('file-import') private readonly fileQueue: Queue,
     private readonly metricService: MetricService,
+    private readonly emailService: EmailService,
   ) {}
 
   async createLead(createLeadDto: CreateLeadDto, tenantId: string, user: User) {
@@ -69,11 +72,11 @@ export class LeadService {
 
   async importLeads(file: Express.Multer.File, tenant: string, user: User) {
     const leadData = { file, tenant, user };
-    await this.fileQueue.add('file-import', leadData);
+    this.fileQueue.add('file-import', leadData);
     return {
       success: true,
       statusCode: HttpStatus.CREATED,
-      message: 'Lead data imported successfully',
+      message: 'Bulk lead upload received. Processing in background.',
     };
   }
 
@@ -108,7 +111,7 @@ export class LeadService {
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
     const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };
-    let leadData: Lead[] = [];
+    const leadData: Lead[] = [];
     for (const lead of data) {
       const notes = await noteRepo.find({
         where: { entityId: lead.id, entityName: NotesEntityName.Lead },
@@ -162,43 +165,54 @@ export class LeadService {
   async bulkLeadsSave(file: Express.Multer.File, tenant: string, user: User) {
     const results: Partial<Lead>[] = [];
     const leadRepo = await getRepo(Lead, tenant);
-    const leads = await leadRepo.find({ select: { email: true, phone: true } });
+    const existingLeads = await leadRepo.find({ select: { email: true, phone: true } });
 
-    await new Promise((resolve, reject) => {
-      const serializedBuffer = file.buffer as unknown as SerializedBuffer;
+    const buffer = Buffer.from((file.buffer as unknown as SerializedBuffer).data);
+    const stream = new Readable();
+    stream.push(buffer);
+    stream.push(null);
 
-      const buffer = Buffer.from(serializedBuffer.data);
-      const stream = new Readable();
+    try {
+      await new Promise<void>((resolve, reject) => {
+        stream
+          .pipe(csv())
+          .on('data', (row: CreateLeadDto) => {
+            results.push({
+              name: row['name'],
+              email: row['email'],
+              phone: row['phone'],
+              company: row['company'] || undefined,
+              source: row['source'] || undefined,
+              createdBy: user,
+            });
+          })
+          .on('end', async () => {
+            try {
+              const newLeads = results.filter(
+                (r) => !existingLeads.some((l) => l.email === r.email || l.phone === r.phone),
+              );
 
-      stream.push(buffer);
-      stream.push(null);
-
-      stream
-        .pipe(csv())
-        .on('data', (row: CreateLeadDto) => {
-          results.push({
-            name: row['name'],
-            email: row['email'],
-            phone: row['phone'],
-            company: row['company'] || undefined,
-            source: row['source'] || undefined,
-            createdBy: user,
-          });
-        })
-        .on('end', async () => {
-          const finalLead = results.filter(
-            (result) =>
-              !leads.some((lead) => lead.email === result.email || lead.phone === result.phone),
-          );
-          if (finalLead.length > 0) {
-            const newLeads = leadRepo.create(finalLead);
-            const leads = await leadRepo.insert(newLeads);
-            const metric: Partial<MetricDto> = { leads: leads.identifiers.length };
-            await this.metricService.updateTenantCounts(tenant, metric);
-          }
-          resolve(results as Lead[]);
-        })
-        .on('error', (err: unknown) => reject(err));
-    });
+              if (newLeads.length > 0) {
+                const created = leadRepo.create(newLeads);
+                const inserted = await leadRepo.insert(created);
+                await this.metricService.updateTenantCounts(tenant, {
+                  leads: inserted.identifiers.length,
+                });
+              }
+              resolve();
+            } catch (err) {
+              reject(err);
+            }
+          })
+          .on('error', (err) => reject(err));
+      });
+    } catch (err: any) {
+      const html = bulkLeadFailureTemplate(user.name, file.originalname, err.message);
+      await this.emailService.sendMail({
+        to: user.email,
+        html,
+        subject: 'Bulk Lead Upload Failed - Action Required',
+      });
+    }
   }
 }

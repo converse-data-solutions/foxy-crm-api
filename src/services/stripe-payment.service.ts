@@ -74,10 +74,6 @@ export class StripePaymentService {
     const tenantId = stripeResponse.metadata?.tenantId;
     if (!tenantId) throw new UnauthorizedException('Missing tenant ID');
 
-    // const existingSubscription = await this.subscriptionRepo.findOne({
-    //   where: { tenant: { schemaName: tenantId } },
-    //   relations: { planPrice: true, tenant: true },
-    // });
     const existingSubscription = await this.subscriptionRepo
       .createQueryBuilder('subscription')
       .leftJoinAndSelect('subscription.tenant', 'tenant')
@@ -93,7 +89,6 @@ export class StripePaymentService {
     const stripeSubscription = stripeResponse.subscription as Stripe.Subscription;
     const stripeCustomer = stripeResponse.customer as Stripe.Customer;
     const stripeInvoice = stripeResponse.invoice as Stripe.Invoice;
-
     const endDate = new Date(stripeSubscription.start_date * 1000);
     const interval_count = stripeSubscription.items.data[0].price.recurring?.interval_count ?? 1;
     endDate.setMonth(endDate.getMonth() + interval_count);

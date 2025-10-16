@@ -1,10 +1,10 @@
-import { ApiPropertyOptional, IntersectionType, PickType } from '@nestjs/swagger';
+import { ApiPropertyOptional, IntersectionType, PartialType, PickType } from '@nestjs/swagger';
 import { IsOptional, IsDateString, IsDecimal } from 'class-validator';
 import { CreateDealDto } from './create-deal.dto';
 import { PageDto } from '../page-dto/page.dto';
 
 export class GetDealDto extends IntersectionType(
-  PickType(CreateDealDto, ['name'] as const),
+  PartialType(PickType(CreateDealDto, ['name'] as const)),
   PageDto,
 ) {
   @ApiPropertyOptional()

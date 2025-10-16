@@ -36,7 +36,7 @@ export class ContactService {
       where: [{ email: createContactDto.email }, { phone: createContactDto.phone }],
     });
     if (contactExist) {
-      throw new BadRequestException('Contact is alredy exist');
+      throw new BadRequestException('Contact is already exist');
     }
     const { account, assignedTo, ...contact } = createContactDto;
     let accountExist: Account | null = null;
@@ -98,7 +98,7 @@ export class ContactService {
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
     const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };
-    let contactData: Contact[] = [];
+    const contactData: Contact[] = [];
     for (const contact of data) {
       const notes = await noteRepo.find({
         where: { entityId: contact.id, entityName: NotesEntityName.Contact },
