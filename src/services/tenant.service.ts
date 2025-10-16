@@ -31,8 +31,8 @@ export class TenantService {
     private readonly otpService: OtpService,
     @InjectRepository(Tenant) private readonly tenantRepo: Repository<Tenant>,
   ) {}
-  async tenantSetup(tenantData: { tenant: Tenant }) {
-    const { tenant } = tenantData;
+  async tenantSetup(tenantData: { tenant: Tenant; token: string }) {
+    const { tenant, token } = tenantData;
     const schema = tenant.schemaName;
     const dataSource = await getConnection(schema);
     try {
@@ -50,6 +50,7 @@ export class TenantService {
         city: tenant.city,
         role: Role.Admin,
         email: tenant.email,
+        refreshToken: token,
       });
       await userRepo.save(user);
       await this.sendEmail(user.name, user.email, true);

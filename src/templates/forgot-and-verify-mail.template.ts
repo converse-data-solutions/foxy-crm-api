@@ -6,12 +6,12 @@ export function ForgotAndVerifyMail(name: string, otp: string, type: EmailTempla
   let introText = '';
 
   switch (type) {
-    case 'email-verify':
+    case EmailTemplateType.EmailVerify:
       subjectText = 'Your OTP for Email Verification';
       introText = `Your One-Time Password (OTP) for verification is: <strong>${otp}</strong>`;
       break;
 
-    case 'forgot-password':
+    case EmailTemplateType.ForgotPassword:
       subjectText = 'Your OTP for Password Reset';
       introText = `You requested to reset your password. Your One-Time Password (OTP) is: <strong>${otp}</strong>`;
       break;

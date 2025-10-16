@@ -59,7 +59,7 @@ export class DealService {
 
   async findAllDeals(tenantId: string, dealQuery: GetDealDto, user: User) {
     const dealRepo = await getRepo<Deal>(Deal, tenantId);
-    const qb = dealRepo.createQueryBuilder('deal');
+    const qb = dealRepo.createQueryBuilder('deal').leftJoinAndSelect('deal.contactId', 'contact');
 
     const { limit, page, skip } = paginationParams(dealQuery.page, dealQuery.limit);
 
@@ -87,7 +87,7 @@ export class DealService {
     const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };
     const deals: Partial<Deal>[] = data.map(({ value, ...deal }) => deal);
     let dealData: Partial<Deal>[] = data;
-    if (![Role.Admin, Role.Manager].includes(user.role)) {
+    if (![Role.Admin].includes(user.role)) {
       dealData = deals;
     }
     return {

@@ -30,7 +30,7 @@ import { SubscriptionHistoryModule } from './subscription-history.module';
     {
       provide: 'STRIPE_CLIENT',
       useFactory: () => {
-        return new Stripe(STRIPE.stripeSecreteKey!, {
+        return new Stripe(STRIPE.stripeSecreteKey, {
           apiVersion: '2025-08-27.basil',
         });
       },

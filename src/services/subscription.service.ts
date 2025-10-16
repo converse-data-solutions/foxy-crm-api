@@ -40,7 +40,7 @@ export class SubscriptionService {
     if (!token) {
       throw new UnauthorizedException('Unauthorized access token not found');
     }
-    const payload = await this.tokenService.verifyToken(token);
+    const payload = await this.tokenService.verifyAccessToken(token);
     const planPrice = await this.planPriceRepo.findOne({
       where: { id: subscribe.planId },
       relations: { plan: true },
@@ -55,7 +55,7 @@ export class SubscriptionService {
       .leftJoin('subscription.tenant', 'tenant')
       .leftJoinAndSelect('subscription.planPrice', 'planPrice')
       .leftJoinAndSelect('planPrice.plan', 'plan')
-      .andWhere('tenant.id = :id', { id: payload.id })
+      .andWhere('tenant.email = :email', { email: payload.email })
       .getOne();
 
     if (tenantSubscription) {
@@ -87,11 +87,11 @@ export class SubscriptionService {
   }
 
   async findAllPlans(request: Request): Promise<APIResponse<Plan[]>> {
-    const token: string | undefined = request?.cookies['tenant_access_token'];
+    const token: string | undefined = request?.cookies['access_token'];
     if (!token) {
       throw new UnauthorizedException('Unauthorized access token not found');
     }
-    const payload = await this.tokenService.verifyToken(token);
+    const payload = await this.tokenService.verifyAccessToken(token);
     await this.checkTenant(payload);
     const plans = await this.planRepo.find({ relations: { planPricings: true } });
 
@@ -104,11 +104,11 @@ export class SubscriptionService {
   }
 
   async findCurrentPlan(request: Request) {
-    const token: string | undefined = request?.cookies['tenant_access_token'];
+    const token: string | undefined = request?.cookies['access_token'];
     if (!token) {
       throw new UnauthorizedException('Unauthorized access token not found');
     }
-    const payload = await this.tokenService.verifyToken(token);
+    const payload = await this.tokenService.verifyAccessToken(token);
     const subscription = await this.planPriceRepo.findOne({
       where: {
         tenantsSubscription: {
@@ -188,7 +188,7 @@ export class SubscriptionService {
   }
 
   private async checkTenant(payload: JwtPayload) {
-    const tenant = await this.tenantRepo.findOne({ where: { id: payload.id } });
+    const tenant = await this.tenantRepo.findOne({ where: { email: payload.email } });
     if (!tenant) {
       throw new UnauthorizedException('Unauthorized access');
     }

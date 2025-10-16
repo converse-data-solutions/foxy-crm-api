@@ -76,7 +76,7 @@ export class LeadController {
     @Headers('x-tenant-id') tenantId: string,
     @CurrentUser() user: User,
   ) {
-    return await this.leadService.importLeads(file, tenantId, user);
+    return this.leadService.importLeads(file, tenantId, user);
   }
 
   @Post(':id/conversion')
@@ -101,6 +101,7 @@ export class LeadController {
   }
 
   @Get()
+  @Roles(Role.Admin, Role.Manager, Role.SalesRep)
   @ApiOperation({ summary: 'Retrive lead based on query' })
   @ApiResponse({ status: 200, description: 'Lead fetched successfully' })
   async findAllLeads(

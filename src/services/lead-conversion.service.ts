@@ -84,7 +84,10 @@ export class LeadConversionService {
     const isAccount = await accountRepo.findOne({ where: { name: ILike(`%${lead.company}%`) } });
     let newAccount = leadToContact?.account
       ? await accountRepo.findOne({
-          where: { name: leadToContact?.account?.name },
+          where: [
+            { name: leadToContact?.account?.name },
+            { website: leadToContact.account.website },
+          ],
         })
       : null;
 

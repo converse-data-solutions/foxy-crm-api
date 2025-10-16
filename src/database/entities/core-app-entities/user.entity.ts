@@ -66,6 +66,9 @@ export class User {
   @OneToMany(() => Lead, (lead) => lead.assignedTo, { nullable: true })
   leads: Lead[];
 
+  @Column({ nullable: true, type: 'text' })
+  refreshToken?: string;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

@@ -22,7 +22,7 @@ import { DealStage, TicketStatus } from 'src/enums/status.enum';
 import { getRepo } from 'src/shared/database-connection/get-connection';
 import { paginationParams } from 'src/shared/utils/pagination-params.util';
 import { taskAssignmentTemplate } from 'src/templates/task-assignment.template';
-import { Not, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { EmailService } from './email.service';
 
 @Injectable()

@@ -65,7 +65,7 @@ export class CustomExceptionFilter implements ExceptionFilter {
       if (typeof errorResponse === 'string') {
         message = errorResponse;
       } else if (typeof errorResponse === 'object' && 'message' in errorResponse) {
-        message = (errorResponse as any).message;
+        message = errorResponse.message;
       }
     } else if (exception instanceof Error) {
       message = exception.message;

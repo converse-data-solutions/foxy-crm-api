@@ -20,7 +20,9 @@ export class LeadActivityService {
     const leadActivityRepo = await getRepo<LeadActivity>(LeadActivity, tenantId);
     const noteRepo = await getRepo(Note, tenantId);
     const leadRepo = await getRepo(Lead, tenantId);
-    const lead = await leadRepo.findOne({ where: { id: createLeadActivityDto.leadId } });
+    const lead = await leadRepo.findOne({
+      where: { id: createLeadActivityDto.leadId, assignedTo: { id: user.id } },
+    });
     if (!lead) {
       throw new NotFoundException('Lead not found or invalid lead ID');
     }
@@ -51,7 +53,7 @@ export class LeadActivityService {
   async findAllLeadActivities(tenantId: string, user: User, leadId: string): Promise<APIResponse> {
     const leadActivityRepo = await getRepo<LeadActivity>(LeadActivity, tenantId);
     const leadRepo = await getRepo(Lead, tenantId);
-    const lead = await leadRepo.findOne({ where: { id: leadId } });
+    const lead = await leadRepo.findOne({ where: { id: leadId, assignedTo: { id: user.id } } });
     const noteRepo = await getRepo(Note, tenantId);
     const notes = await noteRepo.find({
       where: { entityId: leadId, entityName: NotesEntityName.Lead },
