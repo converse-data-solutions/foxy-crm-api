@@ -1,5 +1,5 @@
 import { BadRequestException, forwardRef, HttpStatus, Inject, Injectable } from '@nestjs/common';
-import { APIResponse } from 'src/common/dtos/response.dto';
+import { APIResponse, OTPFor } from 'src/common/dtos/response.dto';
 import { TenantService } from './tenant.service';
 import { User } from 'src/database/entities/core-app-entities/user.entity';
 import { Tenant } from 'src/database/entities/base-app-entities/tenant.entity';
@@ -19,6 +19,8 @@ import { generateOtp } from 'src/shared/utils/generate-otp.util';
 import { CookiePayload } from 'src/common/dtos/cookie-payload.dto';
 import { TokenService } from './token.service';
 import { EmailService } from './email.service';
+import * as bcrypt from 'bcrypt';
+import { SALT_ROUNDS } from 'src/shared/utils/config.util';
 
 @Injectable()
 export class OtpService {
@@ -72,14 +74,10 @@ export class OtpService {
   async emailVerifyOtp(otpDto: OtpDto): Promise<APIResponse<CookiePayload>> {
     const tenant = await this.tenantService.getTenant(otpDto.email);
     let repo: Repository<Tenant | User> = this.tenantRepo;
-    let tenantAccessToken: string | null = null;
     let userExist: User | Tenant | null = null;
+
     if (tenant.email === otpDto.email) {
       userExist = tenant;
-      tenantAccessToken = this.tokenService.generateAccessToken({
-        id: tenant.id,
-        email: tenant.email,
-      });
     } else {
       repo = await getRepo<User>(User, tenant.schemaName);
       userExist = await repo.findOne({ where: { email: otpDto.email } });
@@ -97,9 +95,17 @@ export class OtpService {
       throw new BadRequestException('Email is already verified');
     }
 
-    let accessToken: string | null = null;
+    const payload = plainToInstance(JwtPayload, userExist, {
+      excludeExtraneousValues: true,
+    });
+
+    const accessToken = this.tokenService.generateAccessToken({ ...payload });
+    const refreshToken = this.tokenService.generateRefreshToken({ ...payload });
+    const hashedToken = await bcrypt.hash(refreshToken, SALT_ROUNDS);
     userExist.emailVerified = true;
+
     await repo.save(userExist);
+    let otpFor: OTPFor;
     if (userExist instanceof Tenant) {
       const subscription = this.subscriptionRepo.create({
         tenant: userExist,
@@ -108,22 +114,24 @@ export class OtpService {
 
       await this.tenantQueue.add('tenant-setup', {
         tenant: userExist,
+        token: hashedToken,
       });
+      otpFor = 'tenantSignup';
+    } else {
+      otpFor = 'userSignup';
     }
-    const payload = plainToInstance(JwtPayload, userExist, {
-      excludeExtraneousValues: true,
-    });
-    accessToken = tenantAccessToken ? null : this.tokenService.generateAccessToken({ ...payload });
+
     const role = userExist instanceof Tenant ? Role.Admin : userExist.role;
     return {
       success: true,
       statusCode: HttpStatus.OK,
       message: 'Email verified successfully',
-      data: { tenantAccessToken, accessToken, role, xTenantId: tenant.schemaName },
+      data: { accessToken, refreshToken, role, xTenantId: tenant.schemaName },
+      otpFor,
     };
   }
 
-  async forgotPasswordVerifyOtp(otpDto: OtpDto): Promise<APIResponse> {
+  async forgotPasswordVerifyOtp(otpDto: OtpDto): Promise<APIResponse<OTPFor>> {
     const tenant = await this.tenantService.getTenant(otpDto.email);
     const userRepo = await getRepo(User, tenant.schemaName);
     const userExist = await userRepo.findOne({ where: { email: otpDto.email } });
@@ -142,6 +150,7 @@ export class OtpService {
       success: true,
       statusCode: HttpStatus.OK,
       message: 'Otp verified successfully',
+      otpFor: 'forgotPassword',
     };
   }
 }

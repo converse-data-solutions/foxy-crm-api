@@ -85,7 +85,7 @@ export class UserService {
     };
   }
 
-  async getUser(
+  async getAllUsers(
     tenantId: string,
     userQuery: GetUserDto,
   ): Promise<APIResponse<Omit<User, 'password' | 'otp'>[]>> {
@@ -109,15 +109,18 @@ export class UserService {
     }
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
-    const usersData = data.map(({ password, otp, ...rest }) => rest);
     const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };
     return {
       success: true,
       statusCode: HttpStatus.OK,
       message: 'User details fetched based on filter',
-      data: usersData,
+      data,
       pageInfo,
     };
+  }
+
+  async getUser(tenantId: string, user: User) {
+    const userRepo = await getRepo(User, tenantId);
   }
 
   async userSignup(user: UserSignupDto): Promise<APIResponse> {
@@ -183,7 +186,7 @@ export class UserService {
 
     const userRepo = await getRepo(User, schema);
     const user = await userRepo.findOne({
-      where: { id: payload.id, role: payload.role, email: payload.email },
+      where: { email: payload.email },
     });
     return user ?? null;
   }

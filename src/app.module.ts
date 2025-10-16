@@ -36,6 +36,7 @@ import { StripePaymentController } from './controllers/stripe-payment.controller
 import { MetricModule } from './modules/metric.module';
 import { EmailModule } from './modules/email.module';
 import { SubscriptionHistoryModule } from './modules/subscription-history.module';
+import { LoggerModule } from './modules/logger.module';
 
 @Module({
   imports: [
@@ -102,11 +103,11 @@ import { SubscriptionHistoryModule } from './modules/subscription-history.module
     EmailModule,
     SubscriptionHistoryModule,
     EventEmitterModule.forRoot(),
+    LoggerModule,
   ],
   providers: [
     JwtAuthGuard,
     RolesGuard,
-    LoggerService,
     {
       provide: APP_INTERCEPTOR,
       useClass: LoggerInterceptor,
@@ -126,7 +127,6 @@ import { SubscriptionHistoryModule } from './modules/subscription-history.module
       useClass: CustomExceptionFilter,
     },
   ],
-  exports: [LoggerService],
   controllers: [StripePaymentController],
 })
 export class AppModule {}

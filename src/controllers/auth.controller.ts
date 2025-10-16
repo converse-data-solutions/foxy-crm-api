@@ -1,8 +1,8 @@
-import { Body, Controller, Post, Res } from '@nestjs/common';
+import { Body, Controller, HttpStatus, Post, Req, Res } from '@nestjs/common';
 import { AuthService } from '../services/auth.service';
 import { TenantSignupDto } from 'src/dtos/tenant-dto/tenant-signup.dto';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { Response } from 'express';
+import { Response, Request } from 'express';
 import { SignIn, UserSignupDto } from 'src/dtos/user-dto/user-signup.dto';
 import { Public } from 'src/common/decorators/public.decorator';
 import { EmailDto, OtpDto } from 'src/dtos/otp-dto/otp.dto';
@@ -11,6 +11,7 @@ import { OtpService } from 'src/services/otp.service';
 import { UserService } from 'src/services/user.service';
 import { ForgotPasswordDto, ResetPasswordDto } from 'src/dtos/password-dto/reset-password.dto';
 import { setCookie } from 'src/shared/utils/cookie.util';
+import { APIResponse } from 'src/common/dtos/response.dto';
 
 @Public()
 @Controller('auth')
@@ -87,5 +88,18 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Password updated successfully' })
   async forgotPasswordReset(@Body() forgotPassword: ForgotPasswordDto) {
     return await this.authService.forgotPasswordReset(forgotPassword);
+  }
+
+  @Post('refresh')
+  @Public()
+  @ApiOperation({ summary: 'Update refresh token' })
+  @ApiResponse({ status: 200, description: 'Token updated successfully' })
+  async tokenRefresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<APIResponse> {
+    const tokens = await this.authService.tokenRefresh(req);
+    setCookie(tokens, res);
+    return { success: true, statusCode: HttpStatus.OK, message: 'Token refreshed successfully' };
   }
 }

@@ -37,7 +37,7 @@ export class MetricService {
       tickets: await ticketCount.count(),
     };
     counts.leadConversionRate = (counts.contacts / counts.leads) * 100; //percentage
-    this.redis.set(tenantId, JSON.stringify(counts), 'EX', 300);
+    await this.redis.set(tenantId, JSON.stringify(counts), 'EX', 300);
     return counts;
   }
   async updateTenantCounts(tenantId: string, metrics: Partial<MetricDto>) {

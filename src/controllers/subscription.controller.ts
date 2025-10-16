@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Req, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Req, Body } from '@nestjs/common';
 import { SubscriptionService } from '../services/subscription.service';
 import { Request } from 'express';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
@@ -14,7 +14,7 @@ export class SubscriptionController {
   @ApiOperation({ summary: 'Make a subscription' })
   @ApiResponse({ status: 201, description: 'Subscribed to the plan' })
   async createSubscription(@Body() subscribe: SubscribeDto, @Req() request: Request) {
-    const token: string | undefined = request?.cookies['tenant_access_token'];
+    const token: string | undefined = request?.cookies['access_token'];
     return await this.subscriptionService.createSubscription(subscribe, token);
   }
 
