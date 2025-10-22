@@ -58,19 +58,18 @@ export class SubscriptionService {
       .andWhere('tenant.email = :email', { email: payload.email })
       .getOne();
 
-    if (tenantSubscription) {
-      if (tenantSubscription && tenantSubscription.endDate) {
-        if (
-          Number(tenantSubscription.planPrice.plan.userCount) > Number(planPrice.plan.userCount) &&
-          tenantSubscription.status === true
-        ) {
-          throw new BadRequestException(
-            'Cannot downgrade subscription while an active plan exists',
-          );
-        }
+    if (tenantSubscription && tenantSubscription.endDate) {
+      if (
+        Number(tenantSubscription.planPrice.plan.userCount) > Number(planPrice.plan.userCount) &&
+        tenantSubscription.status === true
+      ) {
+        throw new BadRequestException('Cannot downgrade subscription while an active plan exists');
+      } else if (
+        tenantSubscription.planPrice.price > planPrice.price &&
+        Number(tenantSubscription.planPrice.plan.userCount) >= Number(planPrice.plan.userCount)
+      ) {
+        throw new BadRequestException('Cannot downgrade subscription while an active plan exists');
       }
-      tenantSubscription.planPrice = planPrice;
-      await this.subscriptionRepo.save(tenantSubscription);
     }
 
     const session = await this.stripeService.createCheckoutSession(

@@ -5,6 +5,7 @@ import {
   Injectable,
   InternalServerErrorException,
   UnauthorizedException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Queue } from 'bullmq';
@@ -15,6 +16,7 @@ import Stripe from 'stripe';
 import { Repository } from 'typeorm';
 import { EmailService } from './email.service';
 import { SubscriptionHistoryService } from './subscription-history.service';
+import { PlanPricing } from 'src/database/entities/base-app-entities/plan-pricing.entity';
 
 @Injectable()
 export class StripePaymentService {
@@ -22,6 +24,8 @@ export class StripePaymentService {
     @Inject('STRIPE_CLIENT') private stripe: Stripe,
     @InjectRepository(Subscription)
     private readonly subscriptionRepo: Repository<Subscription>,
+    @InjectRepository(PlanPricing)
+    private readonly planPriceRepo: Repository<PlanPricing>,
     private readonly emailService: EmailService,
     private readonly subscriptionHistoryService: SubscriptionHistoryService,
     @InjectQueue('subscription-queue') private readonly subscriptionQueue: Queue,
@@ -91,6 +95,11 @@ export class StripePaymentService {
     const stripeInvoice = stripeResponse.invoice as Stripe.Invoice;
     const endDate = new Date(stripeSubscription.start_date * 1000);
     const interval_count = stripeSubscription.items.data[0].price.recurring?.interval_count ?? 1;
+    const priceId = stripeSubscription.items.data[0].price.id;
+    const planPrice = await this.planPriceRepo.findOne({ where: { stripePriceId: priceId } });
+    if (!planPrice) {
+      throw new UnprocessableEntityException('Invalid subscription plan');
+    }
     endDate.setMonth(endDate.getMonth() + interval_count);
 
     existingSubscription.stripeCustomerId = stripeCustomer.id;
@@ -99,6 +108,7 @@ export class StripePaymentService {
     existingSubscription.stripeSessionId = session.id;
     existingSubscription.stripeSubscriptionId = stripeSubscription.id;
     existingSubscription.endDate = endDate;
+    existingSubscription.planPrice = planPrice;
 
     const subscription = await this.subscriptionRepo.save(existingSubscription);
     await this.subscriptionHistoryService.createSubscriptionHistory(subscription);
