@@ -34,6 +34,7 @@ const envSchema = Joi.object({
 
   RAZORPAY_KEY_ID: Joi.string().required(),
   RAZORPAY_KEY_SECRET: Joi.string().required(),
+  RAZORPAY_WEBHOOK_SECRET: Joi.string().required(),
 })
   .unknown()
   .required();
@@ -90,4 +91,5 @@ export const STRIPE = {
 export const RAZORPAY = {
   razorPayKeyID: envVars.RAZORPAY_KEY_ID as string,
   razorPaySecreteID: envVars.RAZORPAY_KEY_SECRET as string,
+  razorPayWebhookSecret: envVars.RAZORPAY_WEBHOOK_SECRET as string,
 };

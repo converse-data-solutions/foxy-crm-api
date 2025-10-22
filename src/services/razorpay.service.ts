@@ -8,6 +8,7 @@ import { SubscriptionHistoryService } from './subscription-history.service';
 import { PlanPricing } from 'src/database/entities/base-app-entities/plan-pricing.entity';
 import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
+import { RAZORPAY } from 'src/shared/utils/config.util';
 
 @Injectable()
 export class RazorpayService {
@@ -19,7 +20,7 @@ export class RazorpayService {
     @InjectQueue('subscription-queue') private readonly subscriptionQueue: Queue,
   ) {}
   async handleWebhook(rawbody: string, signature: string) {
-    const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+    const secret = RAZORPAY.razorPayWebhookSecret;
 
     const crypto = require('crypto');
     const hmac = crypto.createHmac('sha256', secret);
