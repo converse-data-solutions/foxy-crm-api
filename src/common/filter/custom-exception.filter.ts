@@ -1,13 +1,10 @@
 import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { Socket } from 'socket.io';
-import { LoggerService } from '../logger/logger.service';
 import { WsException } from '@nestjs/websockets';
 
 @Catch()
 export class CustomExceptionFilter implements ExceptionFilter {
-  constructor(private readonly logger: LoggerService) {}
-
   catch(exception: unknown, host: ArgumentsHost) {
     const ctxType = host.getType<'http' | 'ws' | 'rpc'>();
 
@@ -33,7 +30,7 @@ export class CustomExceptionFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       const errorResponse = exception.getResponse() as any;
-      message = errorResponse.message || message;
+      message = errorResponse.message || errorResponse || message;
 
       if (status === HttpStatus.BAD_REQUEST && Array.isArray(errorResponse.message)) {
         message = 'Validation failed';

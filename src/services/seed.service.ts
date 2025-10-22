@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import Stripe from 'stripe';
+import Razorpay from 'razorpay';
 import * as fs from 'fs';
 import { Repository } from 'typeorm';
 import { BillingCycle } from '../enums/billing-cycle.enum';
@@ -12,11 +12,10 @@ import { PlanInterface } from 'src/interfaces/plan.interface';
 @Injectable()
 export class SeedService {
   private readonly logger = new Logger(SeedService.name);
-
   private planDefinitions: PlanInterface[] = [];
 
   constructor(
-    @Inject('STRIPE_CLIENT') private readonly stripe: Stripe,
+    @Inject('RAZORPAY_CLIENT') private readonly razorpay: Razorpay,
     @InjectRepository(Plan) private readonly planRepo: Repository<Plan>,
     @InjectRepository(PlanPricing) private readonly pricingRepo: Repository<PlanPricing>,
   ) {}
@@ -27,109 +26,83 @@ export class SeedService {
     if (!fs.existsSync(filePath)) {
       throw new Error(`File not found at path: ${filePath}`);
     }
+
     const rawData = fs.readFileSync(filePath, 'utf-8');
     this.planDefinitions = JSON.parse(rawData);
 
     for (const planDef of this.planDefinitions) {
-      const stripeProducts = await this.stripe.products.list({ limit: 100 });
-      let stripeProduct = stripeProducts.data.find((p) => p.metadata?.planName === planDef.name);
-
-      if (!stripeProduct) {
-        stripeProduct = await this.stripe.products.create({
-          name: planDef.name,
-          description: `${planDef.name} Plan`,
-          metadata: { planName: planDef.name },
-        });
-        this.logger.log(`Created Stripe product for plan: ${planDef.name}`);
-      } else {
-        this.logger.log(`Found existing Stripe product for plan: ${planDef.name}`);
-      }
+      // 1️⃣ Check if plan exists in DB
       let plan = await this.planRepo.findOne({ where: { planName: planDef.name } });
+
       if (!plan) {
         plan = this.planRepo.create({
           planName: planDef.name,
-          stripeProductId: stripeProduct.id,
           userCount: planDef.userCount,
         });
         await this.planRepo.save(plan);
         this.logger.log(`Created DB plan: ${planDef.name}`);
       } else {
-        if (!plan.stripeProductId || plan.stripeProductId !== stripeProduct.id) {
-          plan.stripeProductId = stripeProduct.id;
-          await this.planRepo.save(plan);
-        }
         this.logger.log(`Found DB plan: ${planDef.name}`);
       }
-      const existingPrices = await this.stripe.prices.list({
-        product: stripeProduct.id,
-        active: true,
-      });
 
+      // 2️⃣ Create Razorpay plans for each billing cycle
       for (const [cycle, amount] of Object.entries(planDef.prices)) {
-        let interval: 'month' | 'year' = 'month';
-        let interval_count = 1;
+        let interval: 'monthly' | 'yearly' = 'monthly';
+        let intervalCount = 1;
 
         switch (cycle.toLowerCase()) {
           case 'monthly':
-            interval = 'month';
-            interval_count = 1;
+            interval = 'monthly';
+            intervalCount = 1;
             break;
           case 'quarterly':
-            interval = 'month';
-            interval_count = 3;
+            interval = 'monthly';
+            intervalCount = 3;
             break;
           case 'halfyearly':
-            interval = 'month';
-            interval_count = 6;
+            interval = 'monthly';
+            intervalCount = 6;
             break;
           case 'yearly':
-            interval = 'year';
-            interval_count = 1;
+            interval = 'yearly';
+            intervalCount = 1;
             break;
         }
 
-        let stripePrice = existingPrices.data.find(
-          (p) =>
-            p.recurring?.interval === interval &&
-            p.recurring?.interval_count === interval_count &&
-            p.metadata?.billingCycle === cycle,
-        );
-
-        if (!stripePrice) {
-          stripePrice = await this.stripe.prices.create({
-            unit_amount: amount * 100,
-            currency: 'inr',
-            recurring: { interval, interval_count },
-            product: stripeProduct.id,
-            metadata: { billingCycle: cycle },
-          });
-          this.logger.log(`Created Stripe price: ${planDef.name} - ${cycle}`);
-        } else {
-          this.logger.log(`Found existing Stripe price: ${planDef.name} - ${cycle}`);
-        }
-
+        // Check if plan pricing exists in DB
         let planPricing = await this.pricingRepo.findOne({
           where: { plan: { id: plan.id }, billingCycle: cycle as BillingCycle },
         });
 
         if (!planPricing) {
+          // Create Razorpay plan
+          const razorpayPlan = await this.razorpay.plans.create({
+            period: interval,
+            interval: intervalCount,
+            item: {
+              name: `${planDef.name} - ${cycle}`,
+              amount: amount * 100, // paise
+              currency: 'INR',
+              description: `${planDef.name} ${cycle} subscription`,
+            },
+          });
+
           planPricing = this.pricingRepo.create({
             plan,
             billingCycle: cycle as BillingCycle,
             price: amount,
-            stripePriceId: stripePrice.id,
+            // razorpayPlanId: razorpayPlan.id,
+            priceId: razorpayPlan.id,
           });
           await this.pricingRepo.save(planPricing);
-          this.logger.log(`Created DB PlanPricing: ${planDef.name} - ${cycle}`);
+
+          this.logger.log(`Created Razorpay plan & DB PlanPricing: ${planDef.name} - ${cycle}`);
         } else {
-          if (!planPricing.stripePriceId || planPricing.stripePriceId !== stripePrice.id) {
-            planPricing.stripePriceId = stripePrice.id;
-            await this.pricingRepo.save(planPricing);
-          }
+          this.logger.log(`Found DB PlanPricing: ${planDef.name} - ${cycle}`);
         }
       }
     }
 
-    this.logger.log('Subscription plans seeded successfully!');
+    this.logger.log('Razorpay subscription plans seeded successfully!');
   }
 }

@@ -23,8 +23,8 @@ export class PlanPricing {
   @Column({ type: 'int' })
   price: number;
 
-  @Column({ name: 'stripe_price_id', type: 'varchar', length: 100, nullable: true })
-  stripePriceId?: string;
+  @Column({ name: 'price_id', type: 'varchar', length: 100, nullable: true })
+  priceId: string;
 
   @OneToMany(() => Subscription, (subscription) => subscription.planPrice)
   tenantsSubscription: Subscription[];

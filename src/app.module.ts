@@ -20,7 +20,6 @@ import { TaskModule } from './modules/task.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { OtpModule } from './modules/otp.module';
 import { CountryModule } from './modules/country.module';
-import { LoggerService } from './common/logger/logger.service';
 import { LoggerInterceptor } from './interceptor/logger.interceptor';
 import { GlobalAuthGuard } from './guards/global.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -30,13 +29,12 @@ import { LeadActivityModule } from './modules/lead-activity.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { CustomExceptionFilter } from './common/filter/custom-exception.filter';
 import { LeadConversionModule } from './modules/lead-conversion.module';
-import { StripePaymentModule } from './modules/stripe-payment.module';
 import { TokenModule } from './modules/token.module';
-import { StripePaymentController } from './controllers/stripe-payment.controller';
 import { MetricModule } from './modules/metric.module';
 import { EmailModule } from './modules/email.module';
 import { SubscriptionHistoryModule } from './modules/subscription-history.module';
 import { LoggerModule } from './modules/logger.module';
+import { RazorpayModule } from './modules/razorpay.module';
 
 @Module({
   imports: [
@@ -97,13 +95,13 @@ import { LoggerModule } from './modules/logger.module';
     OtpModule,
     SeedModule,
     CountryModule,
-    StripePaymentModule,
     TokenModule,
     MetricModule,
     EmailModule,
     SubscriptionHistoryModule,
     EventEmitterModule.forRoot(),
     LoggerModule,
+    RazorpayModule,
   ],
   providers: [
     JwtAuthGuard,
@@ -127,6 +125,5 @@ import { LoggerModule } from './modules/logger.module';
       useClass: CustomExceptionFilter,
     },
   ],
-  controllers: [StripePaymentController],
 })
 export class AppModule {}

@@ -10,9 +10,6 @@ export class Plan {
   @Column({ name: 'plan_name', type: 'varchar', length: 20 })
   planName: string;
 
-  @Column({ name: 'stripe_product_id', type: 'varchar', length: 100, nullable: true })
-  stripeProductId?: string;
-
   @OneToMany(() => PlanPricing, (pricing) => pricing.plan, { cascade: true })
   planPricings: PlanPricing[];
 

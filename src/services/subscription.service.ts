@@ -1,4 +1,11 @@
-import { BadRequestException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpStatus,
+  Inject,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Request } from 'express';
 import { APIResponse } from 'src/common/dtos/response.dto';
@@ -12,11 +19,12 @@ import { getRepo } from 'src/shared/database-connection/get-connection';
 import { subscriptionReminderTemplate } from 'src/templates/subscription-remainder.template';
 import { Repository } from 'typeorm';
 import { PlanPricing } from 'src/database/entities/base-app-entities/plan-pricing.entity';
-import { StripePaymentService } from './stripe-payment.service';
 import { TokenService } from './token.service';
 import { EmailService } from './email.service';
 import { SubscriptionHistory } from 'src/database/entities/base-app-entities/subscription-history.entity';
-import { JwtPayload } from 'src/common/dtos/jwt-payload.dto';
+import Razorpay from 'razorpay';
+import { RAZORPAY } from 'src/shared/utils/config.util';
+import { Customers } from 'razorpay/dist/types/customers';
 
 @Injectable()
 export class SubscriptionService {
@@ -29,14 +37,11 @@ export class SubscriptionService {
     private readonly subscriptionHistoryRepo: Repository<SubscriptionHistory>,
     @InjectRepository(Tenant) private readonly tenantRepo: Repository<Tenant>,
     private readonly emailService: EmailService,
-    private readonly stripeService: StripePaymentService,
     private readonly tokenService: TokenService,
+    @Inject('RAZORPAY_CLIENT') private readonly razorpay: Razorpay,
   ) {}
 
-  async createSubscription(
-    subscribe: SubscribeDto,
-    token: string | undefined,
-  ): Promise<APIResponse> {
+  async createSubscription(subscribe: SubscribeDto, token: string | undefined) {
     if (!token) {
       throw new UnauthorizedException('Unauthorized access token not found');
     }
@@ -45,7 +50,7 @@ export class SubscriptionService {
       where: { id: subscribe.planId },
       relations: { plan: true },
     });
-    const tenant = await this.checkTenant(payload);
+    const tenant = await this.checkTenant(payload.email);
     if (!planPrice) {
       throw new BadRequestException('Invalid subscription plan');
     }
@@ -59,30 +64,55 @@ export class SubscriptionService {
       .getOne();
 
     if (tenantSubscription) {
-      if (tenantSubscription && tenantSubscription.endDate) {
+      if (tenantSubscription.endDate && tenantSubscription.status === true) {
         if (
-          Number(tenantSubscription.planPrice.plan.userCount) > Number(planPrice.plan.userCount) &&
-          tenantSubscription.status === true
+          Number(tenantSubscription.planPrice.plan.userCount) > Number(planPrice.plan.userCount)
+        ) {
+          throw new BadRequestException(
+            'Cannot downgrade subscription while an active plan exists',
+          );
+        } else if (
+          tenantSubscription.planPrice.price > planPrice.price &&
+          Number(tenantSubscription.planPrice.plan.userCount) > Number(planPrice.plan.userCount)
         ) {
           throw new BadRequestException(
             'Cannot downgrade subscription while an active plan exists',
           );
         }
       }
-      tenantSubscription.planPrice = planPrice;
-      await this.subscriptionRepo.save(tenantSubscription);
     }
+    let skip = 0;
+    let customer: Customers.RazorpayCustomer | undefined;
 
-    const session = await this.stripeService.createCheckoutSession(
-      payload.email,
-      tenant.schemaName,
-      planPrice.stripePriceId,
-    );
+    while (true) {
+      const customers = await this.razorpay.customers.all({ count: 100, skip });
+      customer = customers.items.find((c) => c.email === tenant.email);
+
+      if (customer) break;
+      if (customers.items.length < 100) break;
+
+      skip += 100;
+    }
+    if (!customer) {
+      customer = await this.razorpay.customers.create({
+        name: tenant.userName,
+        email: tenant.email,
+        contact: tenant.phone,
+      });
+    }
+    const subscription = await this.razorpay.subscriptions.create({
+      plan_id: planPrice.priceId,
+      customer_notify: 1,
+      total_count: 3,
+      customer_id: customer.id,
+    } as any);
+
     return {
       success: true,
       statusCode: HttpStatus.OK,
       message: 'Payment link is retrived successfully',
-      paymentUrl: session.url,
+      subscription_id: subscription.id,
+      key: RAZORPAY.razorPayKeyID,
     };
   }
 
@@ -92,7 +122,7 @@ export class SubscriptionService {
       throw new UnauthorizedException('Unauthorized access token not found');
     }
     const payload = await this.tokenService.verifyAccessToken(token);
-    await this.checkTenant(payload);
+    await this.checkTenant(payload.email);
     const plans = await this.planRepo.find({ relations: { planPricings: true } });
 
     return {
@@ -187,10 +217,10 @@ export class SubscriptionService {
     await userRepo.save(users);
   }
 
-  private async checkTenant(payload: JwtPayload) {
-    const tenant = await this.tenantRepo.findOne({ where: { email: payload.email } });
+  private async checkTenant(email: string) {
+    const tenant = await this.tenantRepo.findOne({ where: { email } });
     if (!tenant) {
-      throw new UnauthorizedException('Unauthorized access');
+      throw new NotFoundException('Unauthorized access invalid token');
     }
     return tenant;
   }

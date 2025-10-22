@@ -14,14 +14,14 @@ export class SubscriptionHistory {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'stripe_session_id', type: 'varchar', nullable: true, length: 100 })
-  stripeSessionId?: string;
+  @Column({ name: 'razorpay_payment_id', type: 'varchar', nullable: true, length: 100 })
+  razorpayPaymentId?: string;
 
-  @Column({ name: 'stripe_subscription_id', type: 'varchar', nullable: true, length: 50 })
-  stripeSubscriptionId?: string;
+  @Column({ name: 'razorpay_subscription_id', type: 'varchar', nullable: true, length: 50 })
+  razorpaySubscriptionId?: string;
 
-  @Column({ name: 'stripe_customer_id', type: 'varchar', nullable: true, length: 50 })
-  stripeCustomerId?: string;
+  @Column({ name: 'razorpay_customer_id', type: 'varchar', nullable: true, length: 50 })
+  razorpayCustomerId?: string;
 
   @Column({ type: 'boolean', default: false })
   status: boolean;
