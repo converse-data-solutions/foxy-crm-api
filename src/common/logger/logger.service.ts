@@ -1,20 +1,18 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, LoggerService as INestLoggerService } from '@nestjs/common';
 import * as winston from 'winston';
 import * as path from 'path';
 
 @Injectable()
-export class LoggerService {
+export class LoggerService implements INestLoggerService {
   private successLogger: winston.Logger;
   private errorLogger: winston.Logger;
 
   constructor() {
-    // JSON format for file logs
     const fileFormat = winston.format.combine(
       winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
       winston.format.json(),
     );
 
-    // Colored console format
     const consoleFormat = winston.format.combine(
       winston.format.colorize({ all: true }),
       winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
@@ -23,7 +21,6 @@ export class LoggerService {
       }),
     );
 
-    // Success logger
     this.successLogger = winston.createLogger({
       level: 'info',
       format: fileFormat,
@@ -33,7 +30,6 @@ export class LoggerService {
       ],
     });
 
-    // Error logger
     this.errorLogger = winston.createLogger({
       level: 'error',
       format: fileFormat,
@@ -44,6 +40,28 @@ export class LoggerService {
     });
   }
 
+  // Nest-compatible methods
+  log(message: string, meta?: any) {
+    this.successLogger.info(message, meta);
+  }
+
+  error(message: string, trace?: string, meta?: any) {
+    this.errorLogger.error(`${message} ${trace || ''}`, meta);
+  }
+
+  warn(message: string, meta?: any) {
+    this.successLogger.warn(message, meta);
+  }
+
+  debug(message: string, meta?: any) {
+    this.successLogger.debug(message, meta);
+  }
+
+  verbose(message: string, meta?: any) {
+    this.successLogger.verbose(message, meta);
+  }
+
+  // Optional: your custom methods
   logSuccess(message: string, meta?: { requestId?: string }) {
     this.successLogger.info(message, meta);
   }
