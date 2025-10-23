@@ -40,9 +40,6 @@ export class SeedService {
           description: `${planDef.name} Plan`,
           metadata: { planName: planDef.name },
         });
-        this.logger.log(`Created Stripe product for plan: ${planDef.name}`);
-      } else {
-        this.logger.log(`Found existing Stripe product for plan: ${planDef.name}`);
       }
       let plan = await this.planRepo.findOne({ where: { planName: planDef.name } });
       if (!plan) {
@@ -52,13 +49,11 @@ export class SeedService {
           userCount: planDef.userCount,
         });
         await this.planRepo.save(plan);
-        this.logger.log(`Created DB plan: ${planDef.name}`);
       } else {
         if (!plan.stripeProductId || plan.stripeProductId !== stripeProduct.id) {
           plan.stripeProductId = stripeProduct.id;
           await this.planRepo.save(plan);
         }
-        this.logger.log(`Found DB plan: ${planDef.name}`);
       }
       const existingPrices = await this.stripe.prices.list({
         product: stripeProduct.id,
@@ -103,9 +98,6 @@ export class SeedService {
             product: stripeProduct.id,
             metadata: { billingCycle: cycle },
           });
-          this.logger.log(`Created Stripe price: ${planDef.name} - ${cycle}`);
-        } else {
-          this.logger.log(`Found existing Stripe price: ${planDef.name} - ${cycle}`);
         }
 
         let planPricing = await this.pricingRepo.findOne({
@@ -120,7 +112,6 @@ export class SeedService {
             stripePriceId: stripePrice.id,
           });
           await this.pricingRepo.save(planPricing);
-          this.logger.log(`Created DB PlanPricing: ${planDef.name} - ${cycle}`);
         } else {
           if (!planPricing.stripePriceId || planPricing.stripePriceId !== stripePrice.id) {
             planPricing.stripePriceId = stripePrice.id;

@@ -8,9 +8,10 @@ import { SeedService } from './services/seed.service';
 import * as express from 'express';
 import helmet from 'helmet';
 import { ClassSerializerInterceptor } from '@nestjs/common';
+import { LoggerService } from './common/logger/logger.service';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { logger: new LoggerService() });
 
   app.setGlobalPrefix('api/v1');
   app.use('/api/v1/stripe/webhook', express.raw({ type: 'application/json' }));
