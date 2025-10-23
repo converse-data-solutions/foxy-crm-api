@@ -11,11 +11,13 @@ import { BullModule } from '@nestjs/bullmq';
 import { SubscriptionProcessor } from 'src/processors/subscription.processor';
 import { SubscriptionScheduler } from 'src/schedulers/subscription.scheduler';
 import { SubscriptionModule } from './subscription.module';
+import { QueueModule } from './queue.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature(entities),
     LoggerModule,
+    QueueModule,
     SubscriptionHistoryModule,
     BullModule.registerQueue({ name: 'subscription-queue' }),
     SubscriptionModule,

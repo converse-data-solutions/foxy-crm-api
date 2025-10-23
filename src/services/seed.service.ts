@@ -31,7 +31,6 @@ export class SeedService {
     this.planDefinitions = JSON.parse(rawData);
 
     for (const planDef of this.planDefinitions) {
-      // 1️⃣ Check if plan exists in DB
       let plan = await this.planRepo.findOne({ where: { planName: planDef.name } });
 
       if (!plan) {
@@ -40,12 +39,8 @@ export class SeedService {
           userCount: planDef.userCount,
         });
         await this.planRepo.save(plan);
-        this.logger.log(`Created DB plan: ${planDef.name}`);
-      } else {
-        this.logger.log(`Found DB plan: ${planDef.name}`);
       }
 
-      // 2️⃣ Create Razorpay plans for each billing cycle
       for (const [cycle, amount] of Object.entries(planDef.prices)) {
         let interval: 'monthly' | 'yearly' = 'monthly';
         let intervalCount = 1;
@@ -75,7 +70,6 @@ export class SeedService {
         });
 
         if (!planPricing) {
-          // Create Razorpay plan
           const razorpayPlan = await this.razorpay.plans.create({
             period: interval,
             interval: intervalCount,
@@ -91,14 +85,9 @@ export class SeedService {
             plan,
             billingCycle: cycle as BillingCycle,
             price: amount,
-            // razorpayPlanId: razorpayPlan.id,
             priceId: razorpayPlan.id,
           });
           await this.pricingRepo.save(planPricing);
-
-          this.logger.log(`Created Razorpay plan & DB PlanPricing: ${planDef.name} - ${cycle}`);
-        } else {
-          this.logger.log(`Found DB PlanPricing: ${planDef.name} - ${cycle}`);
         }
       }
     }

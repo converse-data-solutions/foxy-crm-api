@@ -6,9 +6,11 @@ import { FileProcessor } from 'src/processors/file.processor';
 import { LeadConversionModule } from './lead-conversion.module';
 import { MetricModule } from './metric.module';
 import { EmailModule } from './email.module';
+import { QueueModule } from './queue.module';
 
 @Module({
   imports: [
+    QueueModule,
     BullModule.registerQueue({ name: 'file-import' }),
     LeadConversionModule,
     MetricModule,

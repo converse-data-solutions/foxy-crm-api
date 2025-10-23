@@ -35,6 +35,7 @@ import { EmailModule } from './modules/email.module';
 import { SubscriptionHistoryModule } from './modules/subscription-history.module';
 import { LoggerModule } from './modules/logger.module';
 import { RazorpayModule } from './modules/razorpay.module';
+import { QueueModule } from './modules/queue.module';
 
 @Module({
   imports: [
@@ -52,14 +53,6 @@ import { RazorpayModule } from './modules/razorpay.module';
       ],
     }),
     TypeOrmModule.forRootAsync({ useFactory: async () => dataSource.options }),
-    BullModule.forRoot({
-      connection: {
-        host: REDIS_CONFIG.host,
-        port: REDIS_CONFIG.port,
-      },
-      defaultJobOptions: { removeOnComplete: true },
-    }),
-
     AuthModule,
     SubscriptionModule,
     TenantModule,
@@ -82,6 +75,7 @@ import { RazorpayModule } from './modules/razorpay.module';
     EventEmitterModule.forRoot(),
     LoggerModule,
     RazorpayModule,
+    QueueModule,
   ],
   providers: [
     JwtAuthGuard,

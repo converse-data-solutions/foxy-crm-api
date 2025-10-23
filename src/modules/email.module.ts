@@ -4,10 +4,12 @@ import { BullModule } from '@nestjs/bullmq';
 import { EmailProcessor } from 'src/processors/email.processor';
 import { SMTP_CONFIG } from 'src/shared/utils/config.util';
 import { MailerModule } from '@nestjs-modules/mailer';
+import { QueueModule } from './queue.module';
 
 @Module({
   imports: [
     BullModule.registerQueue({ name: 'mail-queue' }),
+    QueueModule,
     MailerModule.forRoot({
       transport: {
         host: SMTP_CONFIG.host,
