@@ -59,27 +59,7 @@ import { RazorpayModule } from './modules/razorpay.module';
       },
       defaultJobOptions: { removeOnComplete: true },
     }),
-    MailerModule.forRoot({
-      transport: {
-        host: SMTP_CONFIG.host,
-        port: SMTP_CONFIG.port,
-        secure: false,
-        auth: {
-          user: SMTP_CONFIG.user,
-          pass: SMTP_CONFIG.pass,
-        },
-        tls: {
-          rejectUnauthorized: false,
-        },
-        logger: false,
-        pool: true,
-        maxConnections: 5,
-        maxMessages: 100,
-      },
-      defaults: {
-        from: 'Converse Data Solutions',
-      },
-    }),
+
     AuthModule,
     SubscriptionModule,
     TenantModule,

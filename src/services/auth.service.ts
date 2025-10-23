@@ -32,39 +32,38 @@ export class AuthService {
 
     const userExist = await repo.findOne({ where: { email: user.email } });
     if (!userExist) {
-      throw new NotFoundException('User email not found please signup');
+      throw new BadRequestException('Invalid login credientials');
+    }
+    const validPassword = await bcrypt.compare(user.password, userExist.password);
+    if (!validPassword) {
+      throw new BadRequestException('Invalid login credientials');
     } else {
-      const validPassword = await bcrypt.compare(user.password, userExist.password);
-      if (!validPassword) {
-        throw new BadRequestException('Invalid password please enter correct password');
-      } else {
-        if (!userExist.status) {
-          throw new BadRequestException('Your account is disabled please contact the admin');
-        }
-        if (!userExist.emailVerified) {
-          throw new BadRequestException('Please verify the email then login');
-        }
-        const payload = plainToInstance(JwtPayload, userExist, {
-          excludeExtraneousValues: true,
-        });
-
-        const accessToken = this.tokenService.generateAccessToken({ ...payload });
-        const refreshToken = this.tokenService.generateRefreshToken({ ...payload });
-        const hashedToken = await bcrypt.hash(refreshToken, SALT_ROUNDS);
-        userExist.refreshToken = hashedToken;
-        await repo.save(userExist);
-        return {
-          success: true,
-          statusCode: HttpStatus.OK,
-          message: 'Signin successfull',
-          data: {
-            accessToken,
-            refreshToken,
-            role: userExist.role,
-            xTenantId: tenant.schemaName,
-          },
-        };
+      if (!userExist.status) {
+        throw new BadRequestException('Your account is disabled please contact the admin');
       }
+      if (!userExist.emailVerified) {
+        throw new BadRequestException('Please verify the email then login');
+      }
+      const payload = plainToInstance(JwtPayload, userExist, {
+        excludeExtraneousValues: true,
+      });
+
+      const accessToken = this.tokenService.generateAccessToken({ ...payload });
+      const refreshToken = this.tokenService.generateRefreshToken({ ...payload });
+      const hashedToken = await bcrypt.hash(refreshToken, SALT_ROUNDS);
+      userExist.refreshToken = hashedToken;
+      await repo.save(userExist);
+      return {
+        success: true,
+        statusCode: HttpStatus.OK,
+        message: 'Signin successfull',
+        data: {
+          accessToken,
+          refreshToken,
+          role: userExist.role,
+          xTenantId: tenant.schemaName,
+        },
+      };
     }
   }
 

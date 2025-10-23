@@ -73,7 +73,7 @@ export class SubscriptionService {
           );
         } else if (
           tenantSubscription.planPrice.price > planPrice.price &&
-          Number(tenantSubscription.planPrice.plan.userCount) > Number(planPrice.plan.userCount)
+          Number(tenantSubscription.planPrice.plan.userCount) >= Number(planPrice.plan.userCount)
         ) {
           throw new BadRequestException(
             'Cannot downgrade subscription while an active plan exists',

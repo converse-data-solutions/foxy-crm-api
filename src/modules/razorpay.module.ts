@@ -10,6 +10,7 @@ import { SubscriptionHistoryModule } from './subscription-history.module';
 import { BullModule } from '@nestjs/bullmq';
 import { SubscriptionProcessor } from 'src/processors/subscription.processor';
 import { SubscriptionScheduler } from 'src/schedulers/subscription.scheduler';
+import { SubscriptionModule } from './subscription.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { SubscriptionScheduler } from 'src/schedulers/subscription.scheduler';
     LoggerModule,
     SubscriptionHistoryModule,
     BullModule.registerQueue({ name: 'subscription-queue' }),
+    SubscriptionModule,
   ],
   controllers: [RazorpayController],
   providers: [
