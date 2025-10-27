@@ -110,6 +110,11 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'CSRF token generated successfully' })
   async getCsrfToken(@Req() req: Request, @Res() res: Response): Promise<void> {
     const token = csrfUtils.generateCsrfToken(req, res);
-    res.json({ csrfToken: token });
+    res.json({
+      success: true,
+      statusCode: HttpStatus.OK,
+      message: 'Csrf token fetched successfully',
+      data: { csrfToken: token },
+    });
   }
 }
