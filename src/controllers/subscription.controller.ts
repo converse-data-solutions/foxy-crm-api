@@ -21,6 +21,7 @@ export class SubscriptionController {
   @Get()
   @Public()
   @ApiOperation({ summary: 'View all plans' })
+  @ApiResponse({ status: 200, description: 'Retrieved all plans' })
   async findAllPlans(@Req() request: Request) {
     return this.subscriptionService.findAllPlans(request);
   }
@@ -28,6 +29,7 @@ export class SubscriptionController {
   @Get('current')
   @Public()
   @ApiOperation({ summary: 'Get current subscription plan' })
+  @ApiResponse({ status: 200, description: 'Retrieved current subscription plan' })
   async findCurrentplan(@Req() request: Request) {
     return this.subscriptionService.findCurrentPlan(request);
   }

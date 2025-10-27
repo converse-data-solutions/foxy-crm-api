@@ -19,7 +19,7 @@ import { MetricService } from './metric.service';
 import { MetricDto } from 'src/dtos/metric-dto/metric.dto';
 import { bulkLeadFailureTemplate } from 'src/templates/bulk-failure.template';
 import { EmailService } from './email.service';
-import { applyFilters, FiltersMap, FilterType } from 'src/shared/utils/query-filter.util';
+import { applyFilters, FiltersMap } from 'src/shared/utils/query-filter.util';
 
 interface SerializedBuffer {
   type: 'Buffer';

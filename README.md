@@ -32,6 +32,35 @@
 $ npm install
 ```
 
+## Migration Strategy
+
+The application uses TypeORM migrations with a multi-tenant schema-per-organization model.
+
+### Data Sources
+- **Base App Data Source** (`base-app-data-source.ts`):  
+  Handles global entities and base migrations.
+- **Core Data Source** (`core-app-data-source.ts`):  
+  Handles core app entities and related migrations.
+
+### Tenant Onboarding Flow
+When a new tenant is created via `tenantSetup()`:
+1. A new PostgreSQL schema is created if it does not exist.  
+2. The schema is set as the active search path.  
+3. TypeORM runs all migrations for that schema using `dataSource.runMigrations()`.  
+4. A default admin user is seeded into that tenant’s schema.  
+
+### How Migrations Are Applied
+- **Base migrations**: automatically executed when the NestJS application starts.  
+  - If all base tables already exist, the migrations are skipped.  
+  - If any base tables are missing, pending migrations are applied automatically.
+- **Tenant migrations**: executed dynamically when a new tenant is created through `tenantSetup()`.
+
+### Notes
+- Each tenant has its own PostgreSQL schema with isolated data and migration history.  
+- The base and core schemas are managed separately to ensure clean modularization.  
+- This approach ensures automatic consistency without requiring manual migration commands during deployment.
+
+
 ## Compile and run the project
 
 ```bash

@@ -91,21 +91,6 @@ export class TicketService {
     };
     applyFilters<Ticket>(qb, FILTERS, ticketQuery);
 
-    // for (const [key, value] of Object.entries(ticketQuery)) {
-    //   if (value == null || key === 'page' || key === 'limit') {
-    //     continue;
-    //   } else if (key === 'title') {
-    //     qb.andWhere(`ticket.title ILIKE :title`, { title: `%${value}%` });
-    //   } else if (key === 'status') {
-    //     qb.andWhere(`ticket.status =:status`, { status: value });
-    //   } else if (key === 'deal') {
-    //     qb.andWhere(`deal.name ILIKE :deal`, { deal: `%${value}%` });
-    //   } else if (key === 'resolvedFrom') {
-    //     qb.andWhere(`ticket.resolved_at >=:resolvedFrom`, { resolvedFrom: value });
-    //   } else if (key === 'resolvedTo') {
-    //     qb.andWhere(`ticket.resolved_at <=:resolvedTo`, { resolvedTo: value });
-    //   }
-    // }
     if (![Role.Admin, Role.Manager].includes(user.role)) {
       qb.andWhere(`user.id =:id`, { id: user.id });
     }

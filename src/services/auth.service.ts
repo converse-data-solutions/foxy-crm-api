@@ -17,7 +17,8 @@ import { APIResponse } from 'src/common/dtos/response.dto';
 import { SALT_ROUNDS } from 'src/shared/utils/config.util';
 import { CookiePayload } from 'src/common/dtos/cookie-payload.dto';
 import { TokenService } from './token.service';
-import { Request } from 'express';
+import { Request, Response } from 'express';
+import { csrfUtils } from 'src/shared/utils/csrf.util';
 
 @Injectable()
 export class AuthService {
@@ -124,5 +125,21 @@ export class AuthService {
     }
     const updatedToken = await this.tokenService.getRefreshToken(token);
     return updatedToken;
+  }
+
+  async getCsrfToken(req: Request, res: Response) {
+    const accessToken: string | undefined = req?.cookies['access_token'];
+    if (!accessToken) {
+      throw new UnauthorizedException('Unauthorized access token not found');
+    }
+    const payload = await this.tokenService.verifyAccessToken(accessToken);
+    req.user = payload;
+    const token = csrfUtils.generateCsrfToken(req, res);
+    res.json({
+      success: true,
+      statusCode: HttpStatus.OK,
+      message: 'Csrf token fetched successfully',
+      data: { csrfToken: token },
+    });
   }
 }

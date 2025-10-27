@@ -4,7 +4,7 @@ import { config as dotenvConfig } from 'dotenv';
 dotenvConfig();
 
 const envSchema = Joi.object({
-  NODE_ENV: Joi.string().valid('dev', 'prod').default('dev'),
+  NODE_ENV: Joi.string().valid('development', 'production').default('development'),
   DB_HOST: Joi.string().required(),
   DB_PORT: Joi.number().default(5432),
   DB_USER: Joi.string().required(),
@@ -73,7 +73,7 @@ export const REDIS_CONFIG = {
 };
 
 export const Environment = {
-  NODE_ENV: envVars.NODE_ENV as 'dev' | 'prod',
+  NODE_ENV: envVars.NODE_ENV as 'development' | 'production',
 };
 
 export const PAYMENT_URL = {

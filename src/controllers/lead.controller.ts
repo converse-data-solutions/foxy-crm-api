@@ -29,7 +29,6 @@ import { FileValidationPipe } from 'src/common/pipes/file-validation.pipe';
 import { LeadConversionService } from 'src/services/lead-conversion.service';
 import { CsrfGuard } from 'src/guards/csrf.guard';
 import { CsrfHeader } from 'src/common/decorators/csrf-header.decorator';
-import { Public } from 'src/common/decorators/public.decorator';
 import { Response } from 'express';
 import path from 'path';
 

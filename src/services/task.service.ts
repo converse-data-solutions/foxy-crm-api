@@ -104,15 +104,6 @@ export class TaskService {
     };
     applyFilters<Task>(qb, FILTERS, taskQuery);
 
-    // for (const [key, value] of Object.entries(taskQuery)) {
-    //   if (value == null || key === 'page' || key === 'limit') {
-    //     continue;
-    //   } else if (['entityName', 'entityId', 'type', 'status', 'priority'].includes(key)) {
-    //     qb.andWhere(`task.${key} =:${key}`, { [key]: value });
-    //   } else if (key === 'name') {
-    //     qb.andWhere(`task.name ILIKE :name`, { name: `%${value}%` });
-    //   }
-    // }
     if (![Role.Admin, Role.Manager].includes(user.role)) {
       qb.andWhere(`user.id =:id`, { id: user.id });
     } else {

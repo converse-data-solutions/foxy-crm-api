@@ -41,7 +41,7 @@ import { LoggerModule } from './modules/logger.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: Environment.NODE_ENV !== 'dev' ? '.env.docker' : '.env',
+      envFilePath: Environment.NODE_ENV !== 'development' ? '.env.docker' : '.env',
     }),
     ScheduleModule.forRoot(),
     ThrottlerModule.forRoot({

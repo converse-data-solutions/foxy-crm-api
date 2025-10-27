@@ -73,26 +73,6 @@ export class DealService {
     };
     applyFilters<Deal>(qb, FILTERS, dealQuery);
 
-    // for (const [key, value] of Object.entries(dealQuery)) {
-    //   if (value == null || key === 'page' || key === 'limit') continue;
-    //   if (key === 'name') qb.andWhere('deal.name ILIKE :name', { name: `%${String(value)}%` });
-    //   else if (key === 'maxValue') {
-    //     const nv = Number(value);
-    //     if (!Number.isNaN(nv)) qb.andWhere('deal.value >= :maxValue', { maxValue: nv });
-    //   } else if (key === 'minValue') {
-    //     const nv = Number(value);
-    //     if (!Number.isNaN(nv)) qb.andWhere('deal.value <= :minValue', { minValue: nv });
-    //   } else if (key === 'fromDate') {
-    //     const d = new Date(String(value));
-    //     if (!Number.isNaN(d.getTime()))
-    //       qb.andWhere('deal.expected_close_date >= :fromDate', { fromDate: d.toISOString() });
-    //   } else if (key === 'toDate') {
-    //     const d = new Date(String(value));
-    //     if (!Number.isNaN(d.getTime()))
-    //       qb.andWhere('deal.expected_close_date <= :toDate', { toDate: d.toISOString() });
-    //   }
-    // }
-
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
     const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };
     const deals: Partial<Deal>[] = data.map(({ value, ...deal }) => deal);

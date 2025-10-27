@@ -39,6 +39,7 @@ export class StripePaymentController {
       res
         .status(HttpStatus.INTERNAL_SERVER_ERROR)
         .json({ message: 'Stripe webhook secret is missing' });
+      return;
     }
 
     let event: Stripe.Event;

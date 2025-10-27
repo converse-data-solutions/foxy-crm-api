@@ -11,7 +11,7 @@ interface CookieOptions {
   sameSite?: 'strict' | 'lax' | 'none';
 }
 
-const isProd = Environment.NODE_ENV === 'prod';
+const isProd = Environment.NODE_ENV === 'production';
 export function setCookie(payload: CookiePayload, res: Response) {
   const defaultOptions: CookieOptions = {
     httpOnly: true,

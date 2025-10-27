@@ -106,20 +106,6 @@ export class UserService {
     };
     applyFilters<User>(qb, FILTERS, userQuery);
 
-    // for (const [key, value] of Object.entries(userQuery)) {
-    //   if (value == null || key === 'page' || key === 'limit') {
-    //     continue;
-    //   } else if (['name', 'email', 'phone', 'city', 'country'].includes(key)) {
-    //     qb.andWhere(`user.${key} LIKE :${key}`, { [key]: `%${value}%` });
-    //   } else if (key === 'role') {
-    //     qb.andWhere('user.role =:role', { role: userQuery.role });
-    //   } else if (key === 'statusCause') {
-    //     qb.andWhere('user.status_cause =:statusCause', { statusCause: userQuery.statusCause });
-    //   } else if (key === 'status') {
-    //     qb.andWhere('user.status =:status', { status: userQuery.status });
-    //   }
-    // }
-
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
     const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };
     return {
@@ -189,7 +175,7 @@ export class UserService {
     if (!subscriptionExist) {
       throw new BadRequestException('Invalid schema name');
     }
-    if (subscriptionExist.status === false && Environment.NODE_ENV === 'prod') {
+    if (subscriptionExist.status === false && Environment.NODE_ENV === 'production') {
       throw new HttpException(
         { message: 'Subscription got expired please subscribe' },
         HttpStatus.PAYMENT_REQUIRED,
