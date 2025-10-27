@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Headers, Put, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Headers, Put, Query, UseGuards } from '@nestjs/common';
 import { AccountService } from '../services/account.service';
 import { CreateAccountDto } from 'src/dtos/account-dto/create-account.dto';
 import { UpdateAccountDto } from 'src/dtos/account-dto/update-account.dto';
@@ -8,6 +8,8 @@ import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Roles } from 'src/common/decorators/role.decorator';
 import { Role } from 'src/enums/core-app.enum';
 import { GetAccountDto } from 'src/dtos/account-dto/get-account.dto';
+import { CsrfGuard } from 'src/guards/csrf.guard';
+import { CsrfHeader } from 'src/common/decorators/csrf-header.decorator';
 
 @Roles(Role.Admin, Role.Manager)
 @Controller('accounts')
@@ -15,6 +17,8 @@ export class AccountController {
   constructor(private readonly accountService: AccountService) {}
 
   @Post()
+  @UseGuards(CsrfGuard)
+  @CsrfHeader()
   @ApiOperation({ summary: 'Create new account' })
   @ApiResponse({ status: 201, description: 'Account created successfully' })
   async create(
@@ -33,6 +37,8 @@ export class AccountController {
   }
 
   @Put(':id')
+  @UseGuards(CsrfGuard)
+  @CsrfHeader()
   @Roles(Role.Admin, Role.Manager, Role.SalesRep)
   async update(
     @Headers('x-tenant-id') tenantId: string,

@@ -8,6 +8,7 @@ import { UpdateAccountDto } from 'src/dtos/account-dto/update-account.dto';
 import { getRepo } from 'src/shared/database-connection/get-connection';
 import { CountryService } from './country.service';
 import { paginationParams } from 'src/shared/utils/pagination-params.util';
+import { applyFilters, FiltersMap } from 'src/shared/utils/query-filter.util';
 
 @Injectable()
 export class AccountService {
@@ -47,13 +48,13 @@ export class AccountService {
     const qb = accountRepo.createQueryBuilder('account');
 
     const { limit, page, skip } = paginationParams(accountQuery.page, accountQuery.limit);
-    for (const [key, value] of Object.entries(accountQuery)) {
-      if (value == null || key === 'page' || key === 'limit') {
-        continue;
-      } else if (['name', 'industry', 'city', 'country'].includes(key)) {
-        qb.andWhere(`account.${key} LIKE :${key}`, { [key]: `%${value}%` });
-      }
-    }
+    const FILTERS: FiltersMap = {
+      name: { column: 'account.name', type: 'ilike' },
+      industry: { column: 'account.industry', type: 'ilike' },
+      city: { column: 'account.city', type: 'ilike' },
+      country: { column: 'account.country', type: 'ilike' },
+    };
+    applyFilters<Account>(qb, FILTERS, accountQuery);
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
     const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };

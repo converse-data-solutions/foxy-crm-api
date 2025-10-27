@@ -31,6 +31,8 @@ const envSchema = Joi.object({
 
   STRIPE_SECRET_KEY: Joi.string().required(),
   STRIPE_WEBHOOK_SECRET: Joi.string().required(),
+
+  CSRF_SECRET: Joi.string().required(),
 })
   .unknown()
   .required();
@@ -83,3 +85,5 @@ export const STRIPE = {
   stripeSecreteKey: envVars.STRIPE_SECRET_KEY as string,
   stripeWebhookSecret: envVars.STRIPE_WEBHOOK_SECRET as string,
 };
+
+export const CSRF_SECRET = envVars.CSRF_SECRET as string;

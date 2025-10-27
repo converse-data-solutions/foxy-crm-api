@@ -19,6 +19,7 @@ import { getRepo } from 'src/shared/database-connection/get-connection';
 import { paginationParams } from 'src/shared/utils/pagination-params.util';
 import { MetricService } from './metric.service';
 import { MetricDto } from 'src/dtos/metric-dto/metric.dto';
+import { applyFilters, FiltersMap } from 'src/shared/utils/query-filter.util';
 
 @Injectable()
 export class DealService {
@@ -63,25 +64,34 @@ export class DealService {
 
     const { limit, page, skip } = paginationParams(dealQuery.page, dealQuery.limit);
 
-    for (const [key, value] of Object.entries(dealQuery)) {
-      if (value == null || key === 'page' || key === 'limit') continue;
-      if (key === 'name') qb.andWhere('deal.name ILIKE :name', { name: `%${String(value)}%` });
-      else if (key === 'maxValue') {
-        const nv = Number(value);
-        if (!Number.isNaN(nv)) qb.andWhere('deal.value >= :maxValue', { maxValue: nv });
-      } else if (key === 'minValue') {
-        const nv = Number(value);
-        if (!Number.isNaN(nv)) qb.andWhere('deal.value <= :minValue', { minValue: nv });
-      } else if (key === 'fromDate') {
-        const d = new Date(String(value));
-        if (!Number.isNaN(d.getTime()))
-          qb.andWhere('deal.expected_close_date >= :fromDate', { fromDate: d.toISOString() });
-      } else if (key === 'toDate') {
-        const d = new Date(String(value));
-        if (!Number.isNaN(d.getTime()))
-          qb.andWhere('deal.expected_close_date <= :toDate', { toDate: d.toISOString() });
-      }
-    }
+    const FILTERS: FiltersMap = {
+      name: { column: 'deal.name', type: 'ilike' },
+      maxValue: { column: 'deal.value', type: 'lte' },
+      minValue: { column: 'deal.value', type: 'gte' },
+      fromDate: { column: 'deal.expected_close_date', type: 'gte' },
+      toDate: { column: 'deal.expected_close_date', type: 'lte' },
+    };
+    applyFilters<Deal>(qb, FILTERS, dealQuery);
+
+    // for (const [key, value] of Object.entries(dealQuery)) {
+    //   if (value == null || key === 'page' || key === 'limit') continue;
+    //   if (key === 'name') qb.andWhere('deal.name ILIKE :name', { name: `%${String(value)}%` });
+    //   else if (key === 'maxValue') {
+    //     const nv = Number(value);
+    //     if (!Number.isNaN(nv)) qb.andWhere('deal.value >= :maxValue', { maxValue: nv });
+    //   } else if (key === 'minValue') {
+    //     const nv = Number(value);
+    //     if (!Number.isNaN(nv)) qb.andWhere('deal.value <= :minValue', { minValue: nv });
+    //   } else if (key === 'fromDate') {
+    //     const d = new Date(String(value));
+    //     if (!Number.isNaN(d.getTime()))
+    //       qb.andWhere('deal.expected_close_date >= :fromDate', { fromDate: d.toISOString() });
+    //   } else if (key === 'toDate') {
+    //     const d = new Date(String(value));
+    //     if (!Number.isNaN(d.getTime()))
+    //       qb.andWhere('deal.expected_close_date <= :toDate', { toDate: d.toISOString() });
+    //   }
+    // }
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
     const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };

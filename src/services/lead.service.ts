@@ -19,6 +19,7 @@ import { MetricService } from './metric.service';
 import { MetricDto } from 'src/dtos/metric-dto/metric.dto';
 import { bulkLeadFailureTemplate } from 'src/templates/bulk-failure.template';
 import { EmailService } from './email.service';
+import { applyFilters, FiltersMap, FilterType } from 'src/shared/utils/query-filter.util';
 
 interface SerializedBuffer {
   type: 'Buffer';
@@ -93,18 +94,18 @@ export class LeadService {
       .leftJoinAndSelect('lead.leadActivities', 'leadActivities');
 
     const { limit, page, skip } = paginationParams(leadQuery.page, leadQuery.limit);
+    const FILTERS: FiltersMap = {
+      source: { column: 'lead.source', type: 'exact' },
+      email: { column: 'lead.email', type: 'exact' },
+      phone: { column: 'lead.phone', type: 'exact' },
+      name: { column: 'lead.name', type: 'ilike' },
+      company: { column: 'lead.company', type: 'ilike' },
+      status: { column: 'lead.status', type: 'exact' },
+      id: { column: 'lead.id', type: 'exact' },
+      assignedTo: { column: 'lead.assignedTo', type: 'exact' },
+    };
+    applyFilters(qb, FILTERS, leadQuery);
 
-    for (const [key, value] of Object.entries(leadQuery)) {
-      if (value == null || key === 'page' || key === 'limit') continue;
-
-      if (['source', 'email', 'phone'].includes(key)) {
-        qb.andWhere(`lead.${key} = :${key}`, { [key]: value });
-      } else if (['name', 'company'].includes(key)) {
-        qb.andWhere(`lead.${key} ILIKE :${key}`, { [key]: `%${value}%` });
-      } else {
-        qb.andWhere(`lead.${key} = :${key}`, { [key]: value });
-      }
-    }
     if (![Role.Admin, Role.Manager].includes(user.role)) {
       qb.andWhere(`user.id =:id`, { id: user.id });
     }

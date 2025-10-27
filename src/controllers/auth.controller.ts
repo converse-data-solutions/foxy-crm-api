@@ -1,4 +1,4 @@
-import { Body, Controller, HttpStatus, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpStatus, Post, Req, Res, Headers } from '@nestjs/common';
 import { AuthService } from '../services/auth.service';
 import { TenantSignupDto } from 'src/dtos/tenant-dto/tenant-signup.dto';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
@@ -12,6 +12,7 @@ import { UserService } from 'src/services/user.service';
 import { ForgotPasswordDto, ResetPasswordDto } from 'src/dtos/password-dto/reset-password.dto';
 import { setCookie } from 'src/shared/utils/cookie.util';
 import { APIResponse } from 'src/common/dtos/response.dto';
+import { csrfUtils } from 'src/shared/utils/csrf.util';
 
 @Public()
 @Controller('auth')
@@ -101,5 +102,14 @@ export class AuthController {
     const tokens = await this.authService.tokenRefresh(req);
     setCookie(tokens, res);
     return { success: true, statusCode: HttpStatus.OK, message: 'Token refreshed successfully' };
+  }
+
+  @Get('csrf-token')
+  @Public()
+  @ApiOperation({ summary: 'Get CSRF token' })
+  @ApiResponse({ status: 200, description: 'CSRF token generated successfully' })
+  async getCsrfToken(@Req() req: Request, @Res() res: Response): Promise<void> {
+    const token = csrfUtils.generateCsrfToken(req, res);
+    res.json({ csrfToken: token });
   }
 }

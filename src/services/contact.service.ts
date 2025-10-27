@@ -19,6 +19,7 @@ import { getRepo } from 'src/shared/database-connection/get-connection';
 import { paginationParams } from 'src/shared/utils/pagination-params.util';
 import { MetricService } from './metric.service';
 import { MetricDto } from 'src/dtos/metric-dto/metric.dto';
+import { applyFilters, FiltersMap } from 'src/shared/utils/query-filter.util';
 
 @Injectable()
 export class ContactService {
@@ -82,16 +83,13 @@ export class ContactService {
       .leftJoinAndSelect('contact.assignedTo', 'user')
       .leftJoinAndSelect('contact.accountId', 'account');
     const { limit, page, skip } = paginationParams(contactQuery.page, contactQuery.limit);
+    const FILTERS: FiltersMap = {
+      name: { column: 'contact.name', type: 'ilike' },
+      email: { column: 'contact.email', type: 'ilike' },
+      phone: { column: 'contact.phone', type: 'ilike' },
+    };
+    applyFilters<Contact>(qb, FILTERS, contactQuery);
 
-    for (const [key, value] of Object.entries(contactQuery)) {
-      if (value == null || key === 'page' || key === 'limit') {
-        continue;
-      } else if (['name', 'email', 'phone'].includes(key)) {
-        qb.andWhere(`contact.${key} ILIKE :${key}`, { [key]: `%${value}%` });
-      } else if (key === 'accountName') {
-        qb.andWhere('account.name ILIKE :accountName', { accountName: `%${value}%` });
-      }
-    }
     if (![Role.Admin, Role.Manager].includes(user.role)) {
       qb.andWhere(`user.id =:id`, { id: user.id });
     }
