@@ -1,4 +1,3 @@
-// src/shared/utils/csrf.util.ts
 import { doubleCsrf } from 'csrf-csrf';
 import { Request } from 'express';
 import { CSRF_SECRET } from './config.util';

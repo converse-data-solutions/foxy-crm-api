@@ -174,9 +174,16 @@ export class LeadService {
     stream.push(null);
 
     try {
+      const requiredHeaders = ['name', 'email', 'phone'];
       await new Promise<void>((resolve, reject) => {
         stream
           .pipe(csv())
+          .on('headers', (headers: string[]) => {
+            const missing = requiredHeaders.filter((h) => !headers.includes(h));
+            if (missing.length > 0) {
+              throw new Error(`Missing required columns: ${missing.join(', ')}`);
+            }
+          })
           .on('data', (row: CreateLeadDto) => {
             results.push({
               name: row['name'],

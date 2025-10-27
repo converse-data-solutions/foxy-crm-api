@@ -11,6 +11,7 @@ import {
   Query,
   Put,
   UseGuards,
+  Res,
 } from '@nestjs/common';
 import { LeadService } from '../services/lead.service';
 import { CreateLeadDto } from '../dtos/lead-dto/create-lead.dto';
@@ -28,6 +29,9 @@ import { FileValidationPipe } from 'src/common/pipes/file-validation.pipe';
 import { LeadConversionService } from 'src/services/lead-conversion.service';
 import { CsrfGuard } from 'src/guards/csrf.guard';
 import { CsrfHeader } from 'src/common/decorators/csrf-header.decorator';
+import { Public } from 'src/common/decorators/public.decorator';
+import { Response } from 'express';
+import path from 'path';
 
 @Roles(Role.Admin, Role.Manager)
 @Controller('leads')
@@ -119,6 +123,14 @@ export class LeadController {
     @CurrentUser() user: User,
   ) {
     return this.leadService.findAllLeads(leadQuery, tenantId, user);
+  }
+
+  @Get('template')
+  @Roles(Role.Admin, Role.Manager, Role.SalesRep)
+  @ApiOperation({ summary: 'Download the Lead Import Template' })
+  async downloadTemplate(@Res() res: Response, @Headers('x-tenant-id') tenantId: string) {
+    const filePath = path.join(__dirname, '../templates/lead-import-template.csv');
+    return res.download(filePath, 'lead-import-template.csv');
   }
 
   @Put(':id')
