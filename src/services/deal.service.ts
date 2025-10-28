@@ -19,6 +19,7 @@ import { getRepo } from 'src/shared/database-connection/get-connection';
 import { paginationParams } from 'src/shared/utils/pagination-params.util';
 import { MetricService } from './metric.service';
 import { MetricDto } from 'src/dtos/metric-dto/metric.dto';
+import { applyFilters, FiltersMap } from 'src/shared/utils/query-filter.util';
 
 @Injectable()
 export class DealService {
@@ -62,8 +63,6 @@ export class DealService {
     const qb = dealRepo.createQueryBuilder('deal').leftJoinAndSelect('deal.contactId', 'contact');
 
     const { limit, page, skip } = paginationParams(dealQuery.page, dealQuery.limit);
-
-    const defaultLimit = Number(dealQuery.limit ?? 10);
     
     for (const [key, value] of Object.entries(dealQuery)) {
       if (value == null || key === 'page' || key === 'limit') continue;

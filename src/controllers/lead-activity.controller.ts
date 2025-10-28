@@ -6,6 +6,7 @@ import { Roles } from 'src/common/decorators/role.decorator';
 import { Role } from 'src/enums/core-app.enum';
 import { CreateLeadActivityDto } from 'src/dtos/activity-dto/create-lead-activity.dto';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { CsrfHeader } from 'src/common/decorators/csrf-header.decorator';
 
 @Roles(Role.Admin, Role.SalesRep, Role.Manager)
 @Controller('lead/activities')
@@ -15,6 +16,7 @@ export class LeadActivityController {
   @ApiOperation({ summary: 'Create lead activity' })
   @ApiResponse({ status: 201, description: 'Lead activity created successfully' })
   @Post()
+  @CsrfHeader()
   async create(
     @Headers('x-tenant-id') tenantId: string,
     @CurrentUser() user: User,

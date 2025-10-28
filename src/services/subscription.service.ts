@@ -111,7 +111,7 @@ export class SubscriptionService {
     const subscription = await this.planPriceRepo.findOne({
       where: {
         tenantsSubscription: {
-          tenant: { id: payload.id },
+          tenant: { email: payload.email },
           status: true,
         },
       },

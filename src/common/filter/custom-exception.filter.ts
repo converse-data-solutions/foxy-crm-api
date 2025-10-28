@@ -16,7 +16,7 @@ export class CustomExceptionFilter implements ExceptionFilter {
     } else if (ctxType === 'ws') {
       this.handleWsException(exception, host);
     } else {
-      console.error(exception);
+      this.logger.error(exception as string);
     }
   }
 
@@ -29,7 +29,6 @@ export class CustomExceptionFilter implements ExceptionFilter {
     let message = 'Internal server error';
     let errors: string[] | null = null;
 
-    console.log(exception);
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       const errorResponse = exception.getResponse() as any;
@@ -39,6 +38,7 @@ export class CustomExceptionFilter implements ExceptionFilter {
         message = 'Validation failed';
         errors = errorResponse.message;
       }
+      this.logger.error(`HTTP Exception on ${request.method} ${request.url} - ${message}`);
     }
 
     response.status(status).json({
@@ -70,6 +70,7 @@ export class CustomExceptionFilter implements ExceptionFilter {
     } else if (exception instanceof Error) {
       message = exception.message;
     }
+    this.logger.error(`WebSocket Exception on ${client.id} - ${message}`);
 
     client.emit('error', { success: false, message });
   }

@@ -8,6 +8,7 @@ import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { User } from 'src/database/entities/core-app-entities/user.entity';
 import { GetContactDto } from 'src/dtos/contact-dto/get-contact.dto';
+import { CsrfHeader } from 'src/common/decorators/csrf-header.decorator';
 
 @Roles(Role.Admin, Role.Manager)
 @Controller('contacts')
@@ -15,6 +16,7 @@ export class ContactController {
   constructor(private readonly contactService: ContactService) {}
 
   @Post()
+  @CsrfHeader()
   @ApiOperation({ summary: 'Create new contact' })
   @ApiResponse({ status: 201, description: 'Contact created successfully' })
   async create(
@@ -38,6 +40,7 @@ export class ContactController {
   }
 
   @Put(':id')
+  @CsrfHeader()
   @Roles(Role.Admin, Role.Manager, Role.SalesRep)
   @ApiOperation({ summary: 'Update existing contact' })
   @ApiResponse({ status: 200, description: 'Contact updated successfully' })

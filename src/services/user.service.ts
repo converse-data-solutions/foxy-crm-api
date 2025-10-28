@@ -23,6 +23,7 @@ import { Repository } from 'typeorm';
 import { paginationParams } from 'src/shared/utils/pagination-params.util';
 import { Environment, SALT_ROUNDS } from 'src/shared/utils/config.util';
 import { PlanPricing } from 'src/database/entities/base-app-entities/plan-pricing.entity';
+import { applyFilters, FiltersMap } from 'src/shared/utils/query-filter.util';
 
 @Injectable()
 export class UserService {
@@ -93,20 +94,17 @@ export class UserService {
     const qb = userRepo.createQueryBuilder('user');
 
     const { limit, page, skip } = paginationParams(userQuery.page, userQuery.limit);
-
-    for (const [key, value] of Object.entries(userQuery)) {
-      if (value == null || key === 'page' || key === 'limit') {
-        continue;
-      } else if (['name', 'email', 'phone', 'city', 'country'].includes(key)) {
-        qb.andWhere(`user.${key} LIKE :${key}`, { [key]: `%${value}%` });
-      } else if (key === 'role') {
-        qb.andWhere('user.role =:role', { role: userQuery.role });
-      } else if (key === 'statusCause') {
-        qb.andWhere('user.status_cause =:statusCause', { statusCause: userQuery.statusCause });
-      } else if (key === 'status') {
-        qb.andWhere('user.status =:status', { status: userQuery.status });
-      }
-    }
+    const FILTERS: FiltersMap = {
+      name: { column: 'user.name', type: 'like' },
+      email: { column: 'user.email', type: 'like' },
+      phone: { column: 'user.phone', type: 'like' },
+      city: { column: 'user.city', type: 'like' },
+      country: { column: 'user.country', type: 'like' },
+      role: { column: 'user.role', type: 'exact' },
+      statusCause: { column: 'user.status_cause', type: 'exact' },
+      status: { column: 'user.status', type: 'exact' },
+    };
+    applyFilters(qb, FILTERS, userQuery);
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
     const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };
@@ -117,10 +115,6 @@ export class UserService {
       data,
       pageInfo,
     };
-  }
-
-  async getUser(tenantId: string, user: User) {
-    const userRepo = await getRepo(User, tenantId);
   }
 
   async userSignup(user: UserSignupDto): Promise<APIResponse> {
@@ -177,7 +171,7 @@ export class UserService {
     if (!subscriptionExist) {
       throw new BadRequestException('Invalid schema name');
     }
-    if (subscriptionExist.status === false && Environment.NODE_ENV === 'prod') {
+    if (subscriptionExist.status === false && Environment.NODE_ENV === 'production') {
       throw new HttpException(
         { message: 'Subscription got expired please subscribe' },
         HttpStatus.PAYMENT_REQUIRED,
@@ -186,7 +180,7 @@ export class UserService {
 
     const userRepo = await getRepo(User, schema);
     const user = await userRepo.findOne({
-      where: { email: payload.email },
+      where: { email: payload.email, status: true, emailVerified: true },
     });
     return user ?? null;
   }

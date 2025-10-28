@@ -21,6 +21,7 @@ import { getRepo } from 'src/shared/database-connection/get-connection';
 import { paginationParams } from 'src/shared/utils/pagination-params.util';
 import { MetricService } from './metric.service';
 import { Not } from 'typeorm';
+import { applyFilters, FiltersMap } from 'src/shared/utils/query-filter.util';
 @Injectable()
 export class TicketService {
   constructor(private readonly metricService: MetricService) {}
@@ -80,22 +81,15 @@ export class TicketService {
       .leftJoin('ticket.dealId', 'deal')
       .leftJoin('ticket.createdBy', 'user');
     const { limit, page, skip } = paginationParams(ticketQuery.page, ticketQuery.limit);
+    const FILTERS: FiltersMap = {
+      title: { column: 'ticket.title', type: 'ilike' },
+      status: { column: 'ticket.status', type: 'exact' },
+      deal: { column: 'deal.name', type: 'ilike' },
+      resolvedFrom: { column: 'ticket.resolved_at', type: 'gte' },
+      resolvedTo: { column: 'ticket.resolved_at', type: 'lte' },
+    };
+    applyFilters(qb, FILTERS, ticketQuery);
 
-    for (const [key, value] of Object.entries(ticketQuery)) {
-      if (value == null || key === 'page' || key === 'limit') {
-        continue;
-      } else if (key === 'title') {
-        qb.andWhere(`ticket.title ILIKE :title`, { title: `%${value}%` });
-      } else if (key === 'status') {
-        qb.andWhere(`ticket.status =:status`, { status: value });
-      } else if (key === 'deal') {
-        qb.andWhere(`deal.name ILIKE :deal`, { deal: `%${value}%` });
-      } else if (key === 'resolvedFrom') {
-        qb.andWhere(`ticket.resolved_at >=:resolvedFrom`, { resolvedFrom: value });
-      } else if (key === 'resolvedTo') {
-        qb.andWhere(`ticket.resolved_at <=:resolvedTo`, { resolvedTo: value });
-      }
-    }
     if (![Role.Admin, Role.Manager].includes(user.role)) {
       qb.andWhere(`user.id =:id`, { id: user.id });
     }

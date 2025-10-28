@@ -60,8 +60,8 @@ export class Tenant {
   country?: string;
 
   @Exclude()
-  @Column({ name: 'otp', type: 'int', nullable: true })
-  otp?: number;
+  @Column({ name: 'otp', type: 'varchar', length: 100, nullable: true })
+  otp?: string;
 
   @Exclude()
   @Column({ name: 'otp_expiry_at', type: 'timestamp', nullable: true })

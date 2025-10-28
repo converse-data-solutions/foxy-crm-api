@@ -10,6 +10,7 @@ import {
   ParseFilePipeBuilder,
   Query,
   Put,
+  Res,
 } from '@nestjs/common';
 import { LeadService } from '../services/lead.service';
 import { CreateLeadDto } from '../dtos/lead-dto/create-lead.dto';
@@ -25,6 +26,9 @@ import { LeadToContactDto } from 'src/dtos/lead-dto/lead-to-contact.dto';
 import { User } from 'src/database/entities/core-app-entities/user.entity';
 import { FileValidationPipe } from 'src/common/pipes/file-validation.pipe';
 import { LeadConversionService } from 'src/services/lead-conversion.service';
+import { CsrfHeader } from 'src/common/decorators/csrf-header.decorator';
+import { Response } from 'express';
+import path from 'path';
 
 @Roles(Role.Admin, Role.Manager)
 @Controller('leads')
@@ -35,6 +39,7 @@ export class LeadController {
   ) {}
 
   @Post()
+  @CsrfHeader()
   @Roles(Role.Admin, Role.Manager, Role.SalesRep)
   @ApiOperation({ summary: 'Insert lead or create lead' })
   @ApiResponse({ status: 201, description: 'Lead created successfully' })
@@ -47,6 +52,7 @@ export class LeadController {
   }
 
   @Post('upload')
+  @CsrfHeader()
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Upload CSV for bulk lead import' })
   @ApiBody({
@@ -80,6 +86,7 @@ export class LeadController {
   }
 
   @Post(':id/conversion')
+  @CsrfHeader()
   @Roles(Role.Admin, Role.Manager, Role.SalesRep)
   @ApiOperation({ summary: 'Convert lead to contact' })
   @ApiResponse({ status: 200, description: 'Lead converted successfully' })
@@ -112,7 +119,16 @@ export class LeadController {
     return this.leadService.findAllLeads(leadQuery, tenantId, user);
   }
 
+  @Get('template')
+  @Roles(Role.Admin, Role.Manager, Role.SalesRep)
+  @ApiOperation({ summary: 'Download the Lead Import Template' })
+  async downloadTemplate(@Res() res: Response, @Headers('x-tenant-id') tenantId: string) {
+    const filePath = path.join(__dirname, '../templates/lead-import-template.csv');
+    return res.download(filePath, 'lead-import-template.csv');
+  }
+
   @Put(':id')
+  @CsrfHeader()
   @Roles(Role.Admin, Role.Manager, Role.SalesRep)
   @ApiOperation({ summary: 'Update lead data' })
   @ApiResponse({ status: 200, description: 'Lead updated successfully' })

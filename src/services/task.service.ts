@@ -24,6 +24,7 @@ import { paginationParams } from 'src/shared/utils/pagination-params.util';
 import { taskAssignmentTemplate } from 'src/templates/task-assignment.template';
 import { Repository } from 'typeorm';
 import { EmailService } from './email.service';
+import { applyFilters, FiltersMap } from 'src/shared/utils/query-filter.util';
 
 @Injectable()
 export class TaskService {
@@ -93,16 +94,16 @@ export class TaskService {
     const qb = taskRepo.createQueryBuilder('task').leftJoin('task.assignedTo', 'user');
 
     const { limit, page, skip } = paginationParams(taskQuery.page, taskQuery.limit);
+    const FILTERS: FiltersMap = {
+      entityName: { column: 'task.entityName', type: 'exact' },
+      entityId: { column: 'task.entityId', type: 'exact' },
+      type: { column: 'task.type', type: 'exact' },
+      status: { column: 'task.status', type: 'exact' },
+      priority: { column: 'task.priority', type: 'exact' },
+      name: { column: 'task.name', type: 'ilike' },
+    };
+    applyFilters(qb, FILTERS, taskQuery);
 
-    for (const [key, value] of Object.entries(taskQuery)) {
-      if (value == null || key === 'page' || key === 'limit') {
-        continue;
-      } else if (['entityName', 'entityId', 'type', 'status', 'priority'].includes(key)) {
-        qb.andWhere(`task.${key} =:${key}`, { [key]: value });
-      } else if (key === 'name') {
-        qb.andWhere(`task.name ILIKE :name`, { name: `%${value}%` });
-      }
-    }
     if (![Role.Admin, Role.Manager].includes(user.role)) {
       qb.andWhere(`user.id =:id`, { id: user.id });
     } else {

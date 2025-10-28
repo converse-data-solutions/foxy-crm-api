@@ -8,6 +8,7 @@ import { Roles } from 'src/common/decorators/role.decorator';
 import { Role } from 'src/enums/core-app.enum';
 import { UpdateDealDto } from 'src/dtos/deal-dto/update-deal.dto';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { CsrfHeader } from 'src/common/decorators/csrf-header.decorator';
 
 @Roles(Role.Admin, Role.Manager)
 @Controller('deals')
@@ -15,6 +16,7 @@ export class DealController {
   constructor(private readonly dealService: DealService) {}
 
   @Post()
+  @CsrfHeader()
   @ApiOperation({ summary: 'Create deal info' })
   @ApiResponse({ status: 201, description: 'Deal info created successfully' })
   async createDeal(
@@ -38,6 +40,7 @@ export class DealController {
   }
 
   @Put(':id')
+  @CsrfHeader()
   @ApiOperation({ summary: 'Update deal info' })
   @ApiResponse({ status: 200, description: 'Deal info updated successfully' })
   async updateDeal(

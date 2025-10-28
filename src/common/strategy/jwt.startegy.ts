@@ -24,7 +24,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const tenantHeaders = req?.headers['x-tenant-id'];
     const tenantId = Array.isArray(tenantHeaders) ? tenantHeaders[0] : tenantHeaders;
     if (!tenantId) {
-      throw new BadRequestException('x-tenant-id header is missing');
+      throw new BadRequestException('Please provide tenant-id in request headers');
     }
 
     if (!validate(tenantId) || version(tenantId) !== 4) {

@@ -48,9 +48,10 @@ export class OtpService {
     if (!existUser) {
       throw new BadRequestException('Please provide registered email address');
     }
-    const otp = generateOtp();
+    const rawOtp = generateOtp();
     const expiryAt = new Date(Date.now() + 1.5 * 60 * 1000);
-    existUser.otp = Number(otp);
+    const otp = bcrypt.hashSync(rawOtp, SALT_ROUNDS);
+    existUser.otp = otp;
     existUser.otpExpiryAt = expiryAt;
     await repo.save(existUser);
     const name = existUser instanceof User ? existUser.name : existUser.userName;
@@ -61,7 +62,7 @@ export class OtpService {
       emailType = EmailTemplateType.ForgotPassword;
       subject = 'Your One-Time Password (OTP) for Password Reset';
     }
-    const html = ForgotAndVerifyMail(name, otp, emailType);
+    const html = ForgotAndVerifyMail(name, rawOtp, emailType);
     await this.emailService.sendMail({
       to: existUser.email,
       html,
@@ -88,7 +89,7 @@ export class OtpService {
     if (userExist.otpExpiryAt && userExist.otpExpiryAt < new Date()) {
       throw new BadRequestException('Otp expired please click resend and verify');
     }
-    if (userExist.otp && userExist.otp !== otpDto.otp) {
+    if (userExist.otp && bcrypt.compareSync(otpDto.otp.toString(), userExist.otp) === false) {
       throw new BadRequestException('Invalid or wrong otp');
     }
     if (userExist.emailVerified) {
@@ -140,7 +141,7 @@ export class OtpService {
     if (userExist.otpExpiryAt && userExist.otpExpiryAt < new Date()) {
       throw new BadRequestException('Otp expired please click resend and verify');
     }
-    if (userExist.otp && userExist.otp !== otpDto.otp) {
+    if (userExist.otp && bcrypt.compareSync(otpDto.otp.toString(), userExist.otp) === false) {
       throw new BadRequestException('Invalid or wrong otp');
     }
     userExist.otpVerified = true;

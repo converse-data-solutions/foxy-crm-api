@@ -54,6 +54,7 @@
     "cookie": "^1.0.2",
     "cookie-parser": "^1.4.7",
     "countries-list": "^3.1.1",
+    "csrf-csrf": "^4.0.3",
     "csv-parser": "^3.2.0",
     "dotenv": "^17.2.2",
     "helmet": "^8.1.0",
@@ -127,8 +128,7 @@
   },
   "lint-staged": {
     "*.{ts,js,json,}": [
-      "prettier --write",
-      "git add"
+      "prettier --write"
     ]
   }
 }
