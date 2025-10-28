@@ -54,7 +54,7 @@ export class AccountService {
       city: { column: 'account.city', type: 'ilike' },
       country: { column: 'account.country', type: 'ilike' },
     };
-    applyFilters<Account>(qb, FILTERS, accountQuery);
+    applyFilters(qb, FILTERS, accountQuery);
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
     const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };

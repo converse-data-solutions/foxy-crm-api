@@ -102,7 +102,7 @@ export class TaskService {
       priority: { column: 'task.priority', type: 'exact' },
       name: { column: 'task.name', type: 'ilike' },
     };
-    applyFilters<Task>(qb, FILTERS, taskQuery);
+    applyFilters(qb, FILTERS, taskQuery);
 
     if (![Role.Admin, Role.Manager].includes(user.role)) {
       qb.andWhere(`user.id =:id`, { id: user.id });

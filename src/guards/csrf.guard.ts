@@ -4,7 +4,7 @@ import { csrfUtils } from 'src/shared/utils/csrf.util';
 
 @Injectable()
 export class CsrfGuard implements CanActivate {
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest<Request>();
 
     //Validate the CSRF token

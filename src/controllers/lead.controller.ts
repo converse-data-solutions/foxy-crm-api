@@ -10,7 +10,6 @@ import {
   ParseFilePipeBuilder,
   Query,
   Put,
-  UseGuards,
   Res,
 } from '@nestjs/common';
 import { LeadService } from '../services/lead.service';
@@ -27,7 +26,6 @@ import { LeadToContactDto } from 'src/dtos/lead-dto/lead-to-contact.dto';
 import { User } from 'src/database/entities/core-app-entities/user.entity';
 import { FileValidationPipe } from 'src/common/pipes/file-validation.pipe';
 import { LeadConversionService } from 'src/services/lead-conversion.service';
-import { CsrfGuard } from 'src/guards/csrf.guard';
 import { CsrfHeader } from 'src/common/decorators/csrf-header.decorator';
 import { Response } from 'express';
 import path from 'path';
@@ -41,7 +39,6 @@ export class LeadController {
   ) {}
 
   @Post()
-  @UseGuards(CsrfGuard)
   @CsrfHeader()
   @Roles(Role.Admin, Role.Manager, Role.SalesRep)
   @ApiOperation({ summary: 'Insert lead or create lead' })
@@ -55,7 +52,6 @@ export class LeadController {
   }
 
   @Post('upload')
-  @UseGuards(CsrfGuard)
   @CsrfHeader()
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Upload CSV for bulk lead import' })
@@ -90,7 +86,6 @@ export class LeadController {
   }
 
   @Post(':id/conversion')
-  @UseGuards(CsrfGuard)
   @CsrfHeader()
   @Roles(Role.Admin, Role.Manager, Role.SalesRep)
   @ApiOperation({ summary: 'Convert lead to contact' })
@@ -133,7 +128,6 @@ export class LeadController {
   }
 
   @Put(':id')
-  @UseGuards(CsrfGuard)
   @CsrfHeader()
   @Roles(Role.Admin, Role.Manager, Role.SalesRep)
   @ApiOperation({ summary: 'Update lead data' })

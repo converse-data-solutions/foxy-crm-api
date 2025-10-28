@@ -104,7 +104,7 @@ export class UserService {
       statusCause: { column: 'user.status_cause', type: 'exact' },
       status: { column: 'user.status', type: 'exact' },
     };
-    applyFilters<User>(qb, FILTERS, userQuery);
+    applyFilters(qb, FILTERS, userQuery);
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
     const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };

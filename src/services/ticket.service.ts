@@ -89,7 +89,7 @@ export class TicketService {
       resolvedFrom: { column: 'ticket.resolved_at', type: 'gte' },
       resolvedTo: { column: 'ticket.resolved_at', type: 'lte' },
     };
-    applyFilters<Ticket>(qb, FILTERS, ticketQuery);
+    applyFilters(qb, FILTERS, ticketQuery);
 
     if (![Role.Admin, Role.Manager].includes(user.role)) {
       qb.andWhere(`user.id =:id`, { id: user.id });

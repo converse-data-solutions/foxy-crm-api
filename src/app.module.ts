@@ -36,6 +36,7 @@ import { MetricModule } from './modules/metric.module';
 import { EmailModule } from './modules/email.module';
 import { SubscriptionHistoryModule } from './modules/subscription-history.module';
 import { LoggerModule } from './modules/logger.module';
+import { CsrfGuard } from './guards/csrf.guard';
 
 @Module({
   imports: [
@@ -107,6 +108,7 @@ import { LoggerModule } from './modules/logger.module';
   providers: [
     JwtAuthGuard,
     RolesGuard,
+    CsrfGuard,
     {
       provide: APP_INTERCEPTOR,
       useClass: LoggerInterceptor,

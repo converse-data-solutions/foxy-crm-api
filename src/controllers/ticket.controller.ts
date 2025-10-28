@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Put, Headers, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Headers, Query } from '@nestjs/common';
 import { TicketService } from '../services/ticket.service';
 import { UpdateTicketDto } from 'src/dtos/ticket-dto/update-ticket.dto';
 import { CreateTicketDto } from 'src/dtos/ticket-dto/create-ticket.dto';
@@ -9,7 +9,6 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { User } from 'src/database/entities/core-app-entities/user.entity';
 import { GetTicketDto } from 'src/dtos/ticket-dto/get-ticket.dto';
 import { CsrfHeader } from 'src/common/decorators/csrf-header.decorator';
-import { CsrfGuard } from 'src/guards/csrf.guard';
 
 @Roles(Role.Admin, Role.Manager, Role.SalesRep, Role.Support)
 @Controller('tickets')
@@ -17,7 +16,6 @@ export class TicketController {
   constructor(private readonly ticketService: TicketService) {}
 
   @Post()
-  @UseGuards(CsrfGuard)
   @CsrfHeader()
   @ApiOperation({ summary: 'Create ticket' })
   @ApiResponse({ status: 201, description: 'Ticket created successfully' })
@@ -41,7 +39,6 @@ export class TicketController {
   }
 
   @Put(':id')
-  @UseGuards(CsrfGuard)
   @CsrfHeader()
   @ApiOperation({ summary: 'Update ticket' })
   @ApiResponse({ status: 200, description: 'Ticket updated successfully' })

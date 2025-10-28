@@ -13,7 +13,9 @@ import { ForgotPasswordDto, ResetPasswordDto } from 'src/dtos/password-dto/reset
 import { setCookie } from 'src/shared/utils/cookie.util';
 import { APIResponse } from 'src/common/dtos/response.dto';
 import { Throttle } from '@nestjs/throttler';
+import { SkipCsrf } from 'src/common/decorators/skip-csrf.decorator';
 
+@SkipCsrf()
 @Controller('auth')
 export class AuthController {
   constructor(

@@ -88,7 +88,7 @@ export class ContactService {
       email: { column: 'contact.email', type: 'ilike' },
       phone: { column: 'contact.phone', type: 'ilike' },
     };
-    applyFilters<Contact>(qb, FILTERS, contactQuery);
+    applyFilters(qb, FILTERS, contactQuery);
 
     if (![Role.Admin, Role.Manager].includes(user.role)) {
       qb.andWhere(`user.id =:id`, { id: user.id });

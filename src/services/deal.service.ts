@@ -71,7 +71,7 @@ export class DealService {
       fromDate: { column: 'deal.expected_close_date', type: 'gte' },
       toDate: { column: 'deal.expected_close_date', type: 'lte' },
     };
-    applyFilters<Deal>(qb, FILTERS, dealQuery);
+    applyFilters(qb, FILTERS, dealQuery);
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
     const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };

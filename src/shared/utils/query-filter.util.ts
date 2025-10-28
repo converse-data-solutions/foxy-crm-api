@@ -4,10 +4,10 @@ export type FilterType = 'exact' | 'ilike' | 'gte' | 'lte' | 'like';
 
 export type FiltersMap = Record<string, { column: string; type: FilterType }>;
 
-export function applyFilters<T extends ObjectLiteral>(
+export function applyFilters<T extends ObjectLiteral, Q extends Record<keyof Q & string, unknown>>(
   qb: SelectQueryBuilder<T>,
   filtersMap: FiltersMap,
-  query: Record<string, any>,
+  query: Partial<Q>,
   paramPrefix = 'p',
 ): SelectQueryBuilder<T> {
   function makeParamName(rawKey: string) {
