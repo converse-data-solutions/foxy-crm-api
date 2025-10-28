@@ -66,6 +66,7 @@ export class User {
   @OneToMany(() => Lead, (lead) => lead.assignedTo, { nullable: true })
   leads: Lead[];
 
+  @Exclude()
   @Column({ nullable: true, type: 'text' })
   refreshToken?: string;
 

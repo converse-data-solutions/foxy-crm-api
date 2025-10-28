@@ -117,10 +117,6 @@ export class UserService {
     };
   }
 
-  async getUser(tenantId: string, user: User) {
-    const userRepo = await getRepo(User, tenantId);
-  }
-
   async userSignup(user: UserSignupDto): Promise<APIResponse> {
     const tenant = await this.tenantService.getTenant(user.email);
     const userRepo = await getRepo<User>(User, tenant.schemaName);
