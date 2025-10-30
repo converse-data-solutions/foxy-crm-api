@@ -4,7 +4,7 @@ import { config as dotenvConfig } from 'dotenv';
 dotenvConfig();
 
 const envSchema = Joi.object({
-  NODE_ENV: Joi.string().valid('development', 'production').default('development'),
+  NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
   DB_HOST: Joi.string().required(),
   DB_PORT: Joi.number().default(5432),
   DB_USER: Joi.string().required(),
