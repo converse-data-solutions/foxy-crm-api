@@ -37,7 +37,7 @@ describe('AuthService', () => {
     service = module.get<AuthService>(AuthService);
     jest.clearAllMocks();
     req = { cookies: { refresh_token: 'mockRefresh', access_token: 'mockAccess' } };
-    res = { json: jest.fn() };
+    res = { json: jest.fn(), clearCookie: jest.fn() };
   });
 
   const mockUserRepo = {
@@ -241,11 +241,14 @@ describe('AuthService', () => {
     it('should generate and return csrf token', async () => {
       const mockPayload = { id: 'user01', email: 'user@mail.com' };
       const mockCsrfToken = 'csrf123';
+      req.cookies = { access_token: 'mockAccess' };
       mockTokenService.verifyAccessToken.mockResolvedValue(mockPayload);
       jest.spyOn(csrfUtils, 'generateCsrfToken').mockReturnValue(mockCsrfToken);
+      jest.spyOn(res, 'clearCookie').mockImplementation();
       await service.getCsrfToken(req as Request, res as Response);
       expect(mockTokenService.verifyAccessToken).toHaveBeenCalledWith('mockAccess');
-      expect(csrfUtils.generateCsrfToken).toHaveBeenCalledWith(req, res);
+      expect(res.clearCookie).toHaveBeenCalledWith('x-csrf-secret', { path: '/' });
+      expect(csrfUtils.generateCsrfToken).toHaveBeenCalledWith(req, res, { overwrite: true });
       expect(req.user).toEqual(mockPayload);
       expect(res.json).toHaveBeenCalledWith({
         success: true,
@@ -262,6 +265,7 @@ describe('AuthService', () => {
       );
       expect(mockTokenService.verifyAccessToken).not.toHaveBeenCalled();
       expect(csrfUtils.generateCsrfToken).not.toHaveBeenCalled();
+      expect(res.clearCookie).not.toHaveBeenCalled();
     });
   });
 });
