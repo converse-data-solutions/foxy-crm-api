@@ -1,0 +1,32 @@
+[
+  {
+    "name": "Starter",
+    "prices": {
+      "monthly": 499,
+      "quarterly": 1399,
+      "halfyearly": 2599,
+      "yearly": 4999
+    },
+    "userCount": 10
+  },
+  {
+    "name": "Proffessional",
+    "prices": {
+      "monthly": 999,
+      "quarterly": 2799,
+      "halfyearly": 5199,
+      "yearly": 9999
+    },
+    "userCount": 20
+  },
+  {
+    "name": "Enterprise",
+    "prices": {
+      "monthly": 1999,
+      "quarterly": 5599,
+      "halfyearly": 10399,
+      "yearly": 19999
+    },
+    "userCount": "Infinity"
+  }
+]
