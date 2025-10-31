@@ -6,9 +6,8 @@ import { csrfUtils } from 'src/shared/utils/csrf.util';
 export class CsrfGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest<Request>();
-
-    //Validate the CSRF token
     const isValid = csrfUtils.validateRequest(req);
+
     if (!isValid) {
       throw new ForbiddenException('Invalid or missing CSRF token');
     }

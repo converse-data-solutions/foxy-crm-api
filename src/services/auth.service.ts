@@ -14,7 +14,7 @@ import { plainToInstance } from 'class-transformer';
 import { TenantService } from './tenant.service';
 import { ForgotPasswordDto, ResetPasswordDto } from 'src/dtos/password-dto/reset-password.dto';
 import { APIResponse } from 'src/common/dtos/response.dto';
-import { SALT_ROUNDS } from 'src/shared/utils/config.util';
+import { CSRF_SECRET, SALT_ROUNDS } from 'src/shared/utils/config.util';
 import { CookiePayload } from 'src/common/dtos/cookie-payload.dto';
 import { TokenService } from './token.service';
 import { Request, Response } from 'express';
@@ -134,7 +134,10 @@ export class AuthService {
     }
     const payload = await this.tokenService.verifyAccessToken(accessToken);
     req.user = payload;
-    const token = csrfUtils.generateCsrfToken(req, res);
+    res.clearCookie('x-csrf-secret', { path: '/' });
+    const token = csrfUtils.generateCsrfToken(req, res, {
+      overwrite: true,
+    });
     res.json({
       success: true,
       statusCode: HttpStatus.OK,
