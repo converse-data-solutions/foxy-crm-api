@@ -26,7 +26,6 @@ export class CustomExceptionFilter implements ExceptionFilter {
     let message = 'Internal server error';
     let errors: string[] | null = null;
 
-    console.log(exception);
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       const errorResponse = exception.getResponse() as any;
