@@ -2,6 +2,7 @@ import { ApiPropertyOptional, IntersectionType, PartialType, PickType } from '@n
 import { IsOptional, IsDateString, IsDecimal } from 'class-validator';
 import { CreateDealDto } from './create-deal.dto';
 import { PageDto } from '../page-dto/page.dto';
+import { Sanitize } from 'src/common/decorators/sanitize.decorator';
 
 export class GetDealDto extends IntersectionType(
   PartialType(PickType(CreateDealDto, ['name'] as const)),
@@ -13,6 +14,7 @@ export class GetDealDto extends IntersectionType(
     { decimal_digits: '0,2' },
     { message: 'Amount should contain maximum 2 decimal points' },
   )
+  @Sanitize()
   maxValue?: string;
 
   @ApiPropertyOptional()
@@ -21,6 +23,7 @@ export class GetDealDto extends IntersectionType(
     { decimal_digits: '0,2' },
     { message: 'Amount should contain maximum 2 decimal points' },
   )
+  @Sanitize()
   minValue?: string;
 
   @ApiPropertyOptional({
@@ -29,6 +32,7 @@ export class GetDealDto extends IntersectionType(
   })
   @IsOptional()
   @IsDateString({}, { message: 'fromDate must be a valid date string (YYYY-MM-DD)' })
+  @Sanitize()
   fromDate?: Date;
 
   @ApiPropertyOptional({
@@ -37,5 +41,6 @@ export class GetDealDto extends IntersectionType(
   })
   @IsOptional()
   @IsDateString({}, { message: 'toDate must be a valid date string (YYYY-MM-DD)' })
+  @Sanitize()
   toDate?: Date;
 }

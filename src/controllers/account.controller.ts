@@ -41,7 +41,8 @@ export class AccountController {
     @Headers('x-tenant-id') tenantId: string,
     @Param('id') id: string,
     @Body() updateAccountDto: UpdateAccountDto,
+    @CurrentUser() user: User,
   ) {
-    return await this.accountService.update(tenantId, id, updateAccountDto);
+    return await this.accountService.update(tenantId, id, updateAccountDto, user);
   }
 }

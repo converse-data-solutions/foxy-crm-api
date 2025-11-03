@@ -32,7 +32,7 @@ export class LeadConversionService {
     const contactRepo = await getRepo<Contact>(Contact, tenantId);
     const accountRepo = await getRepo<Account>(Account, tenantId);
     if (!lead) {
-      throw new NotFoundException('Lead not found or invalid lead id');
+      throw new NotFoundException('Lead not found or invalid lead ID.');
     }
     const account = await accountRepo.findOne({ where: { name: ILike(`%${lead.company}%`) } });
     const contact = await contactRepo.findOne({
@@ -64,22 +64,24 @@ export class LeadConversionService {
     const accountRepo = await getRepo<Account>(Account, tenantId);
 
     if (!lead) {
-      throw new BadRequestException('Invalid lead id or lead not found');
+      throw new BadRequestException('Invalid lead ID or lead not found.');
     }
     if (!lead.assignedTo && user.role == Role.SalesRep) {
-      throw new UnauthorizedException('Not authorized to convert others lead to contact');
+      throw new UnauthorizedException('You are not authorized to convert another user’s lead.');
     } else if (lead.assignedTo && lead.assignedTo.id != user.id && user.role == Role.SalesRep) {
-      throw new UnauthorizedException('Not authorized to convert others lead to contact');
+      throw new UnauthorizedException('You are not authorized to convert another user’s lead.');
     }
     if (lead.status === LeadStatus.Disqualified) {
-      throw new BadRequestException('Cannot convert disqualified lead first update status');
+      throw new BadRequestException(
+        'Cannot convert a disqualified lead. Please update the lead status first.',
+      );
     }
 
     const isContact = await contactRepo.findOne({
       where: [{ email: lead.email }, { phone: lead.phone }],
     });
     if (isContact) {
-      throw new BadRequestException('This lead is already converted into contact');
+      throw new BadRequestException('This lead has already been converted into a contact.');
     }
     const isAccount = await accountRepo.findOne({ where: { name: ILike(`%${lead.company}%`) } });
     let newAccount = leadToContact?.account

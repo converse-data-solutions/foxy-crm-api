@@ -44,15 +44,15 @@ export class LeadService {
     let existingUser: User | null = null;
     if (assignedTo) {
       if (![Role.Admin, Role.Manager].includes(user.role)) {
-        throw new UnauthorizedException('Admin or manger only can assign a lead to the user');
+        throw new UnauthorizedException('Only an Admin or Manager can assign a lead to a user.');
       }
       existingUser = await userRepo.findOne({ where: { id: assignedTo } });
       if (!existingUser) {
-        throw new BadRequestException('Invalid user id for lead assignment');
+        throw new BadRequestException('Invalid user ID for lead assignment.');
       }
     }
     if (leadExist) {
-      throw new BadRequestException('The lead is already present');
+      throw new BadRequestException('Lead already exists.');
     } else {
       const newLead: Lead = leadRepo.create({
         ...createLead,
@@ -135,20 +135,20 @@ export class LeadService {
     let assignedUser: User | null = null;
     if (updateLeadDto.assignedTo) {
       if (user.role === Role.SalesRep) {
-        throw new UnauthorizedException('Not have enough authorization to assign a lead');
+        throw new UnauthorizedException('You are not authorized to assign a lead.');
       }
       assignedUser = await userRepo.findOne({ where: { id: updateLeadDto.assignedTo } });
       if (!assignedUser) {
-        throw new BadRequestException('Lead is not assigned to invalid id');
+        throw new BadRequestException('Invalid user ID specified for lead assignment.');
       }
     }
 
     const lead = await leadRepo.findOne({ where: { id } });
     if (!lead) {
-      throw new BadRequestException('Lead not found or invalid lead id');
+      throw new BadRequestException('Lead not found or invalid lead ID.');
     } else {
       if (lead.status == LeadStatus.Converted) {
-        throw new BadRequestException('Lead is already converted cannot update');
+        throw new BadRequestException('Lead has already been converted and cannot be updated.');
       }
 
       const { assignedTo, ...other } = updateLeadDto;

@@ -19,7 +19,7 @@
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
-    "paths": { "src/": ["./src/*"] }
+    "paths": { "src/*": ["src/*"] }
   },
   "include": ["src/**/*.ts", "src/**/*.json"]
 }

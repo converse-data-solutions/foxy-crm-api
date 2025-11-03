@@ -2,6 +2,7 @@ import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
 import { IsEnum, IsOptional } from 'class-validator';
 import { TicketStatus } from 'src/enums/status.enum';
 import { CreateTicketDto } from './create-ticket.dto';
+import { Sanitize } from 'src/common/decorators/sanitize.decorator';
 
 export class UpdateTicketDto extends PartialType(
   OmitType(CreateTicketDto, ['dealId', 'contactId']),
@@ -13,5 +14,6 @@ export class UpdateTicketDto extends PartialType(
   })
   @IsOptional()
   @IsEnum(TicketStatus)
+  @Sanitize()
   status?: TicketStatus;
 }

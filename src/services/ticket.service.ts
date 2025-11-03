@@ -36,23 +36,23 @@ export class TicketService {
     const { dealId, contactId, ...createTicket } = createTicketDto;
     const dealExist = await dealRepo.findOne({ where: { id: dealId } });
     if (!dealExist) {
-      throw new BadRequestException('Invalid deal id or deal not found');
+      throw new BadRequestException('Invalid deal ID. Please provide a valid deal.');
     }
     if (dealExist.stage === DealStage.Declined) {
-      throw new BadRequestException('Cannot raise ticket for unaccepted deal');
+      throw new BadRequestException('Cannot create a ticket for a declined deal.');
     }
     if (dealExist.stage === DealStage.Accepted) {
-      throw new BadRequestException('Cannot raise ticket for incomplete deal');
+      throw new BadRequestException('Cannot create a ticket for an incomplete deal.');
     }
     const ticketExist = await ticketRepo.findOne({
       where: { title: createTicketDto.title, dealId: { id: dealExist.id } },
     });
     if (ticketExist) {
-      throw new ConflictException('Ticket with this name is already created');
+      throw new ConflictException('A ticket with this title already exists for the selected deal.');
     }
     const contactExist = await contactRepo.findOne({ where: { id: contactId } });
     if (!contactExist && contactId) {
-      throw new BadRequestException('Invalid contact id or contact not found');
+      throw new BadRequestException('Invalid contact ID. Please select a valid contact.');
     }
     const ticket = ticketRepo.create({
       dealId: dealExist,
@@ -116,7 +116,7 @@ export class TicketService {
     const ticketTasks = await taskRepo.find({ where: { entityId: id } });
     const existTicket = await ticketRepo.findOne({ where: { id } });
     if (!existTicket) {
-      throw new BadRequestException('Invalid ticket id or ticket not found');
+      throw new BadRequestException('Invalid ticket ID. Ticket not found.');
     }
 
     if (updateTicketDto.status) {
@@ -126,12 +126,14 @@ export class TicketService {
           ticketTasks.length === 0 &&
           [TicketStatus.Closed, TicketStatus.Resolved].includes(updateTicketDto.status)
         ) {
-          throw new BadRequestException('Cannot close or resolve a ticket without any tasks');
+          throw new BadRequestException(
+            'Cannot close or resolve a ticket with no associated tasks.',
+          );
         }
 
         for (const task of ticketTasks) {
           if (task.status !== TaskStatus.Completed) {
-            throw new BadRequestException('Cannot close or resolve a ticket with pending tasks');
+            throw new BadRequestException('Cannot close or resolve a ticket with pending tasks.');
           }
         }
 
@@ -140,14 +142,14 @@ export class TicketService {
           user.role !== Role.Manager &&
           updateTicketDto.status === TicketStatus.Closed
         ) {
-          throw new UnauthorizedException('Not authorized to close the ticket');
+          throw new UnauthorizedException('You are not authorized to close this ticket.');
         }
 
         if (
           existTicket.status !== TicketStatus.Resolved &&
           updateTicketDto.status === TicketStatus.Closed
         ) {
-          throw new BadRequestException('Cannot close a ticket without resolving it first');
+          throw new BadRequestException('You must resolve a ticket before closing it.');
         }
 
         //  Apply Resolved/Closed update
@@ -163,14 +165,14 @@ export class TicketService {
       (updateTicketDto.title || updateTicketDto.description) &&
       ![Role.Admin, Role.Manager].includes(user.role)
     ) {
-      throw new UnauthorizedException('Not have authorization to update ticket details');
+      throw new UnauthorizedException('You are not authorized to update ticket details.');
     }
     if (updateTicketDto.title) {
       const ticketExist = await ticketRepo.findOne({
         where: { id: Not(existTicket.id), title: updateTicketDto.title },
       });
       if (ticketExist) {
-        throw new ConflictException('Ticket with this name is already exist');
+        throw new ConflictException('A ticket with this title already exists.');
       }
     }
 

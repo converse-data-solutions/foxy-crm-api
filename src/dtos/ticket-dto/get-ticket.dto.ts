@@ -4,6 +4,7 @@ import { IsEnum, IsOptional, IsString, IsDateString, IsInt, Min } from 'class-va
 import { TicketStatus } from 'src/enums/status.enum';
 import { CreateTicketDto } from './create-ticket.dto';
 import { PageDto } from '../page-dto/page.dto';
+import { Sanitize } from 'src/common/decorators/sanitize.decorator';
 
 export class GetTicketDto extends IntersectionType(
   PartialType(PickType(CreateTicketDto, ['title'] as const)),
@@ -14,6 +15,7 @@ export class GetTicketDto extends IntersectionType(
   })
   @IsOptional()
   @IsEnum(TicketStatus)
+  @Sanitize()
   status?: TicketStatus;
 
   @ApiPropertyOptional({
@@ -21,6 +23,7 @@ export class GetTicketDto extends IntersectionType(
   })
   @IsOptional()
   @IsString()
+  @Sanitize()
   deal?: string;
 
   @ApiPropertyOptional({
@@ -28,6 +31,7 @@ export class GetTicketDto extends IntersectionType(
   })
   @IsOptional()
   @IsDateString()
+  @Sanitize()
   resolvedFrom?: Date;
 
   @ApiPropertyOptional({
@@ -35,5 +39,6 @@ export class GetTicketDto extends IntersectionType(
   })
   @IsOptional()
   @IsDateString()
+  @Sanitize()
   resolvedTo?: Date;
 }

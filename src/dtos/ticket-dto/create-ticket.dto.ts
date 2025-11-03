@@ -1,10 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsDefined, IsOptional, IsString, IsUUID } from 'class-validator';
+import { Sanitize } from 'src/common/decorators/sanitize.decorator';
 
 export class CreateTicketDto {
   @ApiProperty({ description: 'Title of the support ticket', example: 'Payment issue' })
   @IsDefined({ message: 'Title is required' })
   @IsString({ message: 'Title should be a type of string' })
+  @Sanitize()
   title: string;
 
   @ApiProperty({
@@ -13,6 +15,7 @@ export class CreateTicketDto {
   })
   @IsDefined({ message: 'Description is required' })
   @IsString({ message: 'Description should be a type of string' })
+  @Sanitize()
   description: string;
 
   @ApiPropertyOptional({
@@ -21,6 +24,7 @@ export class CreateTicketDto {
   })
   @IsOptional({ message: 'Contact id is required' })
   @IsUUID('4', { message: 'Contact id should be UUID' })
+  @Sanitize()
   contactId?: string;
 
   @ApiProperty({
@@ -31,5 +35,6 @@ export class CreateTicketDto {
   @IsDefined({ message: 'Deal id is required' })
   @IsString({ message: 'Deal id should be UUID' })
   @IsUUID()
+  @Sanitize()
   dealId?: string;
 }

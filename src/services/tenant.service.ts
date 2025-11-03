@@ -31,15 +31,23 @@ export class TenantService {
     private readonly otpService: OtpService,
     @InjectRepository(Tenant) private readonly tenantRepo: Repository<Tenant>,
   ) {}
-  async tenantSetup(tenantData: { tenant: Tenant; token: string }) {
+  async tenantSetup(tenantData: { tenant: Tenant; token?: string }) {
     const { tenant, token } = tenantData;
     const schema = tenant.schemaName;
-    const dataSource = await getConnection(schema);
+
+    const rootDataSource = await getConnection('public');
+    const queryRunner = rootDataSource.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
     try {
-      await dataSource.query(`CREATE SCHEMA IF NOT EXISTS "${schema}"`);
-      await dataSource.query(`SET search_path TO "${schema}"`);
-      await dataSource.runMigrations();
-      const userRepo = dataSource.getRepository(User);
+      await queryRunner.query(`CREATE SCHEMA IF NOT EXISTS "${schema}"`);
+      await queryRunner.commitTransaction();
+      const tenantDataSource = await getConnection(schema);
+      await tenantDataSource.runMigrations();
+
+      const userRepo = tenantDataSource.getRepository(User);
       const user = userRepo.create({
         name: tenant.userName,
         password: tenant.password,
@@ -52,10 +60,19 @@ export class TenantService {
         email: tenant.email,
         refreshToken: token,
       });
+
       await userRepo.save(user);
+
       await this.sendEmail(user.name, user.email, true);
     } catch (error) {
+      await queryRunner.rollbackTransaction();
+
+      await queryRunner.query(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`);
+
       await this.sendEmail(tenant.userName, tenant.email, false);
+      throw new InternalServerErrorException('Tenant setup failed. Please try again later.');
+    } finally {
+      await queryRunner.release();
     }
   }
 
@@ -69,7 +86,7 @@ export class TenantService {
     try {
       await this.emailService.sendMail(mailOptions);
     } catch (error: unknown) {
-      throw new InternalServerErrorException(`Error occured while sending mail ${error}`);
+      throw new InternalServerErrorException(`Failed to send setup notification email.`);
     }
   }
 
@@ -81,7 +98,7 @@ export class TenantService {
     });
     if (isTenant != null) {
       throw new ConflictException(
-        'The Organization or email with this domain is already registered',
+        'An organization or email with this domain is already registered.',
       );
     } else {
       const hashPassword = await bcrypt.hash(tenant.password, SALT_ROUNDS);
@@ -100,20 +117,39 @@ export class TenantService {
       return {
         success: true,
         statusCode: HttpStatus.CREATED,
-        message: 'Signup successfull please verify the mail',
+        message: 'Signup successful. Please verify your email to continue.',
       };
     }
   }
 
   async getTenant(email: string) {
     const domain = email.split('@')[1];
-    const domainExist = await this.tenantRepo.findOne({
-      where: { domain },
-      relations: { subscription: true },
-    });
-    if (!domainExist) {
-      throw new BadRequestException('Please provide work email address');
+    const dataSource = await getConnection('public');
+    const queryRunner = dataSource.createQueryRunner();
+    try {
+      const schemas: { schema_name: string }[] | undefined = await queryRunner.query(`
+      SELECT schema_name FROM information_schema.schemata;`);
+      const tenant = await this.tenantRepo.findOne({
+        where: { domain },
+        relations: { subscription: true },
+      });
+      if (!tenant) {
+        throw new BadRequestException('Please use your work email address.');
+      }
+
+      if (schemas && schemas.length > 0 && tenant.emailVerified) {
+        const schemaExist = schemas.find((schema) => schema.schema_name === tenant.schemaName);
+        if (!schemaExist) {
+          const tenantData = { tenant };
+          await this.tenantSetup(tenantData);
+          throw new BadRequestException(
+            'Basic setup is in progress. Please log in after receiving the setup completion email.',
+          );
+        }
+      }
+      return tenant;
+    } finally {
+      await queryRunner.release();
     }
-    return domainExist;
   }
 }

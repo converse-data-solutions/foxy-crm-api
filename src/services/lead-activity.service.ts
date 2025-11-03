@@ -1,4 +1,10 @@
-import { BadRequestException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { APIResponse } from 'src/common/dtos/response.dto';
 import { LeadActivity } from 'src/database/entities/core-app-entities/lead-activity.entity';
 import { Lead } from 'src/database/entities/core-app-entities/lead.entity';
@@ -21,15 +27,21 @@ export class LeadActivityService {
     const noteRepo = await getRepo(Note, tenantId);
     const leadRepo = await getRepo(Lead, tenantId);
     const lead = await leadRepo.findOne({
-      where: { id: createLeadActivityDto.leadId, assignedTo: { id: user.id } },
+      where: { id: createLeadActivityDto.leadId },
+      relations: { assignedTo: true },
     });
     if (!lead) {
-      throw new NotFoundException('Lead not found or invalid lead ID');
+      throw new NotFoundException('Lead not found or invalid lead ID.');
+    }
+    if (user.role !== Role.Admin && lead.assignedTo?.email !== user.email) {
+      throw new UnauthorizedException('You are not authorized to assign a lead.');
     }
     if (lead.status === LeadStatus.Converted) {
-      throw new BadRequestException('Not create lead activity after lead is converted');
+      throw new BadRequestException('Cannot create a lead activity after the lead is converted.');
     }
     const { notes, leadId, ...leadActivity } = createLeadActivityDto;
+    console.log(notes, '---------------------------');
+
     if (notes) {
       await noteRepo.save({
         content: notes,
@@ -60,7 +72,7 @@ export class LeadActivityService {
       order: { createdAt: 'DESC' },
     });
     if (!lead) {
-      throw new NotFoundException('Lead not found or invalid lead ID');
+      throw new NotFoundException('Lead not found or invalid lead ID.');
     }
     if (
       lead.assignedTo &&
@@ -68,13 +80,13 @@ export class LeadActivityService {
       user.role !== Role.Admin &&
       user.role !== Role.Manager
     ) {
-      throw new NotFoundException('You do not have permission to view these lead activities');
+      throw new NotFoundException('You do not have permission to view activities for this lead.');
     }
     const leadActivities = await leadActivityRepo.find({
       where: { leadId: { id: leadId } },
     });
     if (leadActivities.length === 0) {
-      throw new NotFoundException('No lead activities found for the given lead ID');
+      throw new NotFoundException('No activities found for this lead.');
     }
     return {
       success: true,

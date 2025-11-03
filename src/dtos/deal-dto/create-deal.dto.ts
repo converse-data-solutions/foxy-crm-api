@@ -8,6 +8,7 @@ import {
   Length,
   IsDecimal,
 } from 'class-validator';
+import { Sanitize } from 'src/common/decorators/sanitize.decorator';
 
 export class CreateDealDto {
   @ApiProperty({
@@ -17,6 +18,7 @@ export class CreateDealDto {
   @IsDefined({ message: 'Name field is required' })
   @IsString({ message: 'Name must be string' })
   @Length(3, 40, { message: 'Name must be between 3 and 40 characters' })
+  @Sanitize()
   name: string;
 
   @ApiProperty({
@@ -29,6 +31,7 @@ export class CreateDealDto {
     { decimal_digits: '0,2' },
     { message: 'Amount should contain maximum 2 decimal points' },
   )
+  @Sanitize()
   value: string;
 
   @ApiPropertyOptional({
@@ -38,6 +41,7 @@ export class CreateDealDto {
   })
   @IsDateString({}, { message: 'Expected close date must be a date' })
   @IsOptional()
+  @Sanitize()
   expectedCloseDate?: string;
 
   @ApiProperty({
@@ -47,5 +51,6 @@ export class CreateDealDto {
   })
   @IsDefined({ message: 'Contact id is required' })
   @IsUUID()
+  @Sanitize()
   contactId: string;
 }

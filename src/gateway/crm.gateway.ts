@@ -16,6 +16,9 @@ import { forwardRef, Inject } from '@nestjs/common';
 import { MetricService } from 'src/services/metric.service';
 import { UserService } from 'src/services/user.service';
 import { LoggerService } from 'src/common/logger/logger.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Subscription } from 'src/database/entities/base-app-entities/subscription.entity';
+import { Repository } from 'typeorm';
 
 @WebSocketGateway({ cors: { origin: '*', credentials: true } })
 export class CrmGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
@@ -27,11 +30,12 @@ export class CrmGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
     private readonly metricService: MetricService,
     private readonly userService: UserService,
     private readonly loggerService: LoggerService,
+    @InjectRepository(Subscription) private readonly subscriptionRepo: Repository<Subscription>,
   ) {}
   afterInit(server: Server) {
     this.server = server;
   }
-  async handleConnection(client: Socket) {
+  async handleConnection(client: Socket): Promise<void> {
     try {
       const rawCookie = client.handshake.headers.cookie || '';
       const parsedCookie = cookie.parse(rawCookie);
@@ -42,11 +46,32 @@ export class CrmGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
         throw new WsException('Invalid connection');
       }
       const payload = await this.tokenService.verifyAccessToken(token, true);
-      await this.userService.validateUser(payload, schema);
+      const user = await this.userService.validateUser(payload, schema);
+
+      if (!user) {
+        throw new WsException('User not found');
+      }
+
+      const subscription = await this.subscriptionRepo.findOne({
+        where: { tenant: { schemaName: schema } },
+        relations: { tenant: true },
+      });
+      if (!subscription || subscription.status === false) {
+        client.emit('error', { message: 'Subscription expired' });
+        this.loggerService.logError(
+          `Subscription expired for ${subscription?.tenant?.schemaName || 'unknown user'}`,
+        );
+        client.disconnect(true);
+        return;
+      }
+
       client.emit('metricUpdates', 'Connection established');
     } catch (error) {
-      client.emit('error', { message: error.message || 'Unauthorized' });
-      this.loggerService.logError(`${error.message} for client- ${client.id}`);
+      const message = error instanceof WsException ? error.message : 'Unauthorized';
+      client.emit('error', { message });
+      this.loggerService.logError(
+        `WebSocket connection failed for client ${client.id}: ${message}`,
+      );
       client.disconnect(true);
     }
   }

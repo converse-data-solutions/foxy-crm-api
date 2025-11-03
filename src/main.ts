@@ -9,6 +9,7 @@ import * as express from 'express';
 import helmet from 'helmet';
 import { ClassSerializerInterceptor } from '@nestjs/common';
 import { LoggerService } from './common/logger/logger.service';
+import { requestIdMiddleware } from './common/middleware/request-id.middleware';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { logger: new LoggerService() });
@@ -18,6 +19,7 @@ async function bootstrap() {
 
   app.use(cookieParser());
   app.use(helmet());
+  app.use(requestIdMiddleware);
 
   app.enableCors({
     origin: 'http://localhost:3000',
@@ -47,6 +49,7 @@ async function bootstrap() {
 
   app.useGlobalPipes(new CustomValidationPipe());
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+  app.enableShutdownHooks();
 
   await app.listen(8000);
 }

@@ -87,3 +87,6 @@ export const STRIPE = {
 };
 
 export const CSRF_SECRET = envVars.CSRF_SECRET as string;
+
+export const SIGNIN_AND_REFRESH_THROTTLE = { default: { limit: 5, ttl: 60000 } };
+export const OTP_THROTTLE = { default: { limit: 3, ttl: 300000 } };

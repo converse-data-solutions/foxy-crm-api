@@ -37,6 +37,7 @@ import { EmailModule } from './modules/email.module';
 import { SubscriptionHistoryModule } from './modules/subscription-history.module';
 import { LoggerModule } from './modules/logger.module';
 import { CsrfGuard } from './guards/csrf.guard';
+import { ConnectionCleanupService } from './services/connection-cleanup.service';
 
 @Module({
   imports: [
@@ -135,6 +136,7 @@ import { CsrfGuard } from './guards/csrf.guard';
       provide: APP_FILTER,
       useClass: CustomExceptionFilter,
     },
+    ConnectionCleanupService,
   ],
   controllers: [StripePaymentController],
 })

@@ -46,7 +46,11 @@ export class OtpService {
       existUser = await repo.findOne({ where: { email } });
     }
     if (!existUser) {
-      throw new BadRequestException('Please provide registered email address');
+      throw new BadRequestException('Please provide a registered email address.');
+    }
+    existUser.otp = undefined;
+    if (existUser instanceof User) {
+      existUser.otpVerified = false;
     }
     const rawOtp = generateOtp();
     const expiryAt = new Date(Date.now() + 1.5 * 60 * 1000);
@@ -84,16 +88,16 @@ export class OtpService {
       userExist = await repo.findOne({ where: { email: otpDto.email } });
     }
     if (!userExist) {
-      throw new BadRequestException('Invalid email address or email not found');
+      throw new BadRequestException('Invalid or unregistered email address.');
     }
     if (userExist.otpExpiryAt && userExist.otpExpiryAt < new Date()) {
-      throw new BadRequestException('Otp expired please click resend and verify');
+      throw new BadRequestException('OTP has expired. Please resend and verify again.');
     }
     if (userExist.otp && bcrypt.compareSync(otpDto.otp.toString(), userExist.otp) === false) {
-      throw new BadRequestException('Invalid or wrong otp');
+      throw new BadRequestException('Invalid or incorrect OTP.');
     }
     if (userExist.emailVerified) {
-      throw new BadRequestException('Email is already verified');
+      throw new BadRequestException('Email has already been verified.');
     }
 
     const payload = plainToInstance(JwtPayload, userExist, {
@@ -136,13 +140,13 @@ export class OtpService {
     const userRepo = await getRepo(User, tenant.schemaName);
     const userExist = await userRepo.findOne({ where: { email: otpDto.email } });
     if (!userExist) {
-      throw new BadRequestException('Invalid email address or email not found');
+      throw new BadRequestException('Invalid or unregistered email address.');
     }
     if (userExist.otpExpiryAt && userExist.otpExpiryAt < new Date()) {
-      throw new BadRequestException('Otp expired please click resend and verify');
+      throw new BadRequestException('OTP has expired. Please resend and verify again.');
     }
     if (userExist.otp && bcrypt.compareSync(otpDto.otp.toString(), userExist.otp) === false) {
-      throw new BadRequestException('Invalid or wrong otp');
+      throw new BadRequestException('Invalid or incorrect OTP.');
     }
     userExist.otpVerified = true;
     await userRepo.save(userExist);

@@ -14,6 +14,7 @@ import { setCookie } from 'src/shared/utils/cookie.util';
 import { APIResponse } from 'src/common/dtos/response.dto';
 import { Throttle } from '@nestjs/throttler';
 import { SkipCsrf } from 'src/common/decorators/skip-csrf.decorator';
+import { OTP_THROTTLE, SIGNIN_AND_REFRESH_THROTTLE } from 'src/shared/utils/config.util';
 
 @SkipCsrf()
 @Controller('auth')
@@ -43,7 +44,7 @@ export class AuthController {
 
   @Post('signin')
   @Public()
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Throttle(SIGNIN_AND_REFRESH_THROTTLE)
   @ApiOperation({ summary: 'Signin user and access token is generated' })
   @ApiResponse({ status: 200, description: 'Signin successfully' })
   async userSignin(@Body() user: SignIn, @Res({ passthrough: true }) response: Response) {
@@ -54,7 +55,7 @@ export class AuthController {
 
   @Post('verify-email/send-otp')
   @Public()
-  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  @Throttle(OTP_THROTTLE)
   @ApiOperation({ summary: 'Send otp to the mail' })
   @ApiResponse({ status: 200, description: 'Otp sent successfully' })
   async sendOtp(@Body() payload: EmailDto) {
@@ -80,6 +81,7 @@ export class AuthController {
 
   @Post('forgot-password/send-otp')
   @Public()
+  @Throttle(OTP_THROTTLE)
   @ApiOperation({ summary: 'Send otp to the mail' })
   @ApiResponse({ status: 200, description: 'Otp sent successfully' })
   async forgotPasswordSendOtp(@Body() payload: EmailDto) {
@@ -104,6 +106,7 @@ export class AuthController {
 
   @Post('refresh')
   @Public()
+  @Throttle(SIGNIN_AND_REFRESH_THROTTLE)
   @ApiOperation({ summary: 'Update refresh token' })
   @ApiResponse({ status: 200, description: 'Token updated successfully' })
   async tokenRefresh(
@@ -112,7 +115,11 @@ export class AuthController {
   ): Promise<APIResponse> {
     const tokens = await this.authService.tokenRefresh(req);
     setCookie(tokens, res);
-    return { success: true, statusCode: HttpStatus.OK, message: 'Token refreshed successfully' };
+    return {
+      success: true,
+      statusCode: HttpStatus.OK,
+      message: 'Access token refreshed successfully',
+    };
   }
 
   @Get('csrf-token')

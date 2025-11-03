@@ -70,13 +70,10 @@ export class LeadController {
   @UseInterceptors(FileInterceptor('file'))
   async importLeads(
     @UploadedFile(
-      new ParseFilePipeBuilder()
-        .addMaxSizeValidator({ maxSize: 200 * 1024 })
-        .addValidator(new FileValidationPipe())
-        .build({
-          fileIsRequired: true,
-          errorHttpStatusCode: 422,
-        }),
+      new ParseFilePipeBuilder().addValidator(new FileValidationPipe()).build({
+        fileIsRequired: true,
+        errorHttpStatusCode: 422,
+      }),
     )
     file: Express.Multer.File,
     @Headers('x-tenant-id') tenantId: string,

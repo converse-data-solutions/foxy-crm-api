@@ -44,17 +44,17 @@ export class UserService {
     const userRepo = await getRepo(User, tenantId);
     const existUser = await userRepo.findOne({ where: { id } });
     if (user.id !== id && user.role != Role.Admin) {
-      throw new UnauthorizedException('Not have authorization to edit others data');
+      throw new UnauthorizedException('You are not authorized to modify other users.');
     }
     if (updateUser.role && user.role != Role.Admin) {
-      throw new UnauthorizedException('Not have enough authorization to update role');
+      throw new UnauthorizedException('Only administrators can update user roles.');
     }
     if (!existUser) {
-      throw new BadRequestException('Invalid user id or user not found');
+      throw new BadRequestException('User not found.');
     }
     if (updateUser.email) {
       if (existUser.role === Role.Admin) {
-        throw new UnauthorizedException('Not able to update admin mail');
+        throw new UnauthorizedException('Administrator email cannot be changed.');
       }
       await this.tenantService.getTenant(updateUser.email);
     }
@@ -66,10 +66,10 @@ export class UserService {
     if (mailOrPhoneExist.length > 0) {
       for (const user of mailOrPhoneExist) {
         if (updateUser.email && user.email === updateUser.email && user.id !== existUser.id) {
-          throw new ConflictException('Email already in use');
+          throw new ConflictException('Email is already registered with another account.');
         }
         if (updateUser.phone && user.phone === updateUser.phone && user.id !== existUser.id) {
-          throw new ConflictException('Phone number already in use');
+          throw new ConflictException('Phone number is already registered with another account.');
         }
       }
     }
@@ -130,17 +130,17 @@ export class UserService {
     });
     const subscriptionExist = planPricing?.tenantsSubscription[0].status;
     if (planPricing?.tenantsSubscription && !subscriptionExist) {
-      throw new BadRequestException('No subscription found. Please subscribe.');
+      throw new BadRequestException('No active subscription found. Please renew your plan.');
     }
 
     if (planPricing?.plan && userCount >= planPricing.plan.userCount) {
-      throw new BadRequestException('User limit exceeded for your plan');
+      throw new BadRequestException('User limit reached for your subscription plan.');
     }
     const isUser = await userRepo.findOne({
       where: [{ email: user.email }, { phone: user.phone }],
     });
     if (isUser) {
-      throw new ConflictException('User with this email or phone number is already registered');
+      throw new ConflictException('An account with this email or phone number already exists.');
     }
     let country: string | undefined;
     if (user.country) {
@@ -169,11 +169,11 @@ export class UserService {
       relations: { tenant: true },
     });
     if (!subscriptionExist) {
-      throw new BadRequestException('Invalid schema name');
+      throw new BadRequestException('Invalid organization or tenant.');
     }
     if (subscriptionExist.status === false && Environment.NODE_ENV === 'production') {
       throw new HttpException(
-        { message: 'Subscription got expired please subscribe' },
+        { message: 'Subscription expired. Please renew your plan.' },
         HttpStatus.PAYMENT_REQUIRED,
       );
     }

@@ -49,14 +49,14 @@ export class TaskService {
 
     const userExist = await userRepo.findOne({ where: { id: assignedTo } });
     if (!userExist) {
-      throw new BadRequestException('Invalid user id');
+      throw new BadRequestException('The assigned user ID is invalid.');
     }
     if (createTaskDto.entityName == EntityName.Deal) {
       const dealExist = await dealRepo.findOne({ where: { id: entityId } });
       if (!dealExist) {
         throw new BadRequestException('Invalid entity id or id not found in deal entity');
       } else if (dealExist.stage === DealStage.Completed) {
-        throw new BadRequestException('Task is not created for completed deal');
+        throw new BadRequestException('Cannot create a task for a completed deal.');
       } else if (dealExist.stage != DealStage.Accepted) {
         throw new BadRequestException('Deal not accepted unable to create task');
       }
@@ -134,7 +134,7 @@ export class TaskService {
     const taskExist = await taskRepo.findOne({ where: { id }, relations: { assignedTo: true } });
     const { status, assignedTo, ...updateTask } = updateTaskDto;
     if (!taskExist) {
-      throw new BadRequestException('Invalid task id or task not exist');
+      throw new BadRequestException('The specified task ID is invalid or the task does not exist.');
     }
     for (const [key, value] of Object.entries(updateTask)) {
       if (value && ![Role.Admin, Role.Manager].includes(user.role)) {

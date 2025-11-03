@@ -33,17 +33,17 @@ export class AuthService {
 
     const userExist = await repo.findOne({ where: { email: user.email } });
     if (!userExist) {
-      throw new NotFoundException('User email not found please signup');
+      throw new NotFoundException('User not found. Please sign up first.');
     } else {
       const validPassword = await bcrypt.compare(user.password, userExist.password);
       if (!validPassword) {
-        throw new BadRequestException('Invalid password please enter correct password');
+        throw new BadRequestException('Incorrect password. Please try again.');
       } else {
         if (!userExist.status) {
-          throw new BadRequestException('Your account is disabled please contact the admin');
+          throw new BadRequestException('Your account is disabled. Please contact the admin.');
         }
         if (!userExist.emailVerified) {
-          throw new BadRequestException('Please verify the email then login');
+          throw new BadRequestException('Please verify your email before signing in.');
         }
         const payload = plainToInstance(JwtPayload, userExist, {
           excludeExtraneousValues: true,
@@ -77,11 +77,11 @@ export class AuthService {
       throw new NotFoundException('User not found or invalid email');
     }
     if (resetPasswordDto.password === resetPasswordDto.newPassword) {
-      throw new BadRequestException('Old password and current password should not be same');
+      throw new BadRequestException('New password cannot be the same as the old password.');
     }
     const validPassword = await bcrypt.compare(resetPasswordDto.password, userExist.password);
     if (!validPassword) {
-      throw new BadRequestException('Invalid password please enter correct password');
+      throw new BadRequestException('Invalid current password.');
     }
     const hashedPassword = await bcrypt.hash(resetPasswordDto.newPassword, SALT_ROUNDS);
     userExist.password = hashedPassword;
@@ -101,11 +101,13 @@ export class AuthService {
       throw new NotFoundException('User not found or invalid email');
     }
     if (!userExist.otpVerified) {
-      throw new BadRequestException('Otp is not verified please verify otp and reset the password');
+      throw new BadRequestException(
+        'OTP not verified. Please verify OTP before resetting password.',
+      );
     }
     const isExistingPassword = await bcrypt.compare(forgotPassword.password, userExist.password);
     if (isExistingPassword) {
-      throw new BadRequestException('Old password and current password should not be same');
+      throw new BadRequestException('New password cannot be the same as the old password.');
     }
     const hashedPassword = await bcrypt.hash(forgotPassword.password, SALT_ROUNDS);
     userExist.password = hashedPassword;
@@ -121,7 +123,7 @@ export class AuthService {
   async tokenRefresh(req: Request) {
     const token: string | undefined = req?.cookies['refresh_token'];
     if (!token) {
-      throw new UnauthorizedException('Unauthorized access token not found');
+      throw new UnauthorizedException('Missing refresh token.');
     }
     const updatedToken = await this.tokenService.getRefreshToken(token);
     return updatedToken;
@@ -130,7 +132,7 @@ export class AuthService {
   async getCsrfToken(req: Request, res: Response) {
     const accessToken: string | undefined = req?.cookies['access_token'];
     if (!accessToken) {
-      throw new UnauthorizedException('Unauthorized access token not found');
+      throw new UnauthorizedException('Access token not found');
     }
     const payload = await this.tokenService.verifyAccessToken(accessToken);
     req.user = payload;

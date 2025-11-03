@@ -14,7 +14,6 @@ import { CreateContactDto } from 'src/dtos/contact-dto/create-contact.dto';
 import { GetContactDto } from 'src/dtos/contact-dto/get-contact.dto';
 import { UpdateContactDto } from 'src/dtos/contact-dto/update-contact.dto';
 import { Role } from 'src/enums/core-app.enum';
-import { NotesEntityName } from 'src/enums/lead-activity.enum';
 import { getRepo } from 'src/shared/database-connection/get-connection';
 import { paginationParams } from 'src/shared/utils/pagination-params.util';
 import { MetricService } from './metric.service';
@@ -37,7 +36,7 @@ export class ContactService {
       where: [{ email: createContactDto.email }, { phone: createContactDto.phone }],
     });
     if (contactExist) {
-      throw new BadRequestException('Contact is already exist');
+      throw new BadRequestException('A contact with this email or phone already exists.');
     }
     const { account, assignedTo, ...contact } = createContactDto;
     let accountExist: Account | null = null;
@@ -45,14 +44,14 @@ export class ContactService {
     if (account) {
       accountExist = await accountRepo.findOne({ where: { name: account } });
       if (!accountExist) {
-        throw new NotFoundException('Account not found');
+        throw new NotFoundException('Invalid account reference.');
       }
     }
     let existingUser: User | null = null;
     if (assignedTo) {
       existingUser = await userRepo.findOne({ where: { id: assignedTo } });
       if (!existingUser) {
-        throw new NotFoundException('User not found');
+        throw new NotFoundException('Invalid assigned user reference.');
       }
     }
 
@@ -124,11 +123,11 @@ export class ContactService {
       throw new NotFoundException('Contact not found or invalid contact id');
     }
     if (updateContactDto.assignedTo && ![Role.Admin, Role.Manager].includes(user.role)) {
-      throw new UnauthorizedException('Not have enough authorization to assign a contact');
+      throw new UnauthorizedException('You are not authorized to assign contacts.');
     } else {
       assignedUser = await userRepo.findOne({ where: { id: updateContactDto.assignedTo } });
       if (!assignedUser) {
-        throw new BadRequestException('Contact is not assigned to invalid id');
+        throw new BadRequestException('Invalid assigned user reference.');
       }
     }
     if (updateContactDto.account) {
