@@ -16,7 +16,6 @@ export class CreateContactDto {
     message: 'Email must be a valid email address',
   })
   @Length(5, 50, { message: 'Email must be between 5 and 50 characters' })
-  @Sanitize()
   email: string;
 
   @ApiProperty({ example: '+1234567890' })
@@ -25,7 +24,6 @@ export class CreateContactDto {
     message: 'Phone must be a valid number and may include country code',
   })
   @Length(6, 20, { message: 'Phone must be between 6 and 20 characters' })
-  @Sanitize()
   phone: string;
 
   @ApiPropertyOptional({ example: 'Acme Corp' })
@@ -37,6 +35,5 @@ export class CreateContactDto {
   @ApiPropertyOptional({ example: '10495caf-7023-40cf-be93-dc26f62569de' })
   @IsOptional()
   @IsUUID('4', { message: 'Assigned should be UUID' })
-  @Sanitize()
   assignedTo?: string;
 }

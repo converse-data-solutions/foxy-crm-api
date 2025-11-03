@@ -24,7 +24,6 @@ export class CreateTicketDto {
   })
   @IsOptional({ message: 'Contact id is required' })
   @IsUUID('4', { message: 'Contact id should be UUID' })
-  @Sanitize()
   contactId?: string;
 
   @ApiProperty({
@@ -34,7 +33,6 @@ export class CreateTicketDto {
   })
   @IsDefined({ message: 'Deal id is required' })
   @IsString({ message: 'Deal id should be UUID' })
-  @IsUUID()
-  @Sanitize()
-  dealId?: string;
+  @IsUUID('4', { message: 'Deal ID should be a UUID' })
+  dealId: string;
 }

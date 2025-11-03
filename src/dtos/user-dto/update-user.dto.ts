@@ -12,6 +12,5 @@ export class UpdateUserDto extends PartialType(OmitType(UserSignupDto, ['passwor
   })
   @IsOptional()
   @IsEnum(Role, { message: 'role must be a valid enum value' })
-  @Sanitize()
   role?: Role;
 }

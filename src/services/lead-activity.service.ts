@@ -40,7 +40,6 @@ export class LeadActivityService {
       throw new BadRequestException('Cannot create a lead activity after the lead is converted.');
     }
     const { notes, leadId, ...leadActivity } = createLeadActivityDto;
-    console.log(notes, '---------------------------');
 
     if (notes) {
       await noteRepo.save({

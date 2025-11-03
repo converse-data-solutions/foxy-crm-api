@@ -19,13 +19,11 @@ export class CreateLeadActivityDto {
     enum: LeadActivityType,
     description: 'Type of activity',
   })
-  @Sanitize()
   activityType: LeadActivityType;
 
   @IsDefined({ message: 'Activity Date is required' })
   @IsDateString({}, { message: 'Activity Date must be a valid date' })
   @ApiProperty({ example: '2023-01-01T00:00:00Z', description: 'Date of the activity' })
-  @Sanitize()
   activityDate: Date;
 
   @IsOptional({ message: 'Notes are required' })

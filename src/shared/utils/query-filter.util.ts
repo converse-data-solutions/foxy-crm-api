@@ -1,7 +1,6 @@
 import { ObjectLiteral, SelectQueryBuilder } from 'typeorm';
 
 export type FilterType = 'exact' | 'ilike' | 'gte' | 'lte' | 'like';
-
 export type FiltersMap = Record<string, { column: string; type: FilterType }>;
 
 export function applyFilters<T extends ObjectLiteral, Q extends Record<keyof Q & string, unknown>>(

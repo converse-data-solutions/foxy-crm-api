@@ -128,14 +128,6 @@ import { ConnectionCleanupService } from './services/connection-cleanup.service'
       provide: APP_FILTER,
       useClass: CustomExceptionFilter,
     },
-    {
-      provide: APP_GUARD,
-      useClass: GlobalAuthGuard,
-    },
-    {
-      provide: APP_FILTER,
-      useClass: CustomExceptionFilter,
-    },
     ConnectionCleanupService,
   ],
   controllers: [StripePaymentController],

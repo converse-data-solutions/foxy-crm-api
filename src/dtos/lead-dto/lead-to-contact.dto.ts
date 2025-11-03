@@ -7,6 +7,5 @@ export class LeadToContactDto {
     type: CreateAccountDto,
     description: 'Account information (optional)',
   })
-  @Sanitize()
   account?: CreateAccountDto;
 }

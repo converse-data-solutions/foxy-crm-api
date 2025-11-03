@@ -17,7 +17,6 @@ export class CreateLeadDto {
   })
   @ApiProperty({ example: 'sam@gmail.com' })
   @Length(5, 50, { message: 'Email must be between 5 and 50 characters' })
-  @Sanitize()
   email: string;
 
   @IsDefined({ message: 'Phone number is required' })
@@ -26,7 +25,6 @@ export class CreateLeadDto {
   })
   @Length(5, 20, { message: 'Phone must be between 2 and 30 characters' })
   @ApiProperty({ example: '9876532458' })
-  @Sanitize()
   phone: string;
 
   @IsOptional()
@@ -40,12 +38,10 @@ export class CreateLeadDto {
     message: `Source must be a valid lead source (${Object.values(LeadSource).join(', ')})`,
   })
   @ApiPropertyOptional({ example: LeadSource.SocialMedia })
-  @Sanitize()
   source?: LeadSource;
 
   @ApiPropertyOptional({ example: '10495caf-7023-40cf-be93-dc26f62569de' })
   @IsOptional()
   @IsUUID('4', { message: 'Assigned should be UUID' })
-  @Sanitize()
   assignedTo?: string;
 }

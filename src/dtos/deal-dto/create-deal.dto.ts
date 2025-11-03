@@ -31,7 +31,6 @@ export class CreateDealDto {
     { decimal_digits: '0,2' },
     { message: 'Amount should contain maximum 2 decimal points' },
   )
-  @Sanitize()
   value: string;
 
   @ApiPropertyOptional({
@@ -41,7 +40,6 @@ export class CreateDealDto {
   })
   @IsDateString({}, { message: 'Expected close date must be a date' })
   @IsOptional()
-  @Sanitize()
   expectedCloseDate?: string;
 
   @ApiProperty({
@@ -50,7 +48,6 @@ export class CreateDealDto {
     required: false,
   })
   @IsDefined({ message: 'Contact id is required' })
-  @IsUUID()
-  @Sanitize()
+  @IsUUID('4', { message: 'Contact ID should be UUID' })
   contactId: string;
 }

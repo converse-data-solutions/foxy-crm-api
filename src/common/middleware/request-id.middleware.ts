@@ -1,11 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { Request, Response, NextFunction } from 'express';
 
-export function requestIdMiddleware(
-  req: Request & { id?: string },
-  res: Response,
-  next: NextFunction,
-) {
+export function requestIdMiddleware(req: Request, res: Response, next: NextFunction) {
   const existingId = req.headers['x-request-id'];
   const requestId = typeof existingId === 'string' ? existingId : uuidv4();
 

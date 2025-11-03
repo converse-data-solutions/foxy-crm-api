@@ -14,18 +14,15 @@ export class GetUserDto extends IntersectionType(
   @ApiPropertyOptional({ description: 'Status of the user' })
   @IsOptional()
   @IsString()
-  @Sanitize()
   status?: boolean;
 
   @ApiPropertyOptional({ description: 'Status cause of the user' })
   @IsOptional()
   @IsEnum(StatusCause)
-  @Sanitize()
   statusCause?: StatusCause;
 
   @ApiPropertyOptional({ description: 'Role of the user' })
   @IsOptional()
   @IsEnum(Role)
-  @Sanitize()
   role?: Role;
 }

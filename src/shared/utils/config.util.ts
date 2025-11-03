@@ -33,6 +33,7 @@ const envSchema = Joi.object({
   STRIPE_WEBHOOK_SECRET: Joi.string().required(),
 
   CSRF_SECRET: Joi.string().required(),
+  CORS_URL: Joi.string().required(),
 })
   .unknown()
   .required();
@@ -88,5 +89,7 @@ export const STRIPE = {
 
 export const CSRF_SECRET = envVars.CSRF_SECRET as string;
 
-export const SIGNIN_AND_REFRESH_THROTTLE = { default: { limit: 5, ttl: 60000 } };
-export const OTP_THROTTLE = { default: { limit: 3, ttl: 300000 } };
+export const SHORT_LIVED_THROTTLE = { default: { limit: 5, ttl: 60000 } };
+export const MEDIUM_LIVED_THROTTLE = { default: { limit: 3, ttl: 300000 } };
+
+export const CORS_URL = envVars.CORS_URL as string;

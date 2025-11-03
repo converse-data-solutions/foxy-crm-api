@@ -10,6 +10,7 @@ import helmet from 'helmet';
 import { ClassSerializerInterceptor } from '@nestjs/common';
 import { LoggerService } from './common/logger/logger.service';
 import { requestIdMiddleware } from './common/middleware/request-id.middleware';
+import { CORS_URL } from './shared/utils/config.util';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { logger: new LoggerService() });
@@ -22,13 +23,7 @@ async function bootstrap() {
   app.use(requestIdMiddleware);
 
   app.enableCors({
-    origin: 'http://localhost:3000',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: true,
-  });
-
-  app.enableCors({
-    origin: 'http://localhost:3000',
+    origin: CORS_URL,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });

@@ -19,6 +19,20 @@ import { LoggerService } from 'src/common/logger/logger.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Subscription } from 'src/database/entities/base-app-entities/subscription.entity';
 import { Repository } from 'typeorm';
+import Redis from 'ioredis';
+import { RateLimiterRedis } from 'rate-limiter-flexible';
+
+const redisClient = new Redis({
+  host: process.env.REDIS_HOST || 'localhost',
+  port: Number(process.env.REDIS_PORT) || 6379,
+});
+
+const connectionLimiter = new RateLimiterRedis({
+  storeClient: redisClient,
+  keyPrefix: 'ws_conn_limit',
+  points: 5, // Allow 5 connections
+  duration: 60, // Per minute per IP
+});
 
 @WebSocketGateway({ cors: { origin: '*', credentials: true } })
 export class CrmGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
@@ -36,6 +50,15 @@ export class CrmGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
     this.server = server;
   }
   async handleConnection(client: Socket): Promise<void> {
+    const ip = client.handshake.address;
+
+    try {
+      await connectionLimiter.consume(ip);
+    } catch {
+      client.emit('error', { message: 'Too many connection attempts. Please wait a moment.' });
+      client.disconnect(true);
+      return;
+    }
     try {
       const rawCookie = client.handshake.headers.cookie || '';
       const parsedCookie = cookie.parse(rawCookie);
@@ -56,10 +79,16 @@ export class CrmGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
         where: { tenant: { schemaName: schema } },
         relations: { tenant: true },
       });
-      if (!subscription || subscription.status === false) {
+
+      if (!subscription) {
+        client.emit('error', { message: 'Subscription not found' });
+        this.loggerService.logError(`No subscription found for ${schema ?? 'unknown user'}`);
+        client.disconnect(true);
+        return;
+      } else if (subscription.status === false) {
         client.emit('error', { message: 'Subscription expired' });
         this.loggerService.logError(
-          `Subscription expired for ${subscription?.tenant?.schemaName || 'unknown user'}`,
+          `Subscription expired for ${subscription?.tenant?.schemaName ?? 'unknown user'}`,
         );
         client.disconnect(true);
         return;

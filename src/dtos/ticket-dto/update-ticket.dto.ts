@@ -14,6 +14,5 @@ export class UpdateTicketDto extends PartialType(
   })
   @IsOptional()
   @IsEnum(TicketStatus)
-  @Sanitize()
   status?: TicketStatus;
 }

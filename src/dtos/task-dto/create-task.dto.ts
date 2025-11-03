@@ -18,14 +18,12 @@ export class CreateTaskDto {
     example: EntityName.Deal,
   })
   @IsEnum(EntityName)
-  @Sanitize()
   entityName: EntityName;
 
   @ApiProperty({
     example: '7e6c5c49-b5c2-46fb-8f7e-23f7a6d2dcd1',
   })
-  @IsUUID()
-  @Sanitize()
+  @IsUUID('4', { message: 'Entity ID should be a UUID' })
   entityId: string;
 
   @ApiProperty({
@@ -33,7 +31,6 @@ export class CreateTaskDto {
     example: TaskType.Call,
   })
   @IsEnum(TaskType)
-  @Sanitize()
   type: TaskType;
 
   @ApiPropertyOptional({
@@ -42,12 +39,10 @@ export class CreateTaskDto {
   })
   @IsOptional()
   @IsEnum(TaskPriority)
-  @Sanitize()
   priority?: TaskPriority;
 
   @ApiProperty({})
   @IsDefined({ message: 'Assigned to is required' })
   @IsUUID('4', { message: 'Assigned to should be a UUID' })
-  @Sanitize()
   assignedTo: string;
 }

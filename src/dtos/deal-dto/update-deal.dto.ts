@@ -10,6 +10,5 @@ export class UpdateDealDto extends PartialType(
   @ApiPropertyOptional({ description: 'Stage of the deal', example: DealStage.Accepted })
   @IsOptional()
   @IsEnum(DealStage, { message: 'Stage must be a valid DealStage enum value' })
-  @Sanitize()
   stage?: DealStage;
 }

@@ -32,7 +32,6 @@ export class GetDealDto extends IntersectionType(
   })
   @IsOptional()
   @IsDateString({}, { message: 'fromDate must be a valid date string (YYYY-MM-DD)' })
-  @Sanitize()
   fromDate?: Date;
 
   @ApiPropertyOptional({
@@ -41,6 +40,5 @@ export class GetDealDto extends IntersectionType(
   })
   @IsOptional()
   @IsDateString({}, { message: 'toDate must be a valid date string (YYYY-MM-DD)' })
-  @Sanitize()
   toDate?: Date;
 }

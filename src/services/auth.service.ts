@@ -2,6 +2,7 @@ import {
   BadRequestException,
   HttpStatus,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -14,17 +15,19 @@ import { plainToInstance } from 'class-transformer';
 import { TenantService } from './tenant.service';
 import { ForgotPasswordDto, ResetPasswordDto } from 'src/dtos/password-dto/reset-password.dto';
 import { APIResponse } from 'src/common/dtos/response.dto';
-import { CSRF_SECRET, SALT_ROUNDS } from 'src/shared/utils/config.util';
+import { SALT_ROUNDS } from 'src/shared/utils/config.util';
 import { CookiePayload } from 'src/common/dtos/cookie-payload.dto';
 import { TokenService } from './token.service';
 import { Request, Response } from 'express';
 import { csrfUtils } from 'src/shared/utils/csrf.util';
+import { LoggerService } from 'src/common/logger/logger.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly tokenService: TokenService,
     private readonly tenantService: TenantService,
+    private readonly loggerService: LoggerService,
   ) {}
 
   async signin(user: SignIn): Promise<APIResponse<CookiePayload>> {
@@ -130,21 +133,31 @@ export class AuthService {
   }
 
   async getCsrfToken(req: Request, res: Response) {
-    const accessToken: string | undefined = req?.cookies['access_token'];
-    if (!accessToken) {
-      throw new UnauthorizedException('Access token not found');
+    try {
+      const accessToken: string | undefined = req?.cookies['access_token'];
+      if (!accessToken) {
+        throw new UnauthorizedException('Access token not found');
+      }
+      const payload = await this.tokenService.verifyAccessToken(accessToken);
+      req.user = payload;
+      res.clearCookie('x-csrf-secret', { path: '/' });
+      const token = csrfUtils.generateCsrfToken(req, res, {
+        overwrite: true,
+      });
+      if (!token) {
+        throw new InternalServerErrorException('Failed to generate CSRF token');
+      }
+      res.json({
+        success: true,
+        statusCode: HttpStatus.OK,
+        message: 'Csrf token fetched successfully',
+        data: { csrfToken: token },
+      });
+    } catch (err) {
+      this.loggerService.logError(`CSRF token generation failed: ${err.message}`);
+      throw new InternalServerErrorException(
+        'Unable to generate CSRF token. Please try again later.',
+      );
     }
-    const payload = await this.tokenService.verifyAccessToken(accessToken);
-    req.user = payload;
-    res.clearCookie('x-csrf-secret', { path: '/' });
-    const token = csrfUtils.generateCsrfToken(req, res, {
-      overwrite: true,
-    });
-    res.json({
-      success: true,
-      statusCode: HttpStatus.OK,
-      message: 'Csrf token fetched successfully',
-      data: { csrfToken: token },
-    });
   }
 }

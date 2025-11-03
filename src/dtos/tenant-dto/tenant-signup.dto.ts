@@ -23,7 +23,6 @@ export class TenantSignupDto {
   })
   @ApiProperty({ example: 'navaneethan@conversedatasolutions.com' })
   @Length(5, 50, { message: 'Email must be between 5 and 50 characters' })
-  @Sanitize()
   email: string;
 
   @IsDefined({ message: 'Phone number is required' })
@@ -32,7 +31,6 @@ export class TenantSignupDto {
   })
   @ApiProperty({ example: '9876532458' })
   @Length(5, 20, { message: 'Phone must be between 6 and 20 characters' })
-  @Sanitize()
   phone: string;
 
   @IsDefined({ message: 'Password is required' })
@@ -42,7 +40,6 @@ export class TenantSignupDto {
     message:
       'Password must be 7-15 characters long, include at least one uppercase letter, one lowercase letter, one number, and one special character',
   })
-  @Sanitize()
   password: string;
 
   @IsOptional()

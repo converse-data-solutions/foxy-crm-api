@@ -1,7 +1,9 @@
 import { ServiceUnavailableException } from '@nestjs/common';
+import { winstonLogger } from 'src/common/logger/logger.service';
 import { coreDataSource } from 'src/database/datasources/core-app-data-source';
 import { DataSource, DataSourceOptions, EntityTarget, ObjectLiteral, Repository } from 'typeorm';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
+import { log } from 'winston';
 
 interface CachedDataSource {
   dataSource: DataSource;
@@ -84,7 +86,11 @@ function startCleanupInterval(): void {
         await connections[schema].dataSource.destroy();
         delete connections[schema];
       } catch (err) {
-        throw err;
+        winstonLogger.error(`Failed to clean up connection for schema: ${schema}`);
+        if (process.env.NODE_ENV !== 'production') {
+          winstonLogger.debug(`Cleanup error for ${schema}: ${err.message}`);
+        }
+        delete connections[schema];
       }
     }
 

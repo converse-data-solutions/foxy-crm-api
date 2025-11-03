@@ -14,7 +14,7 @@ import { setCookie } from 'src/shared/utils/cookie.util';
 import { APIResponse } from 'src/common/dtos/response.dto';
 import { Throttle } from '@nestjs/throttler';
 import { SkipCsrf } from 'src/common/decorators/skip-csrf.decorator';
-import { OTP_THROTTLE, SIGNIN_AND_REFRESH_THROTTLE } from 'src/shared/utils/config.util';
+import { MEDIUM_LIVED_THROTTLE, SHORT_LIVED_THROTTLE } from 'src/shared/utils/config.util';
 
 @SkipCsrf()
 @Controller('auth')
@@ -44,7 +44,7 @@ export class AuthController {
 
   @Post('signin')
   @Public()
-  @Throttle(SIGNIN_AND_REFRESH_THROTTLE)
+  @Throttle(SHORT_LIVED_THROTTLE)
   @ApiOperation({ summary: 'Signin user and access token is generated' })
   @ApiResponse({ status: 200, description: 'Signin successfully' })
   async userSignin(@Body() user: SignIn, @Res({ passthrough: true }) response: Response) {
@@ -55,7 +55,7 @@ export class AuthController {
 
   @Post('verify-email/send-otp')
   @Public()
-  @Throttle(OTP_THROTTLE)
+  @Throttle(MEDIUM_LIVED_THROTTLE)
   @ApiOperation({ summary: 'Send otp to the mail' })
   @ApiResponse({ status: 200, description: 'Otp sent successfully' })
   async sendOtp(@Body() payload: EmailDto) {
@@ -64,6 +64,7 @@ export class AuthController {
 
   @Post('verify-email/confirm')
   @Public()
+  @Throttle(SHORT_LIVED_THROTTLE)
   @ApiOperation({ summary: 'Verify the otp' })
   @ApiResponse({ status: 200, description: 'Otp verified successfully' })
   async emailVerifyOtp(@Body() data: OtpDto, @Res({ passthrough: true }) response: Response) {
@@ -73,6 +74,7 @@ export class AuthController {
   }
 
   @Post('reset-password')
+  @Throttle(MEDIUM_LIVED_THROTTLE)
   @ApiOperation({ summary: 'Update new password using current password' })
   @ApiResponse({ status: 200, description: 'Password updated successfully' })
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
@@ -81,7 +83,7 @@ export class AuthController {
 
   @Post('forgot-password/send-otp')
   @Public()
-  @Throttle(OTP_THROTTLE)
+  @Throttle(MEDIUM_LIVED_THROTTLE)
   @ApiOperation({ summary: 'Send otp to the mail' })
   @ApiResponse({ status: 200, description: 'Otp sent successfully' })
   async forgotPasswordSendOtp(@Body() payload: EmailDto) {
@@ -90,6 +92,7 @@ export class AuthController {
 
   @Post('forgot-password/confirm')
   @Public()
+  @Throttle(SHORT_LIVED_THROTTLE)
   @ApiOperation({ summary: 'Verify the otp' })
   @ApiResponse({ status: 200, description: 'Otp verified successfully' })
   async forgotPasswordVerifyOtp(@Body() otpDto: OtpDto) {
@@ -98,6 +101,7 @@ export class AuthController {
 
   @Post('forgot-password/reset')
   @Public()
+  @Throttle(MEDIUM_LIVED_THROTTLE)
   @ApiOperation({ summary: 'Update new password using otp' })
   @ApiResponse({ status: 200, description: 'Password updated successfully' })
   async forgotPasswordReset(@Body() forgotPassword: ForgotPasswordDto) {
@@ -106,7 +110,7 @@ export class AuthController {
 
   @Post('refresh')
   @Public()
-  @Throttle(SIGNIN_AND_REFRESH_THROTTLE)
+  @Throttle(SHORT_LIVED_THROTTLE)
   @ApiOperation({ summary: 'Update refresh token' })
   @ApiResponse({ status: 200, description: 'Token updated successfully' })
   async tokenRefresh(
@@ -124,6 +128,7 @@ export class AuthController {
 
   @Get('csrf-token')
   @Public()
+  @Throttle(SHORT_LIVED_THROTTLE)
   @ApiOperation({ summary: 'Get CSRF token' })
   @ApiResponse({ status: 200, description: 'CSRF token generated successfully' })
   async getCsrfToken(@Req() req: Request, @Res() res: Response): Promise<void> {
