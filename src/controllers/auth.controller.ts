@@ -134,4 +134,12 @@ export class AuthController {
   async getCsrfToken(@Req() req: Request, @Res() res: Response): Promise<void> {
     await this.authService.getCsrfToken(req, res);
   }
+
+  @Post('tenant-check')
+  @Public()
+  @ApiOperation({ summary: 'Check for tenant existance' })
+  @ApiResponse({ status: 200, description: 'Tenant status fetched for mail' })
+  async checkTenant(@Body() payload: EmailDto) {
+    return await this.tenantService.checkTenant(payload);
+  }
 }

@@ -4,6 +4,7 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { User } from 'src/database/entities/core-app-entities/user.entity';
@@ -50,7 +51,7 @@ export class UserService {
       throw new UnauthorizedException('Only administrators can update user roles.');
     }
     if (!existUser) {
-      throw new BadRequestException('User not found.');
+      throw new NotFoundException('User not found.');
     }
     if (updateUser.email) {
       if (existUser.role === Role.Admin) {

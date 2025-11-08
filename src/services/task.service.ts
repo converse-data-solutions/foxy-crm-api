@@ -73,7 +73,7 @@ export class TaskService {
     });
 
     if (taskExist) {
-      throw new ConflictException('Task with this name is already present');
+      throw new ConflictException('Task with this name is already exists');
     }
     const newTask: Task = await taskRepo.save({
       assignedTo: userExist,

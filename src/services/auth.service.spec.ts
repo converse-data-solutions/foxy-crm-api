@@ -6,6 +6,7 @@ import * as bcrypt from 'bcrypt';
 import * as getConnection from 'src/shared/database-connection/get-connection';
 import { csrfUtils } from 'src/shared/utils/csrf.util';
 import { Request, Response } from 'express';
+import { LoggerService } from 'src/common/logger/logger.service';
 
 jest.mock('bcrypt');
 jest.mock('src/shared/database-connection/get-connection');
@@ -21,6 +22,9 @@ const mockTokenService = {
 const mockTenantService = {
   getTenant: jest.fn().mockResolvedValue({ schemaName: 'tenant1' }),
 };
+const mockLoggerService = {
+  logError: jest.fn(),
+};
 describe('AuthService', () => {
   let service: AuthService;
   let req: Partial<Request>;
@@ -32,6 +36,7 @@ describe('AuthService', () => {
         AuthService,
         { provide: TokenService, useValue: mockTokenService },
         { provide: TenantService, useValue: mockTenantService },
+        { provide: LoggerService, useValue: mockLoggerService },
       ],
     }).compile();
     service = module.get<AuthService>(AuthService);
@@ -64,16 +69,14 @@ describe('AuthService', () => {
 
     it('should throw NotFoundException if user not found', async () => {
       mockUserRepo.findOne.mockResolvedValue(null);
-      await expect(service.signin(dto)).rejects.toThrow('User email not found please signup');
+      await expect(service.signin(dto)).rejects.toThrow('User not found. Please sign up first.');
       expect(mockUserRepo.findOne).toHaveBeenCalledWith({ where: { email: dto.email } });
     });
 
     it('should throw BadRequestException if password is invalid', async () => {
       mockUserRepo.findOne.mockResolvedValue({ ...mockUser, password: 'hashedPassword' });
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
-      await expect(service.signin(dto)).rejects.toThrow(
-        'Invalid password please enter correct password',
-      );
+      await expect(service.signin(dto)).rejects.toThrow('Incorrect password. Please try again.');
       expect(bcrypt.compare).toHaveBeenCalledWith(dto.password, 'hashedPassword');
     });
 
@@ -85,7 +88,7 @@ describe('AuthService', () => {
       });
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       await expect(service.signin(dto)).rejects.toThrow(
-        'Your account is disabled please contact the admin',
+        'Your account is disabled. Please contact the admin.',
       );
     });
 
@@ -97,7 +100,9 @@ describe('AuthService', () => {
         emailVerified: false,
       });
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      await expect(service.signin(dto)).rejects.toThrow('Please verify the email then login');
+      await expect(service.signin(dto)).rejects.toThrow(
+        'Please verify your email before signing in.',
+      );
     });
 
     it('should signin successfully and return tokens', async () => {
@@ -149,7 +154,7 @@ describe('AuthService', () => {
       mockUserRepo.findOne.mockResolvedValue(mockUser);
       passwordDto.newPassword = 'oldPassword';
       await expect(service.resetPassword(passwordDto)).rejects.toThrow(
-        'Old password and current password should not be same',
+        'New password cannot be the same as the old password.',
       );
     });
 
@@ -157,9 +162,7 @@ describe('AuthService', () => {
       passwordDto.newPassword = 'newPassword';
       mockUser.password = 'hashedPassword';
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
-      await expect(service.resetPassword(passwordDto)).rejects.toThrow(
-        'Invalid password please enter correct password',
-      );
+      await expect(service.resetPassword(passwordDto)).rejects.toThrow('Invalid current password.');
       expect(bcrypt.compare).toHaveBeenCalledWith(passwordDto.password, mockUser.password);
     });
 
@@ -190,7 +193,7 @@ describe('AuthService', () => {
     it('should throw BadRequestException if otp is not verified', async () => {
       mockUserRepo.findOne.mockResolvedValue({ ...mockUser, otpVerified: false });
       await expect(service.forgotPasswordReset(passwordDto)).rejects.toThrow(
-        'Otp is not verified please verify otp and reset the password',
+        'OTP not verified. Please verify OTP before resetting password.',
       );
     });
 
@@ -199,7 +202,7 @@ describe('AuthService', () => {
       mockUser.password = 'hashedNewPassword';
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       await expect(service.forgotPasswordReset(passwordDto)).rejects.toThrow(
-        'Old password and current password should not be same',
+        'New password cannot be the same as the old password.',
       );
       expect(bcrypt.compare).toHaveBeenCalledWith(passwordDto.password, mockUser.password);
     });
@@ -230,9 +233,7 @@ describe('AuthService', () => {
 
     it('should throw UnauthorizedException if no refresh token', async () => {
       req.cookies = {};
-      await expect(service.tokenRefresh(req as Request)).rejects.toThrow(
-        'Unauthorized access token not found',
-      );
+      await expect(service.tokenRefresh(req as Request)).rejects.toThrow('Missing refresh token.');
       expect(mockTokenService.getRefreshToken).not.toHaveBeenCalled();
     });
   });
@@ -261,9 +262,10 @@ describe('AuthService', () => {
     it('should throw UnauthorizedException if access token missing', async () => {
       req.cookies = {};
       await expect(service.getCsrfToken(req as Request, res as Response)).rejects.toThrow(
-        'Unauthorized access token not found',
+        'Unable to generate CSRF token. Please try again later.',
       );
       expect(mockTokenService.verifyAccessToken).not.toHaveBeenCalled();
+      expect(mockLoggerService.logError).toHaveBeenCalled();
       expect(csrfUtils.generateCsrfToken).not.toHaveBeenCalled();
       expect(res.clearCookie).not.toHaveBeenCalled();
     });

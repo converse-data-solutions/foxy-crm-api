@@ -21,6 +21,7 @@ import { OtpService } from './otp.service';
 import { CountryService } from './country.service';
 import { SALT_ROUNDS } from 'src/shared/utils/config.util';
 import { EmailService } from './email.service';
+import { EmailDto } from 'src/dtos/otp-dto/otp.dto';
 
 @Injectable()
 export class TenantService {
@@ -96,10 +97,18 @@ export class TenantService {
     const isTenant = await this.tenantRepo.findOne({
       where: [{ organizationName: tenant.organizationName }, { email: tenant.email }, { domain }],
     });
-    if (isTenant != null) {
-      throw new ConflictException(
-        'An organization or email with this domain is already registered.',
-      );
+    if (isTenant) {
+      if (isTenant.emailVerified) {
+        throw new ConflictException(
+          'An organization or email with this domain is already registered.',
+        );
+      }
+      await this.otpService.sendOtp(isTenant.email);
+      return {
+        success: true,
+        statusCode: HttpStatus.OK,
+        message: 'Please verify your email to continue.',
+      };
     } else {
       const hashPassword = await bcrypt.hash(tenant.password, SALT_ROUNDS);
       const { country, ...tenantData } = tenant;
@@ -150,6 +159,24 @@ export class TenantService {
       return tenant;
     } finally {
       await queryRunner.release();
+    }
+  }
+  async checkTenant(payload: EmailDto) {
+    try {
+      await this.getTenant(payload.email);
+      return {
+        success: true,
+        statusCode: HttpStatus.OK,
+        message: 'Tenant status fetched for mail',
+        tenantExists: true,
+      };
+    } catch (error) {
+      return {
+        success: true,
+        statusCode: HttpStatus.OK,
+        message: 'Tenant status fetched for mail',
+        tenantExists: false,
+      };
     }
   }
 }

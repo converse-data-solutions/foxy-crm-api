@@ -107,7 +107,7 @@ describe('TaskService', () => {
     it('should throw BadRequestException if user id is invalid', async () => {
       mockUserRepo.findOne.mockResolvedValue(null);
       await expect(service.createTask(mockTenantId, mockUser, taskDto)).rejects.toThrow(
-        'Invalid user id',
+        'The assigned user ID is invalid.',
       );
       expect(mockUserRepo.findOne).toHaveBeenCalledWith({ where: { id: taskDto.assignedTo } });
     });
@@ -126,7 +126,7 @@ describe('TaskService', () => {
     it('should throw BadRequestException if task created for completed deal', async () => {
       mockDealRepo.findOne.mockResolvedValue(mockDeal);
       await expect(service.createTask(mockTenantId, mockUser, taskDto)).rejects.toThrow(
-        'Task is not created for completed deal',
+        'Cannot create a task for a completed deal.',
       );
     });
 
@@ -159,7 +159,7 @@ describe('TaskService', () => {
       const task = { id: 'task001' } as Task;
       mockTaskRepo.findOne.mockResolvedValue(task);
       await expect(service.createTask(mockTenantId, mockUser, taskDto)).rejects.toThrow(
-        'Task with this name is already present',
+        'Task with this name is already exists',
       );
       expect(mockTaskRepo.findOne).toHaveBeenCalledWith({
         where: { name: taskDto.name, entityId: taskDto.entityId },
@@ -228,7 +228,7 @@ describe('TaskService', () => {
     it('should throw BadRequestException when task not found', async () => {
       mockTaskRepo.findOne.mockResolvedValueOnce(null);
       await expect(service.updateTask(mockTenantId, mockUser, taskId, {})).rejects.toThrow(
-        'Invalid task id or task not exist',
+        'The specified task ID is invalid or the task does not exist.',
       );
     });
 

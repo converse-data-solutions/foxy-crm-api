@@ -144,9 +144,6 @@ export class AuthService {
       const token = csrfUtils.generateCsrfToken(req, res, {
         overwrite: true,
       });
-      if (!token) {
-        throw new InternalServerErrorException('Failed to generate CSRF token');
-      }
       res.json({
         success: true,
         statusCode: HttpStatus.OK,
