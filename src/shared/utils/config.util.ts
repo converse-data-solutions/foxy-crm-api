@@ -4,7 +4,7 @@ import { config as dotenvConfig } from 'dotenv';
 dotenvConfig();
 
 const envSchema = Joi.object({
-  NODE_ENV: Joi.string().valid('dev', 'prod').default('dev'),
+  NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
   DB_HOST: Joi.string().required(),
   DB_PORT: Joi.number().default(5432),
   DB_USER: Joi.string().required(),
@@ -31,6 +31,9 @@ const envSchema = Joi.object({
 
   STRIPE_SECRET_KEY: Joi.string().required(),
   STRIPE_WEBHOOK_SECRET: Joi.string().required(),
+
+  CSRF_SECRET: Joi.string().required(),
+  CORS_URL: Joi.string().required(),
 })
   .unknown()
   .required();
@@ -71,7 +74,7 @@ export const REDIS_CONFIG = {
 };
 
 export const Environment = {
-  NODE_ENV: envVars.NODE_ENV as 'dev' | 'prod',
+  NODE_ENV: envVars.NODE_ENV as 'development' | 'production',
 };
 
 export const PAYMENT_URL = {
@@ -83,3 +86,10 @@ export const STRIPE = {
   stripeSecreteKey: envVars.STRIPE_SECRET_KEY as string,
   stripeWebhookSecret: envVars.STRIPE_WEBHOOK_SECRET as string,
 };
+
+export const CSRF_SECRET = envVars.CSRF_SECRET as string;
+
+export const SHORT_LIVED_THROTTLE = { default: { limit: 5, ttl: 60000 } };
+export const MEDIUM_LIVED_THROTTLE = { default: { limit: 3, ttl: 300000 } };
+
+export const CORS_URL = envVars.CORS_URL as string;

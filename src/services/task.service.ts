@@ -24,6 +24,7 @@ import { paginationParams } from 'src/shared/utils/pagination-params.util';
 import { taskAssignmentTemplate } from 'src/templates/task-assignment.template';
 import { Repository } from 'typeorm';
 import { EmailService } from './email.service';
+import { applyFilters, FiltersMap } from 'src/shared/utils/query-filter.util';
 
 @Injectable()
 export class TaskService {
@@ -48,14 +49,14 @@ export class TaskService {
 
     const userExist = await userRepo.findOne({ where: { id: assignedTo } });
     if (!userExist) {
-      throw new BadRequestException('Invalid user id');
+      throw new BadRequestException('The assigned user ID is invalid.');
     }
     if (createTaskDto.entityName == EntityName.Deal) {
       const dealExist = await dealRepo.findOne({ where: { id: entityId } });
       if (!dealExist) {
         throw new BadRequestException('Invalid entity id or id not found in deal entity');
       } else if (dealExist.stage === DealStage.Completed) {
-        throw new BadRequestException('Task is not created for completed deal');
+        throw new BadRequestException('Cannot create a task for a completed deal.');
       } else if (dealExist.stage != DealStage.Accepted) {
         throw new BadRequestException('Deal not accepted unable to create task');
       }
@@ -72,7 +73,7 @@ export class TaskService {
     });
 
     if (taskExist) {
-      throw new ConflictException('Task with this name is already present');
+      throw new ConflictException('Task with this name is already exists');
     }
     const newTask: Task = await taskRepo.save({
       assignedTo: userExist,
@@ -93,16 +94,16 @@ export class TaskService {
     const qb = taskRepo.createQueryBuilder('task').leftJoin('task.assignedTo', 'user');
 
     const { limit, page, skip } = paginationParams(taskQuery.page, taskQuery.limit);
+    const FILTERS: FiltersMap = {
+      entityName: { column: 'task.entityName', type: 'exact' },
+      entityId: { column: 'task.entityId', type: 'exact' },
+      type: { column: 'task.type', type: 'exact' },
+      status: { column: 'task.status', type: 'exact' },
+      priority: { column: 'task.priority', type: 'exact' },
+      name: { column: 'task.name', type: 'ilike' },
+    };
+    applyFilters(qb, FILTERS, taskQuery);
 
-    for (const [key, value] of Object.entries(taskQuery)) {
-      if (value == null || key === 'page' || key === 'limit') {
-        continue;
-      } else if (['entityName', 'entityId', 'type', 'status', 'priority'].includes(key)) {
-        qb.andWhere(`task.${key} =:${key}`, { [key]: value });
-      } else if (key === 'name') {
-        qb.andWhere(`task.name ILIKE :name`, { name: `%${value}%` });
-      }
-    }
     if (![Role.Admin, Role.Manager].includes(user.role)) {
       qb.andWhere(`user.id =:id`, { id: user.id });
     } else {
@@ -133,7 +134,7 @@ export class TaskService {
     const taskExist = await taskRepo.findOne({ where: { id }, relations: { assignedTo: true } });
     const { status, assignedTo, ...updateTask } = updateTaskDto;
     if (!taskExist) {
-      throw new BadRequestException('Invalid task id or task not exist');
+      throw new BadRequestException('The specified task ID is invalid or the task does not exist.');
     }
     for (const [key, value] of Object.entries(updateTask)) {
       if (value && ![Role.Admin, Role.Manager].includes(user.role)) {

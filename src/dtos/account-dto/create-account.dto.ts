@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, IsOptional, IsUrl, IsDefined, Length } from 'class-validator';
+import { Sanitize } from 'src/common/decorators/sanitize.decorator';
 
 export class CreateAccountDto {
   @ApiProperty({
@@ -8,6 +9,7 @@ export class CreateAccountDto {
   @IsDefined({ message: 'Name field is required' })
   @IsString({ message: 'Name must be string' })
   @Length(3, 40, { message: 'Name must be between 3 and 40 characters' })
+  @Sanitize()
   name: string;
 
   @ApiProperty({
@@ -16,6 +18,7 @@ export class CreateAccountDto {
   @IsDefined({ message: 'Industry field is required' })
   @IsString({ message: 'Industry must be string type' })
   @Length(5, 40, { message: 'Industry must be between 5 and 40 characters' })
+  @Sanitize()
   industry: string;
 
   @ApiProperty({
@@ -23,6 +26,7 @@ export class CreateAccountDto {
   })
   @IsDefined({ message: 'Website field is required' })
   @IsUrl({}, { message: 'Please give valid website url' })
+  @Sanitize()
   website: string;
 
   @ApiPropertyOptional({
@@ -31,6 +35,7 @@ export class CreateAccountDto {
   @IsOptional()
   @IsString({ message: 'Address must be a string' })
   @Length(5, 50, { message: 'Address must be between 5 and 50 characters' })
+  @Sanitize()
   address?: string;
 
   @ApiPropertyOptional({
@@ -39,6 +44,7 @@ export class CreateAccountDto {
   @IsOptional()
   @IsString({ message: 'City must be a string' })
   @Length(3, 40, { message: 'City must be between 3 and 40 characters' })
+  @Sanitize()
   city?: string;
 
   @ApiPropertyOptional({
@@ -46,5 +52,6 @@ export class CreateAccountDto {
   })
   @IsOptional()
   @IsString({ message: 'Country must be string type' })
+  @Sanitize()
   country?: string;
 }

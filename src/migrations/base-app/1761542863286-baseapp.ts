@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class Baseapp1760363497252 implements MigrationInterface {
-  name = 'Baseapp1760363497252';
+export class Baseapp1761542863286 implements MigrationInterface {
+  name = 'Baseapp1761542863286';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
@@ -23,7 +23,7 @@ export class Baseapp1760363497252 implements MigrationInterface {
       `CREATE TABLE "subscriptions" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "status" boolean NOT NULL DEFAULT false, "start_date" TIMESTAMP, "end_date" TIMESTAMP, "stripe_session_id" character varying(100), "stripe_subscription_id" character varying(50), "stripe_customer_id" character varying(50), "tenant_id" uuid, "plan_price_id" uuid, CONSTRAINT "REL_f6ac03431c311ccb8bbd7d3af1" UNIQUE ("tenant_id"), CONSTRAINT "PK_a87248d73155605cf782be9ee5e" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
-      `CREATE TABLE "tenants" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "organization_name" character varying(30) NOT NULL, "user_name" character varying(30) NOT NULL, "password" character varying(100) NOT NULL, "url" text, "email" character varying(50) NOT NULL, "phone" character varying(20) NOT NULL, "domain" character varying(50) NOT NULL, "schema_name" uuid NOT NULL DEFAULT uuid_generate_v4(), "address" character varying(50), "city" character varying(40), "country" character varying(50), "otp" integer, "otp_expiry_at" TIMESTAMP, "email_verified" boolean NOT NULL DEFAULT false, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), CONSTRAINT "UQ_4054367000c322223f0a12e3943" UNIQUE ("organization_name"), CONSTRAINT "UQ_155c343439adc83ada6ee3f48be" UNIQUE ("email"), CONSTRAINT "UQ_23d5a62128e1a248126c8453ff0" UNIQUE ("phone"), CONSTRAINT "PK_53be67a04681c66b87ee27c9321" PRIMARY KEY ("id"))`,
+      `CREATE TABLE "tenants" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "organization_name" character varying(30) NOT NULL, "user_name" character varying(30) NOT NULL, "password" character varying(100) NOT NULL, "url" text, "email" character varying(50) NOT NULL, "phone" character varying(20) NOT NULL, "domain" character varying(50) NOT NULL, "schema_name" uuid NOT NULL DEFAULT uuid_generate_v4(), "address" character varying(50), "city" character varying(40), "country" character varying(50), "otp" character varying(100), "otp_expiry_at" TIMESTAMP, "email_verified" boolean NOT NULL DEFAULT false, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), CONSTRAINT "UQ_4054367000c322223f0a12e3943" UNIQUE ("organization_name"), CONSTRAINT "UQ_155c343439adc83ada6ee3f48be" UNIQUE ("email"), CONSTRAINT "UQ_23d5a62128e1a248126c8453ff0" UNIQUE ("phone"), CONSTRAINT "PK_53be67a04681c66b87ee27c9321" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
       `ALTER TABLE "subscription_history" ADD CONSTRAINT "FK_e5ee62898352318b393e522dd99" FOREIGN KEY ("tenant_id") REFERENCES "tenants"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,

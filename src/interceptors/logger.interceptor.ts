@@ -8,10 +8,9 @@ export class LoggerInterceptor implements NestInterceptor {
   constructor(private readonly logger: LoggerService) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    const requestId = uuidv4();
     const req = context.switchToHttp().getRequest();
-    req.requestId = requestId;
-
+    // req.requestId = requestId;
+    const requestId = req.id;
     const { method, url } = req;
 
     // Log incoming request

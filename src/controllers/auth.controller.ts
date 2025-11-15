@@ -1,4 +1,4 @@
-import { Body, Controller, HttpStatus, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpStatus, Post, Req, Res } from '@nestjs/common';
 import { AuthService } from '../services/auth.service';
 import { TenantSignupDto } from 'src/dtos/tenant-dto/tenant-signup.dto';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
@@ -12,8 +12,11 @@ import { UserService } from 'src/services/user.service';
 import { ForgotPasswordDto, ResetPasswordDto } from 'src/dtos/password-dto/reset-password.dto';
 import { setCookie } from 'src/shared/utils/cookie.util';
 import { APIResponse } from 'src/common/dtos/response.dto';
+import { Throttle } from '@nestjs/throttler';
+import { SkipCsrf } from 'src/common/decorators/skip-csrf.decorator';
+import { MEDIUM_LIVED_THROTTLE, SHORT_LIVED_THROTTLE } from 'src/shared/utils/config.util';
 
-@Public()
+@SkipCsrf()
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -24,6 +27,7 @@ export class AuthController {
   ) {}
 
   @Post('tenant-signup')
+  @Public()
   @ApiOperation({ summary: 'Signup tenant and automated initial setup' })
   @ApiResponse({ status: 201, description: 'Signup process completed' })
   async tenantSignup(@Body() tenant: TenantSignupDto) {
@@ -31,6 +35,7 @@ export class AuthController {
   }
 
   @Post('user-signup')
+  @Public()
   @ApiOperation({ summary: 'Signup or create a new account' })
   @ApiResponse({ status: 201, description: 'Signup process completed' })
   async userSignup(@Body() user: UserSignupDto) {
@@ -38,6 +43,8 @@ export class AuthController {
   }
 
   @Post('signin')
+  @Public()
+  @Throttle(SHORT_LIVED_THROTTLE)
   @ApiOperation({ summary: 'Signin user and access token is generated' })
   @ApiResponse({ status: 200, description: 'Signin successfully' })
   async userSignin(@Body() user: SignIn, @Res({ passthrough: true }) response: Response) {
@@ -47,6 +54,8 @@ export class AuthController {
   }
 
   @Post('verify-email/send-otp')
+  @Public()
+  @Throttle(MEDIUM_LIVED_THROTTLE)
   @ApiOperation({ summary: 'Send otp to the mail' })
   @ApiResponse({ status: 200, description: 'Otp sent successfully' })
   async sendOtp(@Body() payload: EmailDto) {
@@ -54,6 +63,8 @@ export class AuthController {
   }
 
   @Post('verify-email/confirm')
+  @Public()
+  @Throttle(SHORT_LIVED_THROTTLE)
   @ApiOperation({ summary: 'Verify the otp' })
   @ApiResponse({ status: 200, description: 'Otp verified successfully' })
   async emailVerifyOtp(@Body() data: OtpDto, @Res({ passthrough: true }) response: Response) {
@@ -63,6 +74,7 @@ export class AuthController {
   }
 
   @Post('reset-password')
+  @Throttle(MEDIUM_LIVED_THROTTLE)
   @ApiOperation({ summary: 'Update new password using current password' })
   @ApiResponse({ status: 200, description: 'Password updated successfully' })
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
@@ -70,6 +82,8 @@ export class AuthController {
   }
 
   @Post('forgot-password/send-otp')
+  @Public()
+  @Throttle(MEDIUM_LIVED_THROTTLE)
   @ApiOperation({ summary: 'Send otp to the mail' })
   @ApiResponse({ status: 200, description: 'Otp sent successfully' })
   async forgotPasswordSendOtp(@Body() payload: EmailDto) {
@@ -77,6 +91,8 @@ export class AuthController {
   }
 
   @Post('forgot-password/confirm')
+  @Public()
+  @Throttle(SHORT_LIVED_THROTTLE)
   @ApiOperation({ summary: 'Verify the otp' })
   @ApiResponse({ status: 200, description: 'Otp verified successfully' })
   async forgotPasswordVerifyOtp(@Body() otpDto: OtpDto) {
@@ -84,6 +100,8 @@ export class AuthController {
   }
 
   @Post('forgot-password/reset')
+  @Public()
+  @Throttle(MEDIUM_LIVED_THROTTLE)
   @ApiOperation({ summary: 'Update new password using otp' })
   @ApiResponse({ status: 200, description: 'Password updated successfully' })
   async forgotPasswordReset(@Body() forgotPassword: ForgotPasswordDto) {
@@ -92,6 +110,7 @@ export class AuthController {
 
   @Post('refresh')
   @Public()
+  @Throttle(SHORT_LIVED_THROTTLE)
   @ApiOperation({ summary: 'Update refresh token' })
   @ApiResponse({ status: 200, description: 'Token updated successfully' })
   async tokenRefresh(
@@ -100,6 +119,27 @@ export class AuthController {
   ): Promise<APIResponse> {
     const tokens = await this.authService.tokenRefresh(req);
     setCookie(tokens, res);
-    return { success: true, statusCode: HttpStatus.OK, message: 'Token refreshed successfully' };
+    return {
+      success: true,
+      statusCode: HttpStatus.OK,
+      message: 'Access token refreshed successfully',
+    };
+  }
+
+  @Get('csrf-token')
+  @Public()
+  @Throttle(SHORT_LIVED_THROTTLE)
+  @ApiOperation({ summary: 'Get CSRF token' })
+  @ApiResponse({ status: 200, description: 'CSRF token generated successfully' })
+  async getCsrfToken(@Req() req: Request, @Res() res: Response): Promise<void> {
+    await this.authService.getCsrfToken(req, res);
+  }
+
+  @Post('tenant-check')
+  @Public()
+  @ApiOperation({ summary: 'Check for tenant existance' })
+  @ApiResponse({ status: 200, description: 'Tenant status fetched for mail' })
+  async checkTenant(@Body() payload: EmailDto) {
+    return await this.tenantService.checkTenant(payload);
   }
 }

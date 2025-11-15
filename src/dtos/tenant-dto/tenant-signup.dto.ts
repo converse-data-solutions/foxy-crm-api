@@ -1,17 +1,20 @@
 import { IsDefined, IsOptional, IsString, IsUrl, Length, Matches } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Sanitize } from 'src/common/decorators/sanitize.decorator';
 
 export class TenantSignupDto {
   @IsDefined({ message: 'Organization name is required' })
   @IsString({ message: 'Organization name must be a string' })
   @ApiProperty({ example: 'Abc Tech' })
   @Length(5, 30, { message: 'Organization name must be between 5 and 30 characters' })
+  @Sanitize()
   organizationName: string;
 
   @IsDefined({ message: 'User name is required' })
   @IsString({ message: 'User name must be a string' })
   @ApiProperty({ example: 'navaneethan' })
   @Length(3, 30, { message: 'User name must be between 3 and 30 characters' })
+  @Sanitize()
   userName: string;
 
   @IsDefined({ message: 'Email is required' })
@@ -42,20 +45,24 @@ export class TenantSignupDto {
   @IsOptional()
   @IsUrl({}, { message: 'URL must be a string' })
   @ApiPropertyOptional({ example: 'http://www.abctech.in' })
+  @Sanitize()
   url?: string;
 
   @IsOptional()
   @IsString({ message: 'Please provide a valid address' })
   @ApiPropertyOptional({ example: '11/2 Abc street' })
+  @Sanitize()
   address?: string;
 
   @IsOptional()
   @IsString({ message: 'City should be string' })
   @ApiPropertyOptional({ example: 'Gobi' })
+  @Sanitize()
   city?: string;
 
   @IsOptional()
   @IsString({ message: 'Country should be string' })
   @ApiPropertyOptional({ example: 'India' })
+  @Sanitize()
   country?: string;
 }

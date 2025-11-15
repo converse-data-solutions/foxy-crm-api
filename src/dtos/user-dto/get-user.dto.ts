@@ -5,6 +5,7 @@ import { Role } from 'src/enums/core-app.enum';
 import { StatusCause } from 'src/enums/status.enum';
 import { UserSignupDto } from './user-signup.dto';
 import { PageDto } from '../page-dto/page.dto';
+import { Sanitize } from 'src/common/decorators/sanitize.decorator';
 
 export class GetUserDto extends IntersectionType(
   PartialType(OmitType(UserSignupDto, ['address', 'password'] as const)),

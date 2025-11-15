@@ -1,9 +1,9 @@
 import { ApiPropertyOptional, IntersectionType, PartialType, PickType } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsEnum, IsOptional, IsString, IsDateString, IsInt, Min } from 'class-validator';
+import { IsEnum, IsOptional, IsString, IsDateString } from 'class-validator';
 import { TicketStatus } from 'src/enums/status.enum';
 import { CreateTicketDto } from './create-ticket.dto';
 import { PageDto } from '../page-dto/page.dto';
+import { Sanitize } from 'src/common/decorators/sanitize.decorator';
 
 export class GetTicketDto extends IntersectionType(
   PartialType(PickType(CreateTicketDto, ['title'] as const)),
@@ -21,6 +21,7 @@ export class GetTicketDto extends IntersectionType(
   })
   @IsOptional()
   @IsString()
+  @Sanitize()
   deal?: string;
 
   @ApiPropertyOptional({

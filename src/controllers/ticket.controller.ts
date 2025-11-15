@@ -8,6 +8,7 @@ import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { User } from 'src/database/entities/core-app-entities/user.entity';
 import { GetTicketDto } from 'src/dtos/ticket-dto/get-ticket.dto';
+import { CsrfHeader } from 'src/common/decorators/csrf-header.decorator';
 
 @Roles(Role.Admin, Role.Manager, Role.SalesRep, Role.Support)
 @Controller('tickets')
@@ -15,6 +16,7 @@ export class TicketController {
   constructor(private readonly ticketService: TicketService) {}
 
   @Post()
+  @CsrfHeader()
   @ApiOperation({ summary: 'Create ticket' })
   @ApiResponse({ status: 201, description: 'Ticket created successfully' })
   async createTicket(
@@ -37,6 +39,7 @@ export class TicketController {
   }
 
   @Put(':id')
+  @CsrfHeader()
   @ApiOperation({ summary: 'Update ticket' })
   @ApiResponse({ status: 200, description: 'Ticket updated successfully' })
   async updateTicket(

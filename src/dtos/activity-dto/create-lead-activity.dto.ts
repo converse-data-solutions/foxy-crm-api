@@ -1,11 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsDateString, IsDefined, IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
+import { Sanitize } from 'src/common/decorators/sanitize.decorator';
 import { LeadActivityType } from 'src/enums/lead-activity.enum';
 
 export class CreateLeadActivityDto {
   @IsDefined({ message: 'Lead ID is required' })
   @IsUUID('4', { message: 'Lead ID must be a valid UUID' })
   @ApiProperty({ example: 'a1b2c3d4-e5f6-7g8h-9i0j-k1l2m3n4o5p6', description: 'UUID of the lead' })
+  @Sanitize()
   leadId: string;
 
   @IsDefined({ message: 'Activity Type is required' })
@@ -27,5 +29,6 @@ export class CreateLeadActivityDto {
   @IsOptional({ message: 'Notes are required' })
   @IsString({ message: 'Notes must be a string' })
   @ApiProperty({ example: 'Follow up with the lead', description: 'Notes about the activity' })
+  @Sanitize()
   notes?: string;
 }

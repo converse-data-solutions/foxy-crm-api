@@ -8,6 +8,7 @@ import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Roles } from 'src/common/decorators/role.decorator';
 import { Role } from 'src/enums/core-app.enum';
 import { GetTaskDto } from 'src/dtos/task-dto/get-task.dto';
+import { CsrfHeader } from 'src/common/decorators/csrf-header.decorator';
 
 @Roles(Role.Admin, Role.Manager)
 @Controller('tasks')
@@ -15,6 +16,7 @@ export class TaskController {
   constructor(private readonly taskService: TaskService) {}
 
   @Post()
+  @CsrfHeader()
   @ApiOperation({ summary: 'Create and assign task' })
   @ApiResponse({ status: 201, description: 'Task created successfully' })
   async createTask(
@@ -38,6 +40,7 @@ export class TaskController {
   }
 
   @Put(':id')
+  @CsrfHeader()
   @Roles(Role.Admin, Role.Manager, Role.Support, Role.SalesRep)
   @ApiOperation({ summary: 'Update task details' })
   @ApiResponse({ status: 200, description: 'Task updated successfully' })

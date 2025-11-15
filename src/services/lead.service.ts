@@ -19,6 +19,7 @@ import { MetricService } from './metric.service';
 import { MetricDto } from 'src/dtos/metric-dto/metric.dto';
 import { bulkLeadFailureTemplate } from 'src/templates/bulk-failure.template';
 import { EmailService } from './email.service';
+import { applyFilters, FiltersMap } from 'src/shared/utils/query-filter.util';
 
 interface SerializedBuffer {
   type: 'Buffer';
@@ -43,15 +44,15 @@ export class LeadService {
     let existingUser: User | null = null;
     if (assignedTo) {
       if (![Role.Admin, Role.Manager].includes(user.role)) {
-        throw new UnauthorizedException('Admin or manger only can assign a lead to the user');
+        throw new UnauthorizedException('Only an Admin or Manager can assign a lead to a user.');
       }
       existingUser = await userRepo.findOne({ where: { id: assignedTo } });
       if (!existingUser) {
-        throw new BadRequestException('Invalid user id for lead assignment');
+        throw new BadRequestException('Invalid user ID for lead assignment.');
       }
     }
     if (leadExist) {
-      throw new BadRequestException('The lead is already present');
+      throw new BadRequestException('Lead already exists.');
     } else {
       const newLead: Lead = leadRepo.create({
         ...createLead,
@@ -93,18 +94,18 @@ export class LeadService {
       .leftJoinAndSelect('lead.leadActivities', 'leadActivities');
 
     const { limit, page, skip } = paginationParams(leadQuery.page, leadQuery.limit);
+    const FILTERS: FiltersMap = {
+      source: { column: 'lead.source', type: 'exact' },
+      email: { column: 'lead.email', type: 'exact' },
+      phone: { column: 'lead.phone', type: 'exact' },
+      name: { column: 'lead.name', type: 'ilike' },
+      company: { column: 'lead.company', type: 'ilike' },
+      status: { column: 'lead.status', type: 'exact' },
+      id: { column: 'lead.id', type: 'exact' },
+      assignedTo: { column: 'lead.assignedTo', type: 'exact' },
+    };
+    applyFilters(qb, FILTERS, leadQuery);
 
-    for (const [key, value] of Object.entries(leadQuery)) {
-      if (value == null || key === 'page' || key === 'limit') continue;
-
-      if (['source', 'email', 'phone'].includes(key)) {
-        qb.andWhere(`lead.${key} = :${key}`, { [key]: value });
-      } else if (['name', 'company'].includes(key)) {
-        qb.andWhere(`lead.${key} ILIKE :${key}`, { [key]: `%${value}%` });
-      } else {
-        qb.andWhere(`lead.${key} = :${key}`, { [key]: value });
-      }
-    }
     if (![Role.Admin, Role.Manager].includes(user.role)) {
       qb.andWhere(`user.id =:id`, { id: user.id });
     }
@@ -134,20 +135,20 @@ export class LeadService {
     let assignedUser: User | null = null;
     if (updateLeadDto.assignedTo) {
       if (user.role === Role.SalesRep) {
-        throw new UnauthorizedException('Not have enough authorization to assign a lead');
+        throw new UnauthorizedException('You are not authorized to assign a lead.');
       }
       assignedUser = await userRepo.findOne({ where: { id: updateLeadDto.assignedTo } });
       if (!assignedUser) {
-        throw new BadRequestException('Lead is not assigned to invalid id');
+        throw new BadRequestException('Invalid user ID specified for lead assignment.');
       }
     }
 
     const lead = await leadRepo.findOne({ where: { id } });
     if (!lead) {
-      throw new BadRequestException('Lead not found or invalid lead id');
+      throw new BadRequestException('Lead not found or invalid lead ID.');
     } else {
       if (lead.status == LeadStatus.Converted) {
-        throw new BadRequestException('Lead is already converted cannot update');
+        throw new BadRequestException('Lead has already been converted and cannot be updated.');
       }
 
       const { assignedTo, ...other } = updateLeadDto;
@@ -173,9 +174,16 @@ export class LeadService {
     stream.push(null);
 
     try {
+      const requiredHeaders = ['name', 'email', 'phone'];
       await new Promise<void>((resolve, reject) => {
         stream
           .pipe(csv())
+          .on('headers', (headers: string[]) => {
+            const missing = requiredHeaders.filter((h) => !headers.includes(h));
+            if (missing.length > 0) {
+              throw new Error(`Missing required columns: ${missing.join(', ')}`);
+            }
+          })
           .on('data', (row: CreateLeadDto) => {
             results.push({
               name: row['name'],
