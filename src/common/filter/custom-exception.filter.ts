@@ -48,10 +48,7 @@ export class CustomExceptionFilter implements ExceptionFilter {
       internalMessage = this.stringify(exception);
     }
 
-    this.logger.error(
-      `HTTP Exception [${request.method} ${request.url}] - ${internalMessage}`,
-      exception instanceof Error ? exception.stack : undefined,
-    );
+    this.logger.error(`HTTP Exception [${request.method} ${request.url}] - ${internalMessage}`);
 
     const safeMessage = isProd
       ? status >= 500

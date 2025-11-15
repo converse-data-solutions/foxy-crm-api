@@ -18,14 +18,16 @@ export function setCookie(payload: CookiePayload, res: Response) {
     secure: isProd,
     maxAge: 1000 * 60 * 60 * 24,
     path: '/',
-    sameSite: isProd ? 'strict' : 'lax',
+    sameSite: isProd ? 'none' : 'lax',
   };
   let cookieName = 'access_token';
   if (payload.accessToken) {
+    res.clearCookie(cookieName, defaultOptions);
     res.cookie(cookieName, payload.accessToken, defaultOptions);
   }
   cookieName = 'refresh_token';
   if (payload.refreshToken) {
+    res.clearCookie(cookieName, defaultOptions);
     res.cookie(cookieName, payload.refreshToken, defaultOptions);
   }
   res.status(HttpStatus.OK);

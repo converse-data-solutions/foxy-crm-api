@@ -26,6 +26,7 @@ async function bootstrap() {
     origin: CORS_URL,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
+    allowedHeaders: ['Content-Type', 'x-tenant-id', 'X-Tenant-Id'],
   });
 
   const config = new DocumentBuilder()
