@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { PageDto } from '../page-dto/page.dto';
-import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 import { Sanitize } from 'src/common/decorators/sanitize.decorator';
 
 export class LeadQueryDto extends PageDto {
@@ -27,20 +27,4 @@ export class LeadQueryDto extends PageDto {
   @ApiPropertyOptional({ example: 'XYZ Tech Corp' })
   @Sanitize()
   company?: string;
-
-  @ApiPropertyOptional({
-    description: 'Sort leads by source ASC or DESC',
-    example: 'ASC',
-  })
-  @IsOptional()
-  @IsEnum(['ASC', 'DESC'], { message: 'source must be ASC or DESC' })
-  source?: 'ASC' | 'DESC';
-
-  @ApiPropertyOptional({
-    description: 'Sort leads by status ASC or DESC',
-    example: 'ASC',
-  })
-  @IsOptional()
-  @IsEnum(['ASC', 'DESC'], { message: 'status must be ASC or DESC' })
-  status?: 'ASC' | 'DESC';
 }

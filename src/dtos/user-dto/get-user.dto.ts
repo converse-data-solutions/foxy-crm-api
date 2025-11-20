@@ -1,7 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString } from 'class-validator';
-import { Role } from 'src/enums/core-app.enum';
-import { StatusCause } from 'src/enums/status.enum';
+import { IsOptional, IsString } from 'class-validator';
 import { Sanitize } from 'src/common/decorators/sanitize.decorator';
 import { PageDto } from '../page-dto/page.dto';
 
@@ -40,12 +38,4 @@ export class GetUserDto extends PageDto {
   @IsOptional()
   @IsString()
   status?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'Sort users by role ASC or DESC',
-    example: 'ASC',
-  })
-  @IsOptional()
-  @IsEnum(['ASC', 'DESC'], { message: 'role must be ASC or DESC' })
-  role?: 'ASC' | 'DESC';
 }

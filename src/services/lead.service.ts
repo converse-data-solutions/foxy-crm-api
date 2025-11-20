@@ -103,14 +103,8 @@ export class LeadService {
       assignedTo: { column: 'lead.assignedTo', type: 'exact' },
     };
     applyFilters(qb, FILTERS, leadQuery);
-    if (leadQuery.source) {
-      qb.orderBy('lead.source', leadQuery.source);
-    }
-    if (leadQuery.status) {
-      qb.addOrderBy('lead.status', leadQuery.status);
-    }
-    if (![Role.Admin, Role.Manager, Role.SuperAdmin].includes(user.role)) {
-      qb.andWhere(`user.id =:id`, { id: user.id });
+    if (leadQuery.sortBy && leadQuery.sortDirection) {
+      qb.orderBy(`lead.${leadQuery.sortBy}`, leadQuery.sortDirection);
     }
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();

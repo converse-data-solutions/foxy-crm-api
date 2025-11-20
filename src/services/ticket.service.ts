@@ -89,8 +89,8 @@ export class TicketService {
     };
     applyFilters(qb, FILTERS, ticketQuery);
 
-    if (ticketQuery.status) {
-      qb.orderBy('ticket.status', ticketQuery.status);
+    if (ticketQuery.sortBy) {
+      qb.orderBy(`ticket.${ticketQuery.sortBy}`, ticketQuery.sortDirection);
     }
     if (![Role.Admin, Role.Manager, Role.SuperAdmin].includes(user.role)) {
       qb.andWhere(`user.id =:id`, { id: user.id });

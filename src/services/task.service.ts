@@ -98,15 +98,10 @@ export class TaskService {
       name: { column: 'task.name', type: 'ilike' },
     };
     applyFilters(qb, FILTERS, taskQuery);
-    if (taskQuery.priority) {
-      qb.orderBy('task.priority', taskQuery.priority);
+    if (taskQuery.sortBy && taskQuery.sortDirection) {
+      qb.orderBy(`task.${taskQuery.sortBy}`, taskQuery.sortDirection);
     }
-    if (taskQuery.type) {
-      qb.addOrderBy('task.type', taskQuery.type);
-    }
-    if (taskQuery.status) {
-      qb.addOrderBy('task.status', taskQuery.status);
-    }
+
     if (taskQuery.assignedTo) {
       qb.andWhere('user.name =:name', { name: taskQuery.assignedTo });
     }

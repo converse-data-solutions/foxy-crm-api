@@ -111,8 +111,8 @@ export class UserService {
       country: { column: 'user.country', type: 'like' },
       status: { column: 'user.status', type: 'exact' },
     };
-    if (userQuery.role) {
-      qb.orderBy('user.role', userQuery.role);
+    if (userQuery.sortBy && userQuery.sortDirection) {
+      qb.orderBy(`user.${userQuery.sortBy}`, userQuery.sortDirection);
     }
     applyFilters(qb, FILTERS, userQuery);
     let role: Role[] = [Role.SuperAdmin];
@@ -186,7 +186,7 @@ export class UserService {
       relations: { tenant: true },
     });
     if (!subscriptionExist) {
-      throw new BadRequestException('Invalid organization or tenant.');
+      throw new BadRequestException('Please do initial subscription to access further options.');
     }
     if (subscriptionExist.status === false && Environment.NODE_ENV === 'production') {
       throw new HttpException(
