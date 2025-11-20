@@ -30,7 +30,7 @@ import { CsrfHeader } from 'src/common/decorators/csrf-header.decorator';
 import { Response } from 'express';
 import path from 'path';
 
-@Roles(Role.Admin, Role.Manager)
+@Roles(Role.SuperAdmin, Role.Admin, Role.Manager)
 @Controller('leads')
 export class LeadController {
   constructor(
@@ -40,7 +40,7 @@ export class LeadController {
 
   @Post()
   @CsrfHeader()
-  @Roles(Role.Admin, Role.Manager, Role.SalesRep)
+  @Roles(Role.SuperAdmin, Role.Admin, Role.Manager, Role.SalesRep)
   @ApiOperation({ summary: 'Insert lead or create lead' })
   @ApiResponse({ status: 201, description: 'Lead created successfully' })
   async createLead(
@@ -84,7 +84,7 @@ export class LeadController {
 
   @Post(':id/conversion')
   @CsrfHeader()
-  @Roles(Role.Admin, Role.Manager, Role.SalesRep)
+  @Roles(Role.SuperAdmin, Role.Admin, Role.Manager, Role.SalesRep)
   @ApiOperation({ summary: 'Convert lead to contact' })
   @ApiResponse({ status: 200, description: 'Lead converted successfully' })
   async convertLead(
@@ -99,25 +99,25 @@ export class LeadController {
   @Get(':id/conversion-preview')
   @ApiOperation({ summary: 'Retrive lead preview' })
   @ApiResponse({ status: 200, description: 'Lead preview fetched successfully' })
-  @Roles(Role.Admin, Role.Manager, Role.SalesRep)
+  @Roles(Role.SuperAdmin, Role.Admin, Role.Manager, Role.SalesRep)
   async leadPreview(@Headers('x-tenant-id') tenantId: string, @Param('id') id: string) {
     return await this.leadConversionService.leadPreview(tenantId, id);
   }
 
   @Get()
-  @Roles(Role.Admin, Role.Manager, Role.SalesRep)
+  @Roles(Role.SuperAdmin, Role.Admin, Role.Manager, Role.SalesRep)
   @ApiOperation({ summary: 'Retrive lead based on query' })
   @ApiResponse({ status: 200, description: 'Lead fetched successfully' })
   async findAllLeads(
-    @Query() leadQuery: LeadQueryDto,
     @Headers('x-tenant-id') tenantId: string,
+    @Query() leadQuery: LeadQueryDto,
     @CurrentUser() user: User,
   ) {
     return this.leadService.findAllLeads(leadQuery, tenantId, user);
   }
 
   @Get('template')
-  @Roles(Role.Admin, Role.Manager, Role.SalesRep)
+  @Roles(Role.SuperAdmin, Role.Admin, Role.Manager, Role.SalesRep)
   @ApiOperation({ summary: 'Download the Lead Import Template' })
   async downloadTemplate(@Res() res: Response, @Headers('x-tenant-id') tenantId: string) {
     const filePath = path.join(__dirname, '../templates/lead-import-template.csv');
@@ -126,7 +126,7 @@ export class LeadController {
 
   @Put(':id')
   @CsrfHeader()
-  @Roles(Role.Admin, Role.Manager, Role.SalesRep)
+  @Roles(Role.SuperAdmin, Role.Admin, Role.Manager, Role.SalesRep)
   @ApiOperation({ summary: 'Update lead data' })
   @ApiResponse({ status: 200, description: 'Lead updated successfully' })
   async updateLead(

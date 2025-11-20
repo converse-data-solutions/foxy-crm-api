@@ -28,7 +28,7 @@ export class Coreapp1761542786729 implements MigrationInterface {
       `CREATE TABLE "leads" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "name" character varying(30) NOT NULL, "email" character varying(50) NOT NULL, "status" "leads_status_enum" NOT NULL DEFAULT 'new', "phone" character varying(20) NOT NULL, "company" character varying(100), "source" "leads_source_enum", "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "assigned_to" uuid, "contact_id" uuid, "created_by" uuid, "converted_by" uuid, CONSTRAINT "UQ_b3eea7add0e16594dba102716c5" UNIQUE ("email"), CONSTRAINT "UQ_42ebb4366d014febbcfdef39e36" UNIQUE ("phone"), CONSTRAINT "REL_517db338cbbdc2dcffd8dea4c9" UNIQUE ("contact_id"), CONSTRAINT "PK_cd102ed7a9a4ca7d4d8bfeba406" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
-      `CREATE TYPE "users_role_enum" AS ENUM('admin', 'manager', 'salesrep', 'support', 'technical')`,
+      `CREATE TYPE "users_role_enum" AS ENUM('super admin','admin', 'manager', 'salesrep', 'support', 'technical')`,
     );
     await queryRunner.query(
       `CREATE TYPE "users_status_cause_enum" AS ENUM('plan limit', 'admin disabled')`,

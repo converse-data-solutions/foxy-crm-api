@@ -88,7 +88,7 @@ export class DealService {
     const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };
     const deals: Partial<Deal>[] = data.map(({ value, ...deal }) => deal);
     let dealData: Partial<Deal>[] = data;
-    if (![Role.Admin].includes(user.role)) {
+    if (![Role.Admin, Role.SuperAdmin].includes(user.role)) {
       dealData = deals;
     }
     return {
@@ -124,7 +124,7 @@ export class DealService {
     }
 
     if (updateDeal.stage === DealStage.Completed) {
-      if (user.role !== Role.Admin && user.role !== Role.Manager) {
+      if (user.role !== Role.Admin && user.role !== Role.Manager && user.role !== Role.SuperAdmin) {
         throw new UnauthorizedException('Only admins or managers can mark a deal as completed.');
       }
 

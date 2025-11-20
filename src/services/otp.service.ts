@@ -125,7 +125,7 @@ export class OtpService {
     } else {
       otpFor = 'userSignup';
     }
-    const role = userExist instanceof Tenant ? Role.Admin : userExist.role;
+    const role = userExist instanceof Tenant ? Role.SuperAdmin : userExist.role;
     return {
       success: true,
       statusCode: HttpStatus.OK,

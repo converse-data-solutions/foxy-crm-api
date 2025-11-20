@@ -10,7 +10,7 @@ import { User } from 'src/database/entities/core-app-entities/user.entity';
 import { GetTicketDto } from 'src/dtos/ticket-dto/get-ticket.dto';
 import { CsrfHeader } from 'src/common/decorators/csrf-header.decorator';
 
-@Roles(Role.Admin, Role.Manager, Role.SalesRep, Role.Support)
+@Roles(Role.SuperAdmin, Role.Admin, Role.Manager, Role.SalesRep, Role.Support)
 @Controller('tickets')
 export class TicketController {
   constructor(private readonly ticketService: TicketService) {}

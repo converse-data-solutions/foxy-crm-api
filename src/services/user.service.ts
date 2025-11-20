@@ -44,18 +44,25 @@ export class UserService {
   ): Promise<APIResponse> {
     const userRepo = await getRepo(User, tenantId);
     const existUser = await userRepo.findOne({ where: { id } });
-    if (user.id !== id && user.role != Role.Admin) {
+    if (user.id !== id && user.role != Role.SuperAdmin && user.role != Role.Admin) {
       throw new UnauthorizedException('You are not authorized to modify other users.');
     }
-    if (updateUser.role && user.role != Role.Admin) {
-      throw new UnauthorizedException('Only administrators can update user roles.');
+    if (updateUser.role && user.role != Role.SuperAdmin) {
+      throw new UnauthorizedException('Only super admin can update user roles.');
     }
     if (!existUser) {
       throw new NotFoundException('User not found.');
     }
+    if (
+      [Role.Admin, Role.SuperAdmin].includes(existUser.role) &&
+      user.role !== Role.SuperAdmin &&
+      user.id !== id
+    ) {
+      throw new UnauthorizedException('You are not authorized to modify other users.');
+    }
     if (updateUser.email) {
-      if (existUser.role === Role.Admin) {
-        throw new UnauthorizedException('Administrator email cannot be changed.');
+      if (existUser.role === Role.SuperAdmin) {
+        throw new UnauthorizedException('Super administrator email cannot be changed.');
       }
       await this.tenantService.getTenant(updateUser.email);
     }
@@ -90,6 +97,7 @@ export class UserService {
   async getAllUsers(
     tenantId: string,
     userQuery: GetUserDto,
+    user: User,
   ): Promise<APIResponse<Omit<User, 'password' | 'otp'>[]>> {
     const userRepo = await getRepo(User, tenantId);
     const qb = userRepo.createQueryBuilder('user');
@@ -101,12 +109,20 @@ export class UserService {
       phone: { column: 'user.phone', type: 'like' },
       city: { column: 'user.city', type: 'like' },
       country: { column: 'user.country', type: 'like' },
-      role: { column: 'user.role', type: 'exact' },
-      statusCause: { column: 'user.status_cause', type: 'exact' },
       status: { column: 'user.status', type: 'exact' },
     };
+    if (userQuery.role) {
+      qb.orderBy('user.role', userQuery.role);
+    }
     applyFilters(qb, FILTERS, userQuery);
-
+    let role: Role[] = [Role.SuperAdmin];
+    if (user.role == Role.Admin) {
+      role = [...role, Role.Admin];
+    } else if (user.role == Role.Manager || user.role == Role.SalesRep) {
+      role = [...role, Role.Admin, Role.Manager];
+    }
+    qb.andWhere('user.role NOT IN (:...roles)', { roles: role });
+    qb.andWhere('user.id <> :id', { id: user.id });
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
     const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };
     return {

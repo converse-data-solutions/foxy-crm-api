@@ -43,8 +43,8 @@ export class LeadService {
     const { assignedTo, ...createLead } = createLeadDto;
     let existingUser: User | null = null;
     if (assignedTo) {
-      if (![Role.Admin, Role.Manager].includes(user.role)) {
-        throw new UnauthorizedException('Only an Admin or Manager can assign a lead to a user.');
+      if (![Role.Admin, Role.Manager, Role.SuperAdmin].includes(user.role)) {
+        throw new UnauthorizedException('Only Admins or Managers can assign a lead to a user.');
       }
       existingUser = await userRepo.findOne({ where: { id: assignedTo } });
       if (!existingUser) {
@@ -95,18 +95,21 @@ export class LeadService {
 
     const { limit, page, skip } = paginationParams(leadQuery.page, leadQuery.limit);
     const FILTERS: FiltersMap = {
-      source: { column: 'lead.source', type: 'exact' },
-      email: { column: 'lead.email', type: 'exact' },
-      phone: { column: 'lead.phone', type: 'exact' },
+      email: { column: 'lead.email', type: 'ilike' },
+      phone: { column: 'lead.phone', type: 'ilike' },
       name: { column: 'lead.name', type: 'ilike' },
       company: { column: 'lead.company', type: 'ilike' },
-      status: { column: 'lead.status', type: 'exact' },
       id: { column: 'lead.id', type: 'exact' },
       assignedTo: { column: 'lead.assignedTo', type: 'exact' },
     };
     applyFilters(qb, FILTERS, leadQuery);
-
-    if (![Role.Admin, Role.Manager].includes(user.role)) {
+    if (leadQuery.source) {
+      qb.orderBy('lead.source', leadQuery.source);
+    }
+    if (leadQuery.status) {
+      qb.addOrderBy('lead.status', leadQuery.status);
+    }
+    if (![Role.Admin, Role.Manager, Role.SuperAdmin].includes(user.role)) {
       qb.andWhere(`user.id =:id`, { id: user.id });
     }
 
@@ -134,7 +137,7 @@ export class LeadService {
     const userRepo = await getRepo(User, tenant);
     let assignedUser: User | null = null;
     if (updateLeadDto.assignedTo) {
-      if (user.role === Role.SalesRep) {
+      if (![Role.Admin, Role.SuperAdmin, Role.Manager].includes(user.role)) {
         throw new UnauthorizedException('You are not authorized to assign a lead.');
       }
       assignedUser = await userRepo.findOne({ where: { id: updateLeadDto.assignedTo } });

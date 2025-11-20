@@ -95,16 +95,22 @@ export class TaskService {
 
     const { limit, page, skip } = paginationParams(taskQuery.page, taskQuery.limit);
     const FILTERS: FiltersMap = {
-      entityName: { column: 'task.entityName', type: 'exact' },
-      entityId: { column: 'task.entityId', type: 'exact' },
-      type: { column: 'task.type', type: 'exact' },
-      status: { column: 'task.status', type: 'exact' },
-      priority: { column: 'task.priority', type: 'exact' },
       name: { column: 'task.name', type: 'ilike' },
     };
     applyFilters(qb, FILTERS, taskQuery);
-
-    if (![Role.Admin, Role.Manager].includes(user.role)) {
+    if (taskQuery.priority) {
+      qb.orderBy('task.priority', taskQuery.priority);
+    }
+    if (taskQuery.type) {
+      qb.addOrderBy('task.type', taskQuery.type);
+    }
+    if (taskQuery.status) {
+      qb.addOrderBy('task.status', taskQuery.status);
+    }
+    if (taskQuery.assignedTo) {
+      qb.andWhere('user.name =:name', { name: taskQuery.assignedTo });
+    }
+    if (![Role.Admin, Role.Manager, Role.SuperAdmin].includes(user.role)) {
       qb.andWhere(`user.id =:id`, { id: user.id });
     } else {
       if (taskQuery.assignedTo) {
@@ -137,13 +143,13 @@ export class TaskService {
       throw new BadRequestException('The specified task ID is invalid or the task does not exist.');
     }
     for (const [key, value] of Object.entries(updateTask)) {
-      if (value && ![Role.Admin, Role.Manager].includes(user.role)) {
+      if (value && ![Role.Admin, Role.Manager, Role.SuperAdmin].includes(user.role)) {
         throw new UnauthorizedException('Not authorized to update task details');
       }
     }
     taskRepo.merge(taskExist, updateTask);
     if (assignedTo) {
-      if (![Role.Admin, Role.Manager].includes(user.role)) {
+      if (![Role.Admin, Role.Manager, Role.SuperAdmin].includes(user.role)) {
         throw new UnauthorizedException('Not authorized to update task details');
       }
       const existUser = await userRepo.findOne({ where: { id: assignedTo } });

@@ -8,7 +8,7 @@ import { CreateLeadActivityDto } from 'src/dtos/activity-dto/create-lead-activit
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CsrfHeader } from 'src/common/decorators/csrf-header.decorator';
 
-@Roles(Role.Admin, Role.SalesRep, Role.Manager)
+@Roles(Role.SuperAdmin, Role.Admin, Role.SalesRep, Role.Manager)
 @Controller('lead/activities')
 export class LeadActivityController {
   constructor(private readonly leadActivityService: LeadActivityService) {}

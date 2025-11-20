@@ -1,13 +1,18 @@
-import { ApiPropertyOptional, IntersectionType, PartialType, PickType } from '@nestjs/swagger';
-import { IsOptional, IsDateString, IsDecimal } from 'class-validator';
-import { CreateDealDto } from './create-deal.dto';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsDateString, IsDecimal, IsString } from 'class-validator';
 import { PageDto } from '../page-dto/page.dto';
 import { Sanitize } from 'src/common/decorators/sanitize.decorator';
 
-export class GetDealDto extends IntersectionType(
-  PartialType(PickType(CreateDealDto, ['name'] as const)),
-  PageDto,
-) {
+export class GetDealDto extends PageDto {
+  @ApiPropertyOptional({
+    description: 'Name of the opportunity',
+    example: 'Acme Corp Website Redesign',
+  })
+  @IsOptional()
+  @IsString({ message: 'Name must be string' })
+  @Sanitize()
+  name: string;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsDecimal(

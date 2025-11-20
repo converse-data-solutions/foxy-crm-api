@@ -10,7 +10,7 @@ import { UpdateDealDto } from 'src/dtos/deal-dto/update-deal.dto';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CsrfHeader } from 'src/common/decorators/csrf-header.decorator';
 
-@Roles(Role.Admin, Role.Manager)
+@Roles(Role.SuperAdmin, Role.Admin, Role.Manager)
 @Controller('deals')
 export class DealController {
   constructor(private readonly dealService: DealService) {}
@@ -28,7 +28,7 @@ export class DealController {
   }
 
   @Get()
-  @Roles(Role.Admin, Role.Manager, Role.SalesRep)
+  @Roles(Role.SuperAdmin, Role.Admin, Role.Manager, Role.SalesRep)
   @ApiOperation({ summary: 'Get deal info' })
   @ApiResponse({ status: 200, description: 'Deal info retrived successfully' })
   async findAllDeals(

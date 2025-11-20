@@ -90,7 +90,7 @@ export class ContactService {
     };
     applyFilters(qb, FILTERS, contactQuery);
 
-    if (![Role.Admin, Role.Manager].includes(user.role)) {
+    if (![Role.Admin, Role.Manager, Role.SuperAdmin].includes(user.role)) {
       qb.andWhere(`user.id =:id`, { id: user.id });
     }
 
@@ -122,7 +122,10 @@ export class ContactService {
     if (!contact) {
       throw new NotFoundException('Contact not found or invalid contact id');
     }
-    if (updateContactDto.assignedTo && ![Role.Admin, Role.Manager].includes(user.role)) {
+    if (
+      updateContactDto.assignedTo &&
+      ![Role.SuperAdmin, Role.Admin, Role.Manager].includes(user.role)
+    ) {
       throw new UnauthorizedException('You are not authorized to assign contacts.');
     } else {
       assignedUser = await userRepo.findOne({ where: { id: updateContactDto.assignedTo } });

@@ -1,13 +1,27 @@
-import { ApiPropertyOptional, IntersectionType, OmitType, PartialType } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString } from 'class-validator';
-import { CreateContactDto } from './create-contact.dto';
 import { PageDto } from '../page-dto/page.dto';
 import { Sanitize } from 'src/common/decorators/sanitize.decorator';
 
-export class GetContactDto extends IntersectionType(
-  PartialType(OmitType(CreateContactDto, ['account', 'assignedTo'] as const)),
-  PageDto,
-) {
+export class GetContactDto extends PageDto {
+  @ApiPropertyOptional({ example: 'John Doe' })
+  @IsOptional()
+  @IsString({ message: 'Name must be a string' })
+  @Sanitize()
+  name: string;
+
+  @ApiPropertyOptional({ example: 'john.doe@example.com' })
+  @IsOptional()
+  @IsString()
+  @Sanitize()
+  email: string;
+
+  @ApiPropertyOptional({ example: '+1234567890' })
+  @IsOptional()
+  @IsString()
+  @Sanitize()
+  phone: string;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString({ message: 'Account should be string' })

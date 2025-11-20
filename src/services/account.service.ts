@@ -87,7 +87,12 @@ export class AccountService {
       throw new BadRequestException('Invalid account ID');
     }
 
-    if (user && account.createdBy?.id !== user.id && user.role !== Role.Admin) {
+    if (
+      user &&
+      account.createdBy?.id !== user.id &&
+      user.role !== Role.Admin &&
+      user.role !== Role.SuperAdmin
+    ) {
       throw new ForbiddenException('You do not have permission to update this account.');
     }
     const { country, ...updateAccount } = updateAccountDto;

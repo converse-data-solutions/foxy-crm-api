@@ -10,7 +10,7 @@ import { Role } from 'src/enums/core-app.enum';
 import { GetTaskDto } from 'src/dtos/task-dto/get-task.dto';
 import { CsrfHeader } from 'src/common/decorators/csrf-header.decorator';
 
-@Roles(Role.Admin, Role.Manager)
+@Roles(Role.SuperAdmin, Role.Admin, Role.Manager)
 @Controller('tasks')
 export class TaskController {
   constructor(private readonly taskService: TaskService) {}
@@ -28,7 +28,7 @@ export class TaskController {
   }
 
   @Get()
-  @Roles(Role.Admin, Role.Manager, Role.Support, Role.SalesRep)
+  @Roles(Role.SuperAdmin, Role.Admin, Role.Manager, Role.Support, Role.SalesRep)
   @ApiOperation({ summary: 'Retrive task details' })
   @ApiResponse({ status: 200, description: 'Task fetched successfully' })
   async findAllTasks(
@@ -41,7 +41,7 @@ export class TaskController {
 
   @Put(':id')
   @CsrfHeader()
-  @Roles(Role.Admin, Role.Manager, Role.Support, Role.SalesRep)
+  @Roles(Role.SuperAdmin, Role.Admin, Role.Manager, Role.Support, Role.SalesRep)
   @ApiOperation({ summary: 'Update task details' })
   @ApiResponse({ status: 200, description: 'Task updated successfully' })
   async updateTask(

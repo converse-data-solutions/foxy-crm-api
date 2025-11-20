@@ -33,8 +33,12 @@ export class LeadActivityService {
     if (!lead) {
       throw new NotFoundException('Lead not found or invalid lead ID.');
     }
-    if (user.role !== Role.Admin && lead.assignedTo?.email !== user.email) {
-      throw new UnauthorizedException('You are not authorized to assign a lead.');
+    if (
+      user.role !== Role.Admin &&
+      user.role !== Role.SuperAdmin &&
+      lead.assignedTo?.email !== user.email
+    ) {
+      throw new UnauthorizedException('You are not authorized to create lead activity.');
     }
     if (lead.status === LeadStatus.Converted) {
       throw new BadRequestException('Cannot create a lead activity after the lead is converted.');
@@ -77,7 +81,8 @@ export class LeadActivityService {
       lead.assignedTo &&
       lead.assignedTo.id !== user.id &&
       user.role !== Role.Admin &&
-      user.role !== Role.Manager
+      user.role !== Role.Manager &&
+      user.role !== Role.SuperAdmin
     ) {
       throw new NotFoundException('You do not have permission to view activities for this lead.');
     }

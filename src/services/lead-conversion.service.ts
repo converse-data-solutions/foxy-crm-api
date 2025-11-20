@@ -68,7 +68,11 @@ export class LeadConversionService {
     }
     if (!lead.assignedTo && user.role == Role.SalesRep) {
       throw new UnauthorizedException('You are not authorized to convert another user’s lead.');
-    } else if (lead.assignedTo && lead.assignedTo.id != user.id && user.role == Role.SalesRep) {
+    } else if (
+      lead.assignedTo &&
+      lead.assignedTo.id != user.id &&
+      ![Role.Admin, Role.Manager, Role.SuperAdmin].includes(user.role)
+    ) {
       throw new UnauthorizedException('You are not authorized to convert another user’s lead.');
     }
     if (lead.status === LeadStatus.Disqualified) {

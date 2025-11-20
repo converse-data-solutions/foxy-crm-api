@@ -57,7 +57,7 @@ export class TenantService {
         address: tenant.address,
         emailVerified: true,
         city: tenant.city,
-        role: Role.Admin,
+        role: Role.SuperAdmin,
         email: tenant.email,
         refreshToken: token,
       });

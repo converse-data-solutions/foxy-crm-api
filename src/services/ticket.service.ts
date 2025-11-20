@@ -83,14 +83,16 @@ export class TicketService {
     const { limit, page, skip } = paginationParams(ticketQuery.page, ticketQuery.limit);
     const FILTERS: FiltersMap = {
       title: { column: 'ticket.title', type: 'ilike' },
-      status: { column: 'ticket.status', type: 'exact' },
       deal: { column: 'deal.name', type: 'ilike' },
       resolvedFrom: { column: 'ticket.resolved_at', type: 'gte' },
       resolvedTo: { column: 'ticket.resolved_at', type: 'lte' },
     };
     applyFilters(qb, FILTERS, ticketQuery);
 
-    if (![Role.Admin, Role.Manager].includes(user.role)) {
+    if (ticketQuery.status) {
+      qb.orderBy('ticket.status', ticketQuery.status);
+    }
+    if (![Role.Admin, Role.Manager, Role.SuperAdmin].includes(user.role)) {
       qb.andWhere(`user.id =:id`, { id: user.id });
     }
 
@@ -140,6 +142,7 @@ export class TicketService {
         if (
           user.role !== Role.Admin &&
           user.role !== Role.Manager &&
+          user.role !== Role.SuperAdmin &&
           updateTicketDto.status === TicketStatus.Closed
         ) {
           throw new UnauthorizedException('You are not authorized to close this ticket.');
@@ -163,7 +166,7 @@ export class TicketService {
     }
     if (
       (updateTicketDto.title || updateTicketDto.description) &&
-      ![Role.Admin, Role.Manager].includes(user.role)
+      ![Role.Admin, Role.Manager, Role.SuperAdmin].includes(user.role)
     ) {
       throw new UnauthorizedException('You are not authorized to update ticket details.');
     }

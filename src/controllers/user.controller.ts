@@ -15,11 +15,15 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get()
-  @Roles(Role.Admin, Role.Manager, Role.SalesRep)
+  @Roles(Role.SuperAdmin, Role.Admin, Role.Manager, Role.SalesRep)
   @ApiOperation({ summary: 'Retrive all users' })
   @ApiResponse({ status: 200, description: 'Users retrived successfully' })
-  async getAllUsers(@Headers('x-tenant-id') tenantId: string, @Query() userQuery: GetUserDto) {
-    return await this.userService.getAllUsers(tenantId, userQuery);
+  async getAllUsers(
+    @Headers('x-tenant-id') tenantId: string,
+    @CurrentUser() user: User,
+    @Query() userQuery: GetUserDto,
+  ) {
+    return await this.userService.getAllUsers(tenantId, userQuery, user);
   }
 
   @Get('me')
@@ -36,7 +40,7 @@ export class UserController {
 
   @Put(':id')
   @CsrfHeader()
-  @Roles(Role.Admin, Role.Manager, Role.SalesRep)
+  @Roles(Role.SuperAdmin, Role.Admin, Role.Manager, Role.SalesRep)
   @ApiOperation({ summary: 'Update user data' })
   @ApiResponse({ status: 200, description: 'User updated successfully' })
   async updateUser(
