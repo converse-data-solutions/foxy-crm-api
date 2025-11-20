@@ -1,6 +1,6 @@
 import { ObjectLiteral, SelectQueryBuilder } from 'typeorm';
 
-export type FilterType = 'exact' | 'ilike' | 'gte' | 'lte' | 'like';
+export type FilterType = 'exact' | 'ilike' | 'gte' | 'lte' | 'ilike';
 export type FiltersMap = Record<string, { column: string; type: FilterType }>;
 
 export function applyFilters<T extends ObjectLiteral, Q extends Record<keyof Q & string, unknown>>(
@@ -32,7 +32,7 @@ export function applyFilters<T extends ObjectLiteral, Q extends Record<keyof Q &
         qb.andWhere(`${filter.column} ILIKE :${paramName}`, { [paramName]: `%${rawValue}%` });
         break;
 
-      case 'like':
+      case 'ilike':
         if (typeof rawValue !== 'string') continue;
         qb.andWhere(`${filter.column} LIKE :${paramName}`, { [paramName]: `%${rawValue}%` });
         break;

@@ -104,11 +104,11 @@ export class UserService {
 
     const { limit, page, skip } = paginationParams(userQuery.page, userQuery.limit);
     const FILTERS: FiltersMap = {
-      name: { column: 'user.name', type: 'like' },
-      email: { column: 'user.email', type: 'like' },
-      phone: { column: 'user.phone', type: 'like' },
-      city: { column: 'user.city', type: 'like' },
-      country: { column: 'user.country', type: 'like' },
+      name: { column: 'user.name', type: 'ilike' },
+      email: { column: 'user.email', type: 'ilike' },
+      phone: { column: 'user.phone', type: 'ilike' },
+      city: { column: 'user.city', type: 'ilike' },
+      country: { column: 'user.country', type: 'ilike' },
       status: { column: 'user.status', type: 'exact' },
     };
     if (userQuery.sortBy && userQuery.sortDirection) {
