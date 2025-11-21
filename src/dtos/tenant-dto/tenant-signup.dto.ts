@@ -6,7 +6,7 @@ export class TenantSignupDto {
   @IsDefined({ message: 'Organization name is required' })
   @IsString({ message: 'Organization name must be a string' })
   @ApiProperty({ example: 'Abc Tech' })
-  @Length(5, 30, { message: 'Organization name must be between 5 and 30 characters' })
+  @Length(2, 30, { message: 'Organization name must be between 2 and 30 characters' })
   @Sanitize()
   organizationName: string;
 

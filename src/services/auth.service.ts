@@ -139,6 +139,7 @@ export class AuthService {
         throw new UnauthorizedException('Access token not found');
       }
       const payload = await this.tokenService.verifyAccessToken(accessToken);
+      const tenant = await this.tenantService.getTenant(payload.email);
       req.user = payload;
       res.clearCookie('x-csrf-secret', { path: '/' });
       const token = csrfUtils.generateCsrfToken(req, res, {
@@ -148,7 +149,7 @@ export class AuthService {
         success: true,
         statusCode: HttpStatus.OK,
         message: 'Csrf token fetched successfully',
-        data: { csrfToken: token },
+        data: { csrfToken: token, xTenantId: tenant.schemaName },
       });
     } catch (err) {
       this.loggerService.logError(`CSRF token generation failed: ${err.message}`);

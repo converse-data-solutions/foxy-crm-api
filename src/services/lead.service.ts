@@ -26,7 +26,6 @@ import { MetricDto } from 'src/dtos/metric-dto/metric.dto';
 import { bulkLeadFailureTemplate } from 'src/templates/bulk-failure.template';
 import { EmailService } from './email.service';
 import { applyFilters, FiltersMap } from 'src/shared/utils/query-filter.util';
-import { LeadActivityService } from './lead-activity.service';
 import { LeadConversionService } from './lead-conversion.service';
 import { LeadToContactDto } from 'src/dtos/lead-dto/lead-to-contact.dto';
 
@@ -156,6 +155,9 @@ export class LeadService {
     } else {
       if (lead.status == LeadStatus.Converted) {
         throw new BadRequestException('Lead has already been converted and cannot be updated.');
+      }
+      if (lead.status == LeadStatus.Disqualified && updateLeadDto.status !== LeadStatus.Qualified) {
+        throw new BadRequestException('Qualify this lead for futher procedure');
       }
       if (updateLeadDto.status === LeadStatus.Converted) {
         updateLeadDto.status = undefined;
