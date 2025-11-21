@@ -68,7 +68,16 @@ export class LeadActivityService {
   async findAllLeadActivities(tenantId: string, user: User, leadId: string): Promise<APIResponse> {
     const leadActivityRepo = await getRepo<LeadActivity>(LeadActivity, tenantId);
     const leadRepo = await getRepo(Lead, tenantId);
-    const lead = await leadRepo.findOne({ where: { id: leadId, assignedTo: { id: user.id } } });
+    let lead: Lead | null;
+    if ([Role.Admin, Role.SuperAdmin, Role.Manager].includes(user.role)) {
+      lead = await leadRepo.findOne({
+        where: { id: leadId },
+      });
+    } else {
+      lead = await leadRepo.findOne({
+        where: { id: leadId, assignedTo: { id: user.id } },
+      });
+    }
     const noteRepo = await getRepo(Note, tenantId);
     const notes = await noteRepo.find({
       where: { entityId: leadId, entityName: NotesEntityName.Lead },
