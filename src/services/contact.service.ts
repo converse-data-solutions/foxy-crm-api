@@ -79,8 +79,7 @@ export class ContactService {
     const noteRepo = await getRepo<Note>(Note, tenantId);
     const qb = contactRepo
       .createQueryBuilder('contact')
-      .leftJoinAndSelect('contact.accountId', 'account')
-      .leftJoinAndSelect('contact.notes', 'note');
+      .leftJoinAndSelect('contact.accountId', 'account');
 
     const { limit, page, skip } = paginationParams(contactQuery.page, contactQuery.limit);
     const FILTERS: FiltersMap = {

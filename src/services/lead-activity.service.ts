@@ -14,6 +14,7 @@ import { CreateLeadActivityDto } from 'src/dtos/activity-dto/create-lead-activit
 import { Role } from 'src/enums/core-app.enum';
 import { NotesEntityName } from 'src/enums/lead-activity.enum';
 import { LeadStatus } from 'src/enums/status.enum';
+import { ActivityWithNote } from 'src/interfaces/activity-note.interface';
 import { getRepo } from 'src/shared/database-connection/get-connection';
 
 @Injectable()
@@ -44,9 +45,9 @@ export class LeadActivityService {
       throw new BadRequestException('Cannot create a lead activity after the lead is converted.');
     }
     const { notes, leadId, ...leadActivity } = createLeadActivityDto;
-
+    let note: Note | null = null;
     if (notes) {
-      await noteRepo.save({
+      note = await noteRepo.save({
         content: notes,
         entityId: lead.id,
         entityName: NotesEntityName.Lead,
@@ -57,6 +58,7 @@ export class LeadActivityService {
       ...leadActivity,
       leadId: lead,
       createdBy: user,
+      noteId: note ? note.id : undefined,
     });
     return {
       success: true,
@@ -101,11 +103,19 @@ export class LeadActivityService {
     if (leadActivities.length === 0) {
       throw new NotFoundException('No activities found for this lead.');
     }
+    const result: ActivityWithNote[] = leadActivities.map((activity) => {
+      const note = notes.find((note) => note.id === activity.noteId);
+      return {
+        activity,
+        note: note || null,
+      };
+    });
+
     return {
       success: true,
       statusCode: HttpStatus.OK,
       message: 'Lead activities fetched successfully',
-      data: { leadActivities, notes },
+      data: result,
     };
   }
 }

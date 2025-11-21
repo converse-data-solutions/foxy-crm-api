@@ -1,4 +1,10 @@
-import { BadRequestException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpStatus,
+  Inject,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { CreateLeadDto } from '../dtos/lead-dto/create-lead.dto';
 import { UpdateLeadDto } from '../dtos/lead-dto/update-lead.dto';
 import { getRepo } from 'src/shared/database-connection/get-connection';
@@ -20,6 +26,9 @@ import { MetricDto } from 'src/dtos/metric-dto/metric.dto';
 import { bulkLeadFailureTemplate } from 'src/templates/bulk-failure.template';
 import { EmailService } from './email.service';
 import { applyFilters, FiltersMap } from 'src/shared/utils/query-filter.util';
+import { LeadActivityService } from './lead-activity.service';
+import { LeadConversionService } from './lead-conversion.service';
+import { LeadToContactDto } from 'src/dtos/lead-dto/lead-to-contact.dto';
 
 interface SerializedBuffer {
   type: 'Buffer';
@@ -32,6 +41,7 @@ export class LeadService {
     @InjectQueue('file-import') private readonly fileQueue: Queue,
     private readonly metricService: MetricService,
     private readonly emailService: EmailService,
+    private readonly leadConversionService: LeadConversionService,
   ) {}
 
   async createLead(createLeadDto: CreateLeadDto, tenantId: string, user: User) {
@@ -147,7 +157,11 @@ export class LeadService {
       if (lead.status == LeadStatus.Converted) {
         throw new BadRequestException('Lead has already been converted and cannot be updated.');
       }
-
+      if (updateLeadDto.status === LeadStatus.Converted) {
+        updateLeadDto.status = undefined;
+        const payload = { account: updateLeadDto.account } as LeadToContactDto;
+        await this.leadConversionService.convertLead(tenant, id, user, payload);
+      }
       const { assignedTo, ...other } = updateLeadDto;
       leadRepo.merge(lead, other);
       lead.assignedTo = assignedUser ? assignedUser : undefined;
