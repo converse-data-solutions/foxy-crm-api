@@ -24,6 +24,7 @@ import { paginationParams } from 'src/shared/utils/pagination-params.util';
 import { taskAssignmentTemplate } from 'src/templates/task-assignment.template';
 import { Repository } from 'typeorm';
 import { EmailService } from './email.service';
+import { applyFilters, FiltersMap } from 'src/shared/utils/query-filter.util';
 
 @Injectable()
 export class TaskService {
@@ -48,14 +49,14 @@ export class TaskService {
 
     const userExist = await userRepo.findOne({ where: { id: assignedTo } });
     if (!userExist) {
-      throw new BadRequestException('Invalid user id');
+      throw new BadRequestException('The assigned user ID is invalid.');
     }
     if (createTaskDto.entityName == EntityName.Deal) {
       const dealExist = await dealRepo.findOne({ where: { id: entityId } });
       if (!dealExist) {
         throw new BadRequestException('Invalid entity id or id not found in deal entity');
       } else if (dealExist.stage === DealStage.Completed) {
-        throw new BadRequestException('Task is not created for completed deal');
+        throw new BadRequestException('Cannot create a task for a completed deal.');
       } else if (dealExist.stage != DealStage.Accepted) {
         throw new BadRequestException('Deal not accepted unable to create task');
       }
@@ -72,7 +73,7 @@ export class TaskService {
     });
 
     if (taskExist) {
-      throw new ConflictException('Task with this name is already present');
+      throw new ConflictException('Task with this name is already exists');
     }
     const newTask: Task = await taskRepo.save({
       assignedTo: userExist,
@@ -93,17 +94,18 @@ export class TaskService {
     const qb = taskRepo.createQueryBuilder('task').leftJoin('task.assignedTo', 'user');
 
     const { limit, page, skip } = paginationParams(taskQuery.page, taskQuery.limit);
-
-    for (const [key, value] of Object.entries(taskQuery)) {
-      if (value == null || key === 'page' || key === 'limit') {
-        continue;
-      } else if (['entityName', 'entityId', 'type', 'status', 'priority'].includes(key)) {
-        qb.andWhere(`task.${key} =:${key}`, { [key]: value });
-      } else if (key === 'name') {
-        qb.andWhere(`task.name ILIKE :name`, { name: `%${value}%` });
-      }
+    const FILTERS: FiltersMap = {
+      name: { column: 'task.name', type: 'ilike' },
+    };
+    applyFilters(qb, FILTERS, taskQuery);
+    if (taskQuery.sortBy && taskQuery.sortDirection) {
+      qb.orderBy(`task.${taskQuery.sortBy}`, taskQuery.sortDirection);
     }
-    if (![Role.Admin, Role.Manager].includes(user.role)) {
+
+    if (taskQuery.assignedTo) {
+      qb.andWhere('user.name =:name', { name: taskQuery.assignedTo });
+    }
+    if (![Role.Admin, Role.Manager, Role.SuperAdmin].includes(user.role)) {
       qb.andWhere(`user.id =:id`, { id: user.id });
     } else {
       if (taskQuery.assignedTo) {
@@ -133,16 +135,16 @@ export class TaskService {
     const taskExist = await taskRepo.findOne({ where: { id }, relations: { assignedTo: true } });
     const { status, assignedTo, ...updateTask } = updateTaskDto;
     if (!taskExist) {
-      throw new BadRequestException('Invalid task id or task not exist');
+      throw new BadRequestException('The specified task ID is invalid or the task does not exist.');
     }
     for (const [key, value] of Object.entries(updateTask)) {
-      if (value && ![Role.Admin, Role.Manager].includes(user.role)) {
+      if (value && ![Role.Admin, Role.Manager, Role.SuperAdmin].includes(user.role)) {
         throw new UnauthorizedException('Not authorized to update task details');
       }
     }
     taskRepo.merge(taskExist, updateTask);
     if (assignedTo) {
-      if (![Role.Admin, Role.Manager].includes(user.role)) {
+      if (![Role.Admin, Role.Manager, Role.SuperAdmin].includes(user.role)) {
         throw new UnauthorizedException('Not authorized to update task details');
       }
       const existUser = await userRepo.findOne({ where: { id: assignedTo } });

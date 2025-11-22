@@ -25,7 +25,10 @@ npm run test:watch         # Run tests in watch mode
 npm run test:e2e           # Run e2e tests
 npm run test:cov           # Generate coverage report
 npm run test:debug         # Debug tests
+npm run test -- <file>     # Run specific test file
 ```
+
+Jest configuration: unit tests match `*.spec.ts` in `src/`, e2e tests match `*.e2e-spec.ts` in `test/`
 
 ### Code Quality
 ```bash
@@ -51,7 +54,11 @@ npm run migration:run:core-app         # Run migrations
 npm run migration:revert:core-app      # Revert last migration
 ```
 
-Note: Migrations run automatically on application startup (see src/main.ts:38).
+**Migration Strategy:**
+- Base migrations run automatically on application startup (src/main.ts:38)
+- Tenant migrations execute dynamically during tenant creation via `tenantSetup()`
+- Each tenant has isolated migration history in their PostgreSQL schema
+- When a new tenant is created: schema is created → migrations run → admin user seeded
 
 ## Architecture
 
@@ -128,7 +135,9 @@ Real-time metric updates via Socket.IO (src/gateway/crm.gateway.ts):
 
 ### API Documentation
 
-Swagger UI available at `/swagger` endpoint with cookie-based auth.
+- Swagger UI available at `http://localhost:8000/swagger` with cookie-based auth
+- All routes automatically prefixed with `/api/v1` (configured in src/main.ts:16)
+- Application runs on port 8000 by default
 
 ### Logging
 
@@ -175,3 +184,4 @@ Subscription plans are automatically seeded on startup via `SeedService` (src/se
 - Cookie-based authentication
 - Rate limiting via ThrottlerModule (10 requests per 60s)
 - Raw body parser for Stripe webhooks at `/api/v1/stripe/webhook`
+- always consider fixing lint issues on file changes

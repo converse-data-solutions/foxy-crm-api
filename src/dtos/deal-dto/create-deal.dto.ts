@@ -8,6 +8,7 @@ import {
   Length,
   IsDecimal,
 } from 'class-validator';
+import { Sanitize } from 'src/common/decorators/sanitize.decorator';
 
 export class CreateDealDto {
   @ApiProperty({
@@ -16,7 +17,8 @@ export class CreateDealDto {
   })
   @IsDefined({ message: 'Name field is required' })
   @IsString({ message: 'Name must be string' })
-  @Length(3, 40, { message: 'Name must be between 3 and 40 characters' })
+  @Length(2, 40, { message: 'Name must be between 2 and 40 characters' })
+  @Sanitize()
   name: string;
 
   @ApiProperty({
@@ -46,6 +48,6 @@ export class CreateDealDto {
     required: false,
   })
   @IsDefined({ message: 'Contact id is required' })
-  @IsUUID()
+  @IsUUID('4', { message: 'Contact ID should be UUID' })
   contactId: string;
 }

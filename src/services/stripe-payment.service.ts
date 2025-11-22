@@ -66,7 +66,7 @@ export class StripePaymentService {
     const session = event.data.object as Stripe.Checkout.Session;
     const secreteKey = STRIPE.stripeSecreteKey;
     if (!secreteKey) {
-      throw new InternalServerErrorException('Stripe Secrete key is missing');
+      throw new InternalServerErrorException('Stripe secret key is missing.');
     }
 
     // Retrieve session details

@@ -18,6 +18,9 @@ export class LeadActivity {
   @Column({ name: 'activity_date', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   activityDate: Date;
 
+  @Column({ name: 'note_id', type: 'varchar', length: 40, nullable: true })
+  noteId?: string;
+
   @Column({ name: 'created_at', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
