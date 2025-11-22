@@ -30,7 +30,7 @@ export class CreateLeadDto {
   @IsOptional()
   @IsString({ message: 'Company name must be a string' })
   @ApiPropertyOptional({ example: 'XYZ Tech Corp' })
-  @Length(5, 100, { message: 'Company must be between 5 and 100 characters' })
+  @Length(2, 100, { message: 'Company must be between 2 and 100 characters' })
   @Sanitize()
   company?: string;
 

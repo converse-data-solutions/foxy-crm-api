@@ -6,14 +6,14 @@ export class TenantSignupDto {
   @IsDefined({ message: 'Organization name is required' })
   @IsString({ message: 'Organization name must be a string' })
   @ApiProperty({ example: 'Abc Tech' })
-  @Length(2, 30, { message: 'Organization name must be between 2 and 30 characters' })
+  @Length(2, 50, { message: 'Organization name must be between 2 and 50 characters' })
   @Sanitize()
   organizationName: string;
 
   @IsDefined({ message: 'User name is required' })
   @IsString({ message: 'User name must be a string' })
   @ApiProperty({ example: 'navaneethan' })
-  @Length(3, 30, { message: 'User name must be between 3 and 30 characters' })
+  @Length(2, 50, { message: 'User name must be between 2 and 50 characters' })
   @Sanitize()
   userName: string;
 
@@ -30,7 +30,7 @@ export class TenantSignupDto {
     message: 'Phone must be a valid number and may include country code',
   })
   @ApiProperty({ example: '9876532458' })
-  @Length(5, 20, { message: 'Phone must be between 6 and 20 characters' })
+  @Length(6, 20, { message: 'Phone must be between 6 and 20 characters' })
   phone: string;
 
   @IsDefined({ message: 'Password is required' })

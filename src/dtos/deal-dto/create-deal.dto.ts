@@ -17,7 +17,7 @@ export class CreateDealDto {
   })
   @IsDefined({ message: 'Name field is required' })
   @IsString({ message: 'Name must be string' })
-  @Length(3, 40, { message: 'Name must be between 3 and 40 characters' })
+  @Length(2, 40, { message: 'Name must be between 2 and 40 characters' })
   @Sanitize()
   name: string;
 
