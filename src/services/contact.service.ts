@@ -42,7 +42,7 @@ export class ContactService {
     let accountExist: Account | null = null;
 
     if (account) {
-      accountExist = await accountRepo.findOne({ where: { name: account } });
+      accountExist = await accountRepo.findOne({ where: { id: account } });
       if (!accountExist) {
         throw new NotFoundException('Invalid account reference.');
       }

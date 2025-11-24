@@ -1,4 +1,11 @@
-import { BadRequestException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  forwardRef,
+  HttpStatus,
+  Inject,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Request } from 'express';
 import { APIResponse } from 'src/common/dtos/response.dto';
@@ -17,6 +24,7 @@ import { TokenService } from './token.service';
 import { EmailService } from './email.service';
 import { SubscriptionHistory } from 'src/database/entities/base-app-entities/subscription-history.entity';
 import { JwtPayload } from 'src/common/dtos/jwt-payload.dto';
+import { TenantService } from './tenant.service';
 
 @Injectable()
 export class SubscriptionService {
@@ -31,6 +39,8 @@ export class SubscriptionService {
     private readonly emailService: EmailService,
     private readonly stripeService: StripePaymentService,
     private readonly tokenService: TokenService,
+    @Inject(forwardRef(() => TenantService))
+    private readonly tenantService: TenantService,
   ) {}
 
   async createSubscription(
@@ -112,10 +122,11 @@ export class SubscriptionService {
       throw new UnauthorizedException('Access token is missing or invalid.');
     }
     const payload = await this.tokenService.verifyAccessToken(token);
+    const tenant = await this.tenantService.getTenant(payload.email);
     const subscription = await this.planPriceRepo.findOne({
       where: {
         tenantsSubscription: {
-          tenant: { email: payload.email },
+          tenant: { id: tenant.id },
           status: true,
         },
       },

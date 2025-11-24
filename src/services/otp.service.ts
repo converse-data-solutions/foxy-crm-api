@@ -66,6 +66,8 @@ export class OtpService {
       emailType = EmailTemplateType.ForgotPassword;
       subject = 'Your One-Time Password (OTP) for Password Reset';
     }
+    console.log(rawOtp);
+
     const html = ForgotAndVerifyMail(name, rawOtp, emailType);
     await this.emailService.sendMail({
       to: existUser.email,

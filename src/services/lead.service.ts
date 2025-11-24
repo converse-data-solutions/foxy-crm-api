@@ -99,7 +99,7 @@ export class LeadService {
     const noteRepo = await getRepo(Note, tenant);
     const qb = leadRepo
       .createQueryBuilder('lead')
-      .leftJoin('lead.assignedTo', 'user')
+      .leftJoinAndSelect('lead.assignedTo', 'user')
       .leftJoinAndSelect('lead.leadActivities', 'leadActivities');
 
     const { limit, page, skip } = paginationParams(leadQuery.page, leadQuery.limit);
@@ -109,11 +109,13 @@ export class LeadService {
       name: { column: 'lead.name', type: 'ilike' },
       company: { column: 'lead.company', type: 'ilike' },
       id: { column: 'lead.id', type: 'exact' },
-      assignedTo: { column: 'lead.assignedTo', type: 'exact' },
     };
     applyFilters(qb, FILTERS, leadQuery);
     if (leadQuery.sortBy && leadQuery.sortDirection) {
       qb.orderBy(`lead.${leadQuery.sortBy}`, leadQuery.sortDirection);
+    }
+    if (user.role === Role.SalesRep) {
+      qb.andWhere('user.id =:id', { id: user.id });
     }
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
