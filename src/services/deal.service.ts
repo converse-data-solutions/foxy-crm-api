@@ -87,10 +87,13 @@ export class DealService {
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
     const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };
     const deals: Partial<Deal>[] = data.map(({ value, ...deal }) => deal);
-    let dealData: Partial<Deal>[] = data;
+    let dealData: Partial<Deal>[] = data.map((deal) => {
+      return { ...deal, value: parseFloat(deal.value.toString()) };
+    });
     if (![Role.Admin, Role.SuperAdmin].includes(user.role)) {
       dealData = deals;
     }
+
     return {
       success: true,
       statusCode: HttpStatus.OK,

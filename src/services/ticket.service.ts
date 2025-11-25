@@ -78,7 +78,8 @@ export class TicketService {
     const ticketRepo = await getRepo(Ticket, tenantId);
     const qb = ticketRepo
       .createQueryBuilder('ticket')
-      .leftJoin('ticket.dealId', 'deal')
+      .leftJoinAndSelect('ticket.dealId', 'deal')
+      .leftJoinAndSelect('ticket.contactId', 'contact')
       .leftJoin('ticket.createdBy', 'user');
     const { limit, page, skip } = paginationParams(ticketQuery.page, ticketQuery.limit);
     const FILTERS: FiltersMap = {
@@ -97,12 +98,15 @@ export class TicketService {
     }
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
+    const tickets = data.map(({ dealId, contactId, ...ticket }) => {
+      return { ...ticket, dealId: dealId.id, contactId: contactId.id };
+    });
     const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };
     return {
       success: true,
       statusCode: HttpStatus.OK,
       message: 'Ticket details fetched based on filter',
-      data,
+      data: tickets,
       pageInfo,
     };
   }

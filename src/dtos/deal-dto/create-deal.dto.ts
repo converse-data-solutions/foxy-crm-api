@@ -6,7 +6,7 @@ import {
   IsDateString,
   IsDefined,
   Length,
-  IsDecimal,
+  Matches,
 } from 'class-validator';
 import { Sanitize } from 'src/common/decorators/sanitize.decorator';
 
@@ -27,10 +27,9 @@ export class CreateDealDto {
     required: false,
   })
   @IsDefined({ message: 'Amount should be required' })
-  @IsDecimal(
-    { decimal_digits: '0,2' },
-    { message: 'Amount should contain maximum 2 decimal points' },
-  )
+  @Matches(/^\d+(?:\.\d{1,2})?$/, {
+    message: 'Amount must be a number with up to 2 decimal digits',
+  })
   value: string;
 
   @ApiPropertyOptional({
