@@ -90,11 +90,7 @@ export class LeadService {
     };
   }
 
-  async findAllLeads(
-    leadQuery: LeadQueryDto,
-    tenant: string,
-    user: User,
-  ): Promise<APIResponse<Lead[]>> {
+  async findAllLeads(leadQuery: LeadQueryDto, tenant: string, user: User): Promise<APIResponse> {
     const leadRepo = await getRepo(Lead, tenant);
     const noteRepo = await getRepo(Note, tenant);
     const qb = leadRepo
@@ -128,11 +124,14 @@ export class LeadService {
       lead['notes'] = notes;
       leadData.push(lead);
     }
+    const resultLeads = leadData.map(({ assignedTo, ...remLead }) => {
+      return { ...remLead, assignedTo: assignedTo?.id };
+    });
     return {
       success: true,
       statusCode: HttpStatus.OK,
       message: 'Lead details fetched based on filter',
-      data: leadData,
+      data: resultLeads,
       pageInfo,
     };
   }

@@ -117,7 +117,7 @@ export class LeadController {
   }
 
   @Get('template')
-  @Roles(Role.SuperAdmin, Role.Admin, Role.Manager, Role.SalesRep)
+  @Roles(Role.SuperAdmin, Role.Admin, Role.Manager)
   @ApiOperation({ summary: 'Download the Lead Import Template' })
   async downloadTemplate(@Res() res: Response, @Headers('x-tenant-id') tenantId: string) {
     const filePath = path.join(__dirname, '../templates/lead-import-template.csv');

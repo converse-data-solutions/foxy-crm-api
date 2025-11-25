@@ -10,7 +10,7 @@ import { Role } from 'src/enums/core-app.enum';
 import { GetAccountDto } from 'src/dtos/account-dto/get-account.dto';
 import { CsrfHeader } from 'src/common/decorators/csrf-header.decorator';
 
-@Roles(Role.SuperAdmin, Role.Admin, Role.Manager)
+@Roles(Role.SuperAdmin, Role.Admin, Role.Manager, Role.SalesRep)
 @Controller('accounts')
 export class AccountController {
   constructor(private readonly accountService: AccountService) {}
@@ -36,7 +36,6 @@ export class AccountController {
 
   @Put(':id')
   @CsrfHeader()
-  @Roles(Role.SuperAdmin, Role.Admin, Role.Manager, Role.SalesRep)
   async update(
     @Headers('x-tenant-id') tenantId: string,
     @Param('id') id: string,
