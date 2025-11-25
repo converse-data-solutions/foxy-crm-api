@@ -124,8 +124,8 @@ export class LeadService {
       lead['notes'] = notes;
       leadData.push(lead);
     }
-    const resultLeads = leadData.map(({ assignedTo, ...remLead }) => {
-      return { ...remLead, assignedTo: assignedTo?.id };
+    const resultLeads = leadData.map(({ assignedTo, ...leftLeadData }) => {
+      return { ...leftLeadData, assignedTo: assignedTo?.id };
     });
     return {
       success: true,

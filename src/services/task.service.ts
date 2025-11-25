@@ -91,7 +91,7 @@ export class TaskService {
 
   async findAllTasks(tenantId: string, user: User, taskQuery: GetTaskDto) {
     const taskRepo = await getRepo(Task, tenantId);
-    const qb = taskRepo.createQueryBuilder('task').leftJoin('task.assignedTo', 'user');
+    const qb = taskRepo.createQueryBuilder('task').leftJoinAndSelect('task.assignedTo', 'user');
 
     const { limit, page, skip } = paginationParams(taskQuery.page, taskQuery.limit);
     const FILTERS: FiltersMap = {
@@ -114,12 +114,15 @@ export class TaskService {
     }
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
+    const taskDatas = data.map(({ assignedTo, ...leftTaskData }) => {
+      return { ...leftTaskData, assignedTo: assignedTo.id };
+    });
     const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };
     return {
       success: true,
       statusCode: HttpStatus.OK,
       message: 'Task details fetched based on filter',
-      data,
+      data: taskDatas,
       pageInfo,
     };
   }
