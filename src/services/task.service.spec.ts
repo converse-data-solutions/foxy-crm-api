@@ -204,7 +204,14 @@ describe('TaskService', () => {
 
     it('should apply assignedTo filter for admin when provided', async () => {
       const mockTenantId = 'tenant123';
-      const mockQuery = { page: 1, limit: 10, assignedTo: 'John' };
+      const mockQuery = {
+        page: 1,
+        limit: 10,
+        sortBy: '',
+        sortDirection: 'ASC',
+        assignedTo: 'John',
+        name: '',
+      };
       mockQueryBuilder.getManyAndCount.mockResolvedValueOnce([[], 0]);
       await service.findAllTasks(mockTenantId, mockUser, mockQuery);
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(`user.name ILIKE :assignedTo`, {

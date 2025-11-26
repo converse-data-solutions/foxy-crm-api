@@ -35,6 +35,9 @@ export class Deal {
   @Column({ name: 'expected_close_date', type: 'date', nullable: true })
   expectedCloseDate?: Date;
 
+  @Column({ nullable: true, type: 'text' })
+  notes?: string;
+
   @ManyToOne(() => Contact)
   @JoinColumn({ name: 'contact_id' })
   contactId: Contact;

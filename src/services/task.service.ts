@@ -158,7 +158,9 @@ export class TaskService {
     }
     taskExist.status = status ?? taskExist.status;
     const updatedTask = await taskRepo.save(taskExist);
-    await this.eventEmitter.emitAsync('task-updated', { tenantId, task: updatedTask });
+    if (updateTaskDto.assignedTo) {
+      await this.eventEmitter.emitAsync('task-updated', { tenantId, task: updatedTask });
+    }
     return {
       success: true,
       statusCode: HttpStatus.OK,

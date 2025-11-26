@@ -151,7 +151,7 @@ export class UserService {
     }
 
     if (planPricing?.plan && userCount >= planPricing.plan.userCount) {
-      throw new BadRequestException('User limit reached for your subscription plan.');
+      throw new BadRequestException('User limit reached please contact admin.');
     }
     const isUser = await userRepo.findOne({
       where: [{ email: user.email }, { phone: user.phone }],
@@ -170,6 +170,8 @@ export class UserService {
       email: user.email,
       phone: user.phone,
       country: country,
+      address: user.address,
+      city: user.city,
     });
     await userRepo.save(newUser);
 

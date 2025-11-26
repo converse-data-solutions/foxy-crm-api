@@ -1,8 +1,7 @@
 import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
-import { IsOptional, IsString, IsEnum, IsDecimal } from 'class-validator';
+import { IsOptional, IsEnum } from 'class-validator';
 import { DealStage } from 'src/enums/status.enum';
 import { CreateDealDto } from './create-deal.dto';
-import { Sanitize } from 'src/common/decorators/sanitize.decorator';
 
 export class UpdateDealDto extends PartialType(
   OmitType(CreateDealDto, ['expectedCloseDate', 'contactId']),

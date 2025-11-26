@@ -49,4 +49,10 @@ export class CreateDealDto {
   @IsDefined({ message: 'Contact id is required' })
   @IsUUID('4', { message: 'Contact ID should be UUID' })
   contactId: string;
+
+  @IsOptional()
+  @IsString({ message: 'Please provide correct notes' })
+  @ApiPropertyOptional({ example: 'Deal is confirmed with a price 50000' })
+  @Sanitize()
+  notes?: string;
 }
