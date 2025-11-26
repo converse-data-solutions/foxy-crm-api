@@ -1,10 +1,4 @@
-import {
-  BadRequestException,
-  HttpStatus,
-  Inject,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { BadRequestException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 import { CreateLeadDto } from '../dtos/lead-dto/create-lead.dto';
 import { UpdateLeadDto } from '../dtos/lead-dto/update-lead.dto';
 import { getRepo } from 'src/shared/database-connection/get-connection';
