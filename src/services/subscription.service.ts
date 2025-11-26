@@ -1,4 +1,11 @@
-import { BadRequestException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  forwardRef,
+  HttpStatus,
+  Inject,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Request } from 'express';
 import { APIResponse } from 'src/common/dtos/response.dto';
@@ -17,6 +24,7 @@ import { TokenService } from './token.service';
 import { EmailService } from './email.service';
 import { SubscriptionHistory } from 'src/database/entities/base-app-entities/subscription-history.entity';
 import { JwtPayload } from 'src/common/dtos/jwt-payload.dto';
+import { TenantService } from './tenant.service';
 
 @Injectable()
 export class SubscriptionService {
@@ -31,6 +39,8 @@ export class SubscriptionService {
     private readonly emailService: EmailService,
     private readonly stripeService: StripePaymentService,
     private readonly tokenService: TokenService,
+    @Inject(forwardRef(() => TenantService))
+    private readonly tenantService: TenantService,
   ) {}
 
   async createSubscription(
@@ -38,7 +48,7 @@ export class SubscriptionService {
     token: string | undefined,
   ): Promise<APIResponse> {
     if (!token) {
-      throw new UnauthorizedException('Unauthorized access token not found');
+      throw new UnauthorizedException('Access token is missing or invalid.');
     }
     const payload = await this.tokenService.verifyAccessToken(token);
     const planPrice = await this.planPriceRepo.findOne({
@@ -47,7 +57,7 @@ export class SubscriptionService {
     });
     const tenant = await this.checkTenant(payload);
     if (!planPrice) {
-      throw new BadRequestException('Invalid subscription plan');
+      throw new BadRequestException('The selected subscription plan is invalid.');
     }
 
     const tenantSubscription = await this.subscriptionRepo
@@ -63,12 +73,16 @@ export class SubscriptionService {
         Number(tenantSubscription.planPrice.plan.userCount) > Number(planPrice.plan.userCount) &&
         tenantSubscription.status === true
       ) {
-        throw new BadRequestException('Cannot downgrade subscription while an active plan exists');
+        throw new BadRequestException(
+          'You cannot downgrade your plan while an active subscription exists.',
+        );
       } else if (
         tenantSubscription.planPrice.price > planPrice.price &&
         Number(tenantSubscription.planPrice.plan.userCount) >= Number(planPrice.plan.userCount)
       ) {
-        throw new BadRequestException('Cannot downgrade subscription while an active plan exists');
+        throw new BadRequestException(
+          'You cannot downgrade your plan while an active subscription exists.',
+        );
       }
     }
 
@@ -88,7 +102,7 @@ export class SubscriptionService {
   async findAllPlans(request: Request): Promise<APIResponse<Plan[]>> {
     const token: string | undefined = request?.cookies['access_token'];
     if (!token) {
-      throw new UnauthorizedException('Unauthorized access token not found');
+      throw new UnauthorizedException('Access token is missing or invalid.');
     }
     const payload = await this.tokenService.verifyAccessToken(token);
     await this.checkTenant(payload);
@@ -105,20 +119,21 @@ export class SubscriptionService {
   async findCurrentPlan(request: Request) {
     const token: string | undefined = request?.cookies['access_token'];
     if (!token) {
-      throw new UnauthorizedException('Unauthorized access token not found');
+      throw new UnauthorizedException('Access token is missing or invalid.');
     }
     const payload = await this.tokenService.verifyAccessToken(token);
+    const tenant = await this.tenantService.getTenant(payload.email);
     const subscription = await this.planPriceRepo.findOne({
       where: {
         tenantsSubscription: {
-          tenant: { id: payload.id },
+          tenant: { id: tenant.id },
           status: true,
         },
       },
       relations: { tenantsSubscription: true, plan: true },
     });
     if (!subscription) {
-      throw new BadRequestException('There is no active or current subscription');
+      throw new BadRequestException('No active subscription found for this tenant.');
     }
     return {
       success: true,
@@ -189,7 +204,7 @@ export class SubscriptionService {
   private async checkTenant(payload: JwtPayload) {
     const tenant = await this.tenantRepo.findOne({ where: { email: payload.email } });
     if (!tenant) {
-      throw new UnauthorizedException('Unauthorized access');
+      throw new UnauthorizedException('Access token is missing or invalid.');
     }
     return tenant;
   }

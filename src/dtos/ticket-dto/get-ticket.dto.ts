@@ -1,26 +1,21 @@
-import { ApiPropertyOptional, IntersectionType, PartialType, PickType } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsEnum, IsOptional, IsString, IsDateString, IsInt, Min } from 'class-validator';
-import { TicketStatus } from 'src/enums/status.enum';
-import { CreateTicketDto } from './create-ticket.dto';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsString, IsDateString } from 'class-validator';
 import { PageDto } from '../page-dto/page.dto';
+import { Sanitize } from 'src/common/decorators/sanitize.decorator';
 
-export class GetTicketDto extends IntersectionType(
-  PartialType(PickType(CreateTicketDto, ['title'] as const)),
-  PageDto,
-) {
-  @ApiPropertyOptional({
-    description: 'Filter tickets by status',
-  })
+export class GetTicketDto extends PageDto {
+  @ApiPropertyOptional({ description: 'Title of the support ticket', example: 'Payment issue' })
   @IsOptional()
-  @IsEnum(TicketStatus)
-  status?: TicketStatus;
+  @IsString({ message: 'Title should be a type of string' })
+  @Sanitize()
+  title: string;
 
   @ApiPropertyOptional({
     description: 'Filter tickets by deal name',
   })
   @IsOptional()
   @IsString()
+  @Sanitize()
   deal?: string;
 
   @ApiPropertyOptional({

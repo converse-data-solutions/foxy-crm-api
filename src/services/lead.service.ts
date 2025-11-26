@@ -19,6 +19,9 @@ import { MetricService } from './metric.service';
 import { MetricDto } from 'src/dtos/metric-dto/metric.dto';
 import { bulkLeadFailureTemplate } from 'src/templates/bulk-failure.template';
 import { EmailService } from './email.service';
+import { applyFilters, FiltersMap } from 'src/shared/utils/query-filter.util';
+import { LeadConversionService } from './lead-conversion.service';
+import { LeadToContactDto } from 'src/dtos/lead-dto/lead-to-contact.dto';
 
 interface SerializedBuffer {
   type: 'Buffer';
@@ -31,6 +34,7 @@ export class LeadService {
     @InjectQueue('file-import') private readonly fileQueue: Queue,
     private readonly metricService: MetricService,
     private readonly emailService: EmailService,
+    private readonly leadConversionService: LeadConversionService,
   ) {}
 
   async createLead(createLeadDto: CreateLeadDto, tenantId: string, user: User) {
@@ -42,16 +46,16 @@ export class LeadService {
     const { assignedTo, ...createLead } = createLeadDto;
     let existingUser: User | null = null;
     if (assignedTo) {
-      if (![Role.Admin, Role.Manager].includes(user.role)) {
-        throw new UnauthorizedException('Admin or manger only can assign a lead to the user');
+      if (![Role.Admin, Role.Manager, Role.SuperAdmin].includes(user.role)) {
+        throw new UnauthorizedException('Only Admins or Managers can assign a lead to a user.');
       }
       existingUser = await userRepo.findOne({ where: { id: assignedTo } });
       if (!existingUser) {
-        throw new BadRequestException('Invalid user id for lead assignment');
+        throw new BadRequestException('Invalid user ID for lead assignment.');
       }
     }
     if (leadExist) {
-      throw new BadRequestException('The lead is already present');
+      throw new BadRequestException('Lead already exists.');
     } else {
       const newLead: Lead = leadRepo.create({
         ...createLead,
@@ -80,33 +84,28 @@ export class LeadService {
     };
   }
 
-  async findAllLeads(
-    leadQuery: LeadQueryDto,
-    tenant: string,
-    user: User,
-  ): Promise<APIResponse<Lead[]>> {
+  async findAllLeads(leadQuery: LeadQueryDto, tenant: string, user: User): Promise<APIResponse> {
     const leadRepo = await getRepo(Lead, tenant);
     const noteRepo = await getRepo(Note, tenant);
     const qb = leadRepo
       .createQueryBuilder('lead')
-      .leftJoin('lead.assignedTo', 'user')
+      .leftJoinAndSelect('lead.assignedTo', 'user')
       .leftJoinAndSelect('lead.leadActivities', 'leadActivities');
 
     const { limit, page, skip } = paginationParams(leadQuery.page, leadQuery.limit);
-
-    for (const [key, value] of Object.entries(leadQuery)) {
-      if (value == null || key === 'page' || key === 'limit') continue;
-
-      if (['source', 'email', 'phone'].includes(key)) {
-        qb.andWhere(`lead.${key} = :${key}`, { [key]: value });
-      } else if (['name', 'company'].includes(key)) {
-        qb.andWhere(`lead.${key} ILIKE :${key}`, { [key]: `%${value}%` });
-      } else {
-        qb.andWhere(`lead.${key} = :${key}`, { [key]: value });
-      }
+    const FILTERS: FiltersMap = {
+      email: { column: 'lead.email', type: 'ilike' },
+      phone: { column: 'lead.phone', type: 'ilike' },
+      name: { column: 'lead.name', type: 'ilike' },
+      company: { column: 'lead.company', type: 'ilike' },
+      id: { column: 'lead.id', type: 'exact' },
+    };
+    applyFilters(qb, FILTERS, leadQuery);
+    if (leadQuery.sortBy && leadQuery.sortDirection) {
+      qb.orderBy(`lead.${leadQuery.sortBy}`, leadQuery.sortDirection);
     }
-    if (![Role.Admin, Role.Manager].includes(user.role)) {
-      qb.andWhere(`user.id =:id`, { id: user.id });
+    if (user.role === Role.SalesRep) {
+      qb.andWhere('user.id =:id', { id: user.id });
     }
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
@@ -119,11 +118,14 @@ export class LeadService {
       lead['notes'] = notes;
       leadData.push(lead);
     }
+    const resultLeads = leadData.map(({ assignedTo, ...leftLeadData }) => {
+      return { ...leftLeadData, assignedTo: assignedTo?.id };
+    });
     return {
       success: true,
       statusCode: HttpStatus.OK,
       message: 'Lead details fetched based on filter',
-      data: leadData,
+      data: resultLeads,
       pageInfo,
     };
   }
@@ -133,23 +135,30 @@ export class LeadService {
     const userRepo = await getRepo(User, tenant);
     let assignedUser: User | null = null;
     if (updateLeadDto.assignedTo) {
-      if (user.role === Role.SalesRep) {
-        throw new UnauthorizedException('Not have enough authorization to assign a lead');
+      if (![Role.Admin, Role.SuperAdmin, Role.Manager].includes(user.role)) {
+        throw new UnauthorizedException('You are not authorized to assign a lead.');
       }
       assignedUser = await userRepo.findOne({ where: { id: updateLeadDto.assignedTo } });
       if (!assignedUser) {
-        throw new BadRequestException('Lead is not assigned to invalid id');
+        throw new BadRequestException('Invalid user ID specified for lead assignment.');
       }
     }
 
     const lead = await leadRepo.findOne({ where: { id } });
     if (!lead) {
-      throw new BadRequestException('Lead not found or invalid lead id');
+      throw new BadRequestException('Lead not found or invalid lead ID.');
     } else {
       if (lead.status == LeadStatus.Converted) {
-        throw new BadRequestException('Lead is already converted cannot update');
+        throw new BadRequestException('Lead has already been converted and cannot be updated.');
       }
-
+      if (lead.status == LeadStatus.Disqualified && updateLeadDto.status !== LeadStatus.Qualified) {
+        throw new BadRequestException('Qualify this lead for futher procedure');
+      }
+      if (updateLeadDto.status === LeadStatus.Converted) {
+        updateLeadDto.status = undefined;
+        const payload = { account: updateLeadDto.account } as LeadToContactDto;
+        await this.leadConversionService.convertLead(tenant, id, user, payload);
+      }
       const { assignedTo, ...other } = updateLeadDto;
       leadRepo.merge(lead, other);
       lead.assignedTo = assignedUser ? assignedUser : undefined;
@@ -173,9 +182,16 @@ export class LeadService {
     stream.push(null);
 
     try {
+      const requiredHeaders = ['name', 'email', 'phone'];
       await new Promise<void>((resolve, reject) => {
         stream
           .pipe(csv())
+          .on('headers', (headers: string[]) => {
+            const missing = requiredHeaders.filter((h) => !headers.includes(h));
+            if (missing.length > 0) {
+              throw new Error(`Missing required columns: ${missing.join(', ')}`);
+            }
+          })
           .on('data', (row: CreateLeadDto) => {
             results.push({
               name: row['name'],

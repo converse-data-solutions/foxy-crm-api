@@ -10,6 +10,7 @@ import { CountryModule } from './country.module';
 import { UserModule } from './user.module';
 import { entities } from 'src/database/entities/base-app-entities';
 import { TokenModule } from './token.module';
+import { LoggerModule } from './logger.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { TokenModule } from './token.module';
     CountryModule,
     UserModule,
     TokenModule,
+    LoggerModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],

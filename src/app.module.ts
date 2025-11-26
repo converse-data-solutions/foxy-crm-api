@@ -36,19 +36,21 @@ import { MetricModule } from './modules/metric.module';
 import { EmailModule } from './modules/email.module';
 import { SubscriptionHistoryModule } from './modules/subscription-history.module';
 import { LoggerModule } from './modules/logger.module';
+import { CsrfGuard } from './guards/csrf.guard';
+import { ConnectionCleanupService } from './services/connection-cleanup.service';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: Environment.NODE_ENV !== 'dev' ? '.env.docker' : '.env',
+      envFilePath: Environment.NODE_ENV !== 'development' ? '.env.docker' : '.env',
     }),
     ScheduleModule.forRoot(),
     ThrottlerModule.forRoot({
       throttlers: [
         {
           ttl: 60000,
-          limit: 10,
+          limit: 100,
         },
       ],
     }),
@@ -107,6 +109,7 @@ import { LoggerModule } from './modules/logger.module';
   providers: [
     JwtAuthGuard,
     RolesGuard,
+    CsrfGuard,
     {
       provide: APP_INTERCEPTOR,
       useClass: LoggerInterceptor,
@@ -125,6 +128,7 @@ import { LoggerModule } from './modules/logger.module';
       provide: APP_FILTER,
       useClass: CustomExceptionFilter,
     },
+    ConnectionCleanupService,
   ],
   controllers: [StripePaymentController],
 })

@@ -1,5 +1,5 @@
 import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
-import { IsOptional, IsString, IsEnum, IsDecimal } from 'class-validator';
+import { IsOptional, IsEnum } from 'class-validator';
 import { DealStage } from 'src/enums/status.enum';
 import { CreateDealDto } from './create-deal.dto';
 

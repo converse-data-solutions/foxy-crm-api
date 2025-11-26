@@ -19,6 +19,7 @@ export enum EntityName {
 }
 
 export enum Role {
+  SuperAdmin = 'super admin',
   Admin = 'admin',
   Manager = 'manager',
   SalesRep = 'salesrep',

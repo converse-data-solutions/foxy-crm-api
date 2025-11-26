@@ -1,17 +1,21 @@
-import { ApiPropertyOptional, IntersectionType, OmitType, PartialType } from '@nestjs/swagger';
-import { IsEnum, IsOptional } from 'class-validator';
-import { TaskStatus } from 'src/enums/status.enum';
-import { CreateTaskDto } from './create-task.dto';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsString } from 'class-validator';
 import { PageDto } from '../page-dto/page.dto';
+import { Sanitize } from 'src/common/decorators/sanitize.decorator';
 
-export class GetTaskDto extends IntersectionType(
-  PartialType(OmitType(CreateTaskDto, ['entityId', 'entityName'] as const)),
-  PageDto,
-) {
+export class GetTaskDto extends PageDto {
   @ApiPropertyOptional({
-    enum: TaskStatus,
+    description: 'Task name',
+    example: 'Follow up with client',
   })
   @IsOptional()
-  @IsEnum(TaskStatus)
-  status?: TaskStatus;
+  @IsString()
+  @Sanitize()
+  name: string;
+
+  @ApiPropertyOptional({ description: 'User name', example: 'John' })
+  @IsOptional()
+  @IsString()
+  @Sanitize()
+  assignedTo: string;
 }

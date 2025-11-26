@@ -4,6 +4,7 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { User } from 'src/database/entities/core-app-entities/user.entity';
@@ -23,6 +24,7 @@ import { Repository } from 'typeorm';
 import { paginationParams } from 'src/shared/utils/pagination-params.util';
 import { Environment, SALT_ROUNDS } from 'src/shared/utils/config.util';
 import { PlanPricing } from 'src/database/entities/base-app-entities/plan-pricing.entity';
+import { applyFilters, FiltersMap } from 'src/shared/utils/query-filter.util';
 
 @Injectable()
 export class UserService {
@@ -42,18 +44,25 @@ export class UserService {
   ): Promise<APIResponse> {
     const userRepo = await getRepo(User, tenantId);
     const existUser = await userRepo.findOne({ where: { id } });
-    if (user.id !== id && user.role != Role.Admin) {
-      throw new UnauthorizedException('Not have authorization to edit others data');
+    if (user.id !== id && user.role != Role.SuperAdmin && user.role != Role.Admin) {
+      throw new UnauthorizedException('You are not authorized to modify other users.');
     }
-    if (updateUser.role && user.role != Role.Admin) {
-      throw new UnauthorizedException('Not have enough authorization to update role');
+    if (updateUser.role && user.role != Role.SuperAdmin) {
+      throw new UnauthorizedException('Only super admin can update user roles.');
     }
     if (!existUser) {
-      throw new BadRequestException('Invalid user id or user not found');
+      throw new NotFoundException('User not found.');
+    }
+    if (
+      [Role.Admin, Role.SuperAdmin].includes(existUser.role) &&
+      user.role !== Role.SuperAdmin &&
+      user.id !== id
+    ) {
+      throw new UnauthorizedException('You are not authorized to modify other users.');
     }
     if (updateUser.email) {
-      if (existUser.role === Role.Admin) {
-        throw new UnauthorizedException('Not able to update admin mail');
+      if (existUser.role === Role.SuperAdmin) {
+        throw new UnauthorizedException('Super administrator email cannot be changed.');
       }
       await this.tenantService.getTenant(updateUser.email);
     }
@@ -65,10 +74,10 @@ export class UserService {
     if (mailOrPhoneExist.length > 0) {
       for (const user of mailOrPhoneExist) {
         if (updateUser.email && user.email === updateUser.email && user.id !== existUser.id) {
-          throw new ConflictException('Email already in use');
+          throw new ConflictException('Email is already registered with another account.');
         }
         if (updateUser.phone && user.phone === updateUser.phone && user.id !== existUser.id) {
-          throw new ConflictException('Phone number already in use');
+          throw new ConflictException('Phone number is already registered with another account.');
         }
       }
     }
@@ -77,7 +86,11 @@ export class UserService {
       const countryExist = this.countryService.getCountry(country);
       existUser.country = countryExist;
     }
-    await userRepo.save({ ...existUser, ...userData });
+    await userRepo.save({
+      ...existUser,
+      ...userData,
+      refreshToken: userData.role ? null : undefined,
+    });
     return {
       success: true,
       statusCode: HttpStatus.OK,
@@ -88,26 +101,32 @@ export class UserService {
   async getAllUsers(
     tenantId: string,
     userQuery: GetUserDto,
+    user: User,
   ): Promise<APIResponse<Omit<User, 'password' | 'otp'>[]>> {
     const userRepo = await getRepo(User, tenantId);
     const qb = userRepo.createQueryBuilder('user');
 
     const { limit, page, skip } = paginationParams(userQuery.page, userQuery.limit);
-
-    for (const [key, value] of Object.entries(userQuery)) {
-      if (value == null || key === 'page' || key === 'limit') {
-        continue;
-      } else if (['name', 'email', 'phone', 'city', 'country'].includes(key)) {
-        qb.andWhere(`user.${key} LIKE :${key}`, { [key]: `%${value}%` });
-      } else if (key === 'role') {
-        qb.andWhere('user.role =:role', { role: userQuery.role });
-      } else if (key === 'statusCause') {
-        qb.andWhere('user.status_cause =:statusCause', { statusCause: userQuery.statusCause });
-      } else if (key === 'status') {
-        qb.andWhere('user.status =:status', { status: userQuery.status });
-      }
+    const FILTERS: FiltersMap = {
+      name: { column: 'user.name', type: 'ilike' },
+      email: { column: 'user.email', type: 'ilike' },
+      phone: { column: 'user.phone', type: 'ilike' },
+      city: { column: 'user.city', type: 'ilike' },
+      country: { column: 'user.country', type: 'ilike' },
+      status: { column: 'user.status', type: 'exact' },
+    };
+    if (userQuery.sortBy && userQuery.sortDirection) {
+      qb.orderBy(`user.${userQuery.sortBy}`, userQuery.sortDirection);
     }
-
+    applyFilters(qb, FILTERS, userQuery);
+    let role: Role[] = [Role.SuperAdmin];
+    if (user.role == Role.Admin) {
+      role = [...role, Role.Admin];
+    } else if (user.role == Role.Manager || user.role == Role.SalesRep) {
+      role = [...role, Role.Admin, Role.Manager];
+    }
+    qb.andWhere('user.role NOT IN (:...roles)', { roles: role });
+    qb.andWhere('user.id <> :id', { id: user.id });
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
     const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };
     return {
@@ -117,10 +136,6 @@ export class UserService {
       data,
       pageInfo,
     };
-  }
-
-  async getUser(tenantId: string, user: User) {
-    const userRepo = await getRepo(User, tenantId);
   }
 
   async userSignup(user: UserSignupDto): Promise<APIResponse> {
@@ -136,17 +151,17 @@ export class UserService {
     });
     const subscriptionExist = planPricing?.tenantsSubscription[0].status;
     if (planPricing?.tenantsSubscription && !subscriptionExist) {
-      throw new BadRequestException('No subscription found. Please subscribe.');
+      throw new BadRequestException('No active subscription found. Please renew your plan.');
     }
 
     if (planPricing?.plan && userCount >= planPricing.plan.userCount) {
-      throw new BadRequestException('User limit exceeded for your plan');
+      throw new BadRequestException('User limit reached please contact admin.');
     }
     const isUser = await userRepo.findOne({
       where: [{ email: user.email }, { phone: user.phone }],
     });
     if (isUser) {
-      throw new ConflictException('User with this email or phone number is already registered');
+      throw new ConflictException('An account with this email or phone number already exists.');
     }
     let country: string | undefined;
     if (user.country) {
@@ -159,6 +174,8 @@ export class UserService {
       email: user.email,
       phone: user.phone,
       country: country,
+      address: user.address,
+      city: user.city,
     });
     await userRepo.save(newUser);
 
@@ -175,18 +192,18 @@ export class UserService {
       relations: { tenant: true },
     });
     if (!subscriptionExist) {
-      throw new BadRequestException('Invalid schema name');
+      throw new BadRequestException('Please do initial subscription to access further options.');
     }
-    if (subscriptionExist.status === false && Environment.NODE_ENV === 'prod') {
+    if (subscriptionExist.status === false && Environment.NODE_ENV === 'production') {
       throw new HttpException(
-        { message: 'Subscription got expired please subscribe' },
+        { message: 'Subscription expired. Please renew your plan.' },
         HttpStatus.PAYMENT_REQUIRED,
       );
     }
 
     const userRepo = await getRepo(User, schema);
     const user = await userRepo.findOne({
-      where: { email: payload.email },
+      where: { email: payload.email, status: true, emailVerified: true },
     });
     return user ?? null;
   }

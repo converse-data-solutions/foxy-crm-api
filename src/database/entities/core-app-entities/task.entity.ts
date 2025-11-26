@@ -20,11 +20,9 @@ export class Task {
   @Column({ name: 'name', type: 'varchar', length: 100 })
   name: string;
 
-  @Exclude()
   @Column({ name: 'entity_name', type: 'enum', enum: EntityName })
   entityName: EntityName;
 
-  @Exclude()
   @Column({ name: 'entity_id', type: 'varchar', length: 40 })
   entityId: string;
 

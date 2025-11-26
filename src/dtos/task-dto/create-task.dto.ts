@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsDefined, IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import { Sanitize } from 'src/common/decorators/sanitize.decorator';
 import { EntityName, TaskType, TaskPriority } from 'src/enums/core-app.enum';
 
 export class CreateTaskDto {
@@ -9,6 +10,7 @@ export class CreateTaskDto {
   })
   @IsString()
   @IsNotEmpty()
+  @Sanitize()
   name: string;
 
   @ApiProperty({
@@ -21,7 +23,7 @@ export class CreateTaskDto {
   @ApiProperty({
     example: '7e6c5c49-b5c2-46fb-8f7e-23f7a6d2dcd1',
   })
-  @IsUUID()
+  @IsUUID('4', { message: 'Entity ID should be a UUID' })
   entityId: string;
 
   @ApiProperty({
