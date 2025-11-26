@@ -10,7 +10,7 @@ import { User } from 'src/database/entities/core-app-entities/user.entity';
 import { GetContactDto } from 'src/dtos/contact-dto/get-contact.dto';
 import { CsrfHeader } from 'src/common/decorators/csrf-header.decorator';
 
-@Roles(Role.SuperAdmin, Role.Admin, Role.Manager)
+@Roles(Role.SuperAdmin, Role.Admin, Role.Manager, Role.SalesRep)
 @Controller('contacts')
 export class ContactController {
   constructor(private readonly contactService: ContactService) {}
@@ -28,7 +28,6 @@ export class ContactController {
   }
 
   @Get()
-  @Roles(Role.SuperAdmin, Role.Admin, Role.Manager, Role.SalesRep)
   @ApiOperation({ summary: 'Get the existing contact' })
   @ApiResponse({ status: 200, description: 'Contact fetched successfully' })
   findAll(
@@ -41,7 +40,6 @@ export class ContactController {
 
   @Put(':id')
   @CsrfHeader()
-  @Roles(Role.SuperAdmin, Role.Admin, Role.Manager, Role.SalesRep)
   @ApiOperation({ summary: 'Update existing contact' })
   @ApiResponse({ status: 200, description: 'Contact updated successfully' })
   async update(

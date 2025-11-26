@@ -47,6 +47,9 @@ export class ContactService {
         throw new NotFoundException('Invalid account reference.');
       }
     }
+    if (assignedTo) {
+      throw new UnauthorizedException('You are not authorized to assign user to contacts.');
+    }
     let existingUser: User | null = null;
     if (assignedTo) {
       existingUser = await userRepo.findOne({ where: { id: assignedTo } });
@@ -79,7 +82,8 @@ export class ContactService {
     const noteRepo = await getRepo<Note>(Note, tenantId);
     const qb = contactRepo
       .createQueryBuilder('contact')
-      .leftJoinAndSelect('contact.accountId', 'account');
+      .leftJoinAndSelect('contact.accountId', 'account')
+      .leftJoinAndSelect('contact.assignedTo', 'user');
 
     const { limit, page, skip } = paginationParams(contactQuery.page, contactQuery.limit);
     const FILTERS: FiltersMap = {
@@ -88,10 +92,6 @@ export class ContactService {
       phone: { column: 'contact.phone', type: 'ilike' },
     };
     applyFilters(qb, FILTERS, contactQuery);
-
-    if (![Role.Admin, Role.Manager, Role.SuperAdmin].includes(user.role)) {
-      qb.andWhere(`user.id =:id`, { id: user.id });
-    }
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
     return {
@@ -116,16 +116,26 @@ export class ContactService {
 
     let assignedUser: User | null = null;
     let accountId: Account | null = null;
-    let contact = await contactRepo.findOne({ where: { id } });
+    let contact = await contactRepo.findOne({ where: { id }, relations: { assignedTo: true } });
+    console.log(contact?.assignedTo?.id);
     const { account, assignedTo, note, ...updateContact } = updateContactDto;
     if (!contact) {
       throw new NotFoundException('Contact not found or invalid contact id');
+    }
+    if (!contact.assignedTo && ![Role.SuperAdmin, Role.Admin, Role.Manager].includes(user.role)) {
+      throw new UnauthorizedException('You are not authorized to update others contact details');
+    }
+    if (
+      contact.assignedTo?.id !== user.id &&
+      ![Role.SuperAdmin, Role.Admin, Role.Manager].includes(user.role)
+    ) {
+      throw new UnauthorizedException('You are not authorized to update others contact details');
     }
     if (
       updateContactDto.assignedTo &&
       ![Role.SuperAdmin, Role.Admin, Role.Manager].includes(user.role)
     ) {
-      throw new UnauthorizedException('You are not authorized to assign contacts.');
+      throw new UnauthorizedException('You are not authorized to assign user to contacts.');
     } else {
       assignedUser = await userRepo.findOne({ where: { id: updateContactDto.assignedTo } });
       if (!assignedUser) {

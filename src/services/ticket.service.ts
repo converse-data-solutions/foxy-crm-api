@@ -41,7 +41,7 @@ export class TicketService {
     if (dealExist.stage === DealStage.Declined) {
       throw new BadRequestException('Cannot create a ticket for a declined deal.');
     }
-    if (dealExist.stage === DealStage.Accepted) {
+    if (dealExist.stage !== DealStage.Completed) {
       throw new BadRequestException('Cannot create a ticket for an incomplete deal.');
     }
     const ticketExist = await ticketRepo.findOne({
