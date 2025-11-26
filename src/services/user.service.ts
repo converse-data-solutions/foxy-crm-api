@@ -86,7 +86,11 @@ export class UserService {
       const countryExist = this.countryService.getCountry(country);
       existUser.country = countryExist;
     }
-    await userRepo.save({ ...existUser, ...userData });
+    await userRepo.save({
+      ...existUser,
+      ...userData,
+      refreshToken: userData.role ? null : undefined,
+    });
     return {
       success: true,
       statusCode: HttpStatus.OK,
