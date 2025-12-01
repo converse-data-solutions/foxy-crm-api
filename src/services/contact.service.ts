@@ -117,7 +117,6 @@ export class ContactService {
     let assignedUser: User | null = null;
     let accountId: Account | null = null;
     let contact = await contactRepo.findOne({ where: { id }, relations: { assignedTo: true } });
-    console.log(contact?.assignedTo?.id);
     const { account, assignedTo, note, ...updateContact } = updateContactDto;
     if (!contact) {
       throw new NotFoundException('Contact not found or invalid contact id');
@@ -143,7 +142,7 @@ export class ContactService {
       }
     }
     if (updateContactDto.account) {
-      accountId = await accountRepo.findOne({ where: { name: updateContactDto.account } });
+      accountId = await accountRepo.findOne({ where: { id: updateContactDto.account } });
       if (!accountId) {
         throw new NotFoundException('Account not found');
       }

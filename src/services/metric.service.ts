@@ -16,6 +16,7 @@ export class MetricService {
     this.redis = new Redis({
       host: REDIS_CONFIG.host,
       port: REDIS_CONFIG.port,
+      password: REDIS_CONFIG.password,
     });
   }
 

@@ -43,7 +43,8 @@ import { ConnectionCleanupService } from './services/connection-cleanup.service'
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: Environment.NODE_ENV !== 'development' ? '.env.docker' : '.env',
+      ignoreEnvFile: process.env.NODE_ENV === 'production',
+      envFilePath: ['.env', '.env.docker'],
     }),
     ScheduleModule.forRoot(),
     ThrottlerModule.forRoot({
@@ -59,8 +60,9 @@ import { ConnectionCleanupService } from './services/connection-cleanup.service'
       connection: {
         host: REDIS_CONFIG.host,
         port: REDIS_CONFIG.port,
+        password: REDIS_CONFIG.password,
       },
-      defaultJobOptions: { removeOnComplete: true },
+      defaultJobOptions: { removeOnComplete: true, removeOnFail: true },
     }),
     MailerModule.forRoot({
       transport: {

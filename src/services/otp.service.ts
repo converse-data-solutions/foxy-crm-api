@@ -60,8 +60,6 @@ export class OtpService {
     await repo.save(existUser);
     const name = existUser instanceof User ? existUser.name : existUser.userName;
 
-    console.log(rawOtp);
-
     let emailType = EmailTemplateType.EmailVerify;
     let subject = 'Your One-Time Password (OTP) for Email Verification';
     if (existUser.emailVerified) {

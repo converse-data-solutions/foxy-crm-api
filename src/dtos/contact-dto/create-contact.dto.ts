@@ -26,10 +26,9 @@ export class CreateContactDto {
   @Length(6, 20, { message: 'Phone must be between 6 and 20 characters' })
   phone: string;
 
-  @ApiPropertyOptional({ example: 'Acme Corp' })
+  @ApiPropertyOptional({ example: '10495caf-7023-40cf-be93-dc26f62569de' })
   @IsOptional()
-  @IsString({ message: 'Account should be string' })
-  @Sanitize()
+  @IsUUID('4', { message: 'Account should be UUID' })
   account?: string;
 
   @ApiPropertyOptional({ example: '10495caf-7023-40cf-be93-dc26f62569de' })

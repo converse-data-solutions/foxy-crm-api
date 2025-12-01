@@ -53,7 +53,7 @@ export class CustomExceptionFilter implements ExceptionFilter {
     const safeMessage = isProd
       ? status >= 500
         ? 'Internal server error. Please contact support.'
-        : 'Invalid request. Please check your input.'
+        : internalMessage
       : internalMessage;
 
     response.status(status).json({

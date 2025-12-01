@@ -21,10 +21,12 @@ import { Subscription } from 'src/database/entities/base-app-entities/subscripti
 import { Repository } from 'typeorm';
 import Redis from 'ioredis';
 import { RateLimiterRedis } from 'rate-limiter-flexible';
+import { REDIS_CONFIG } from 'src/shared/utils/config.util';
 
 const redisClient = new Redis({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: Number(process.env.REDIS_PORT) || 6379,
+  host: REDIS_CONFIG.host,
+  port: REDIS_CONFIG.port,
+  password: REDIS_CONFIG.password,
 });
 
 const connectionLimiter = new RateLimiterRedis({

@@ -25,6 +25,8 @@ const envSchema = Joi.object({
 
   REDIS_HOST: Joi.string().default('localhost'),
   REDIS_PORT: Joi.number().default(6379),
+  REDIS_PASSWORD: Joi.string().default(''),
+  REDIS_TLS: Joi.boolean().default(true),
 
   PAYMENT_SUCCESS_URL: Joi.string().uri().required(),
   PAYMENT_FAILURE_URL: Joi.string().uri().required(),
@@ -71,6 +73,8 @@ export const JWT_CONFIG = {
 export const REDIS_CONFIG = {
   host: envVars.REDIS_HOST as string,
   port: Number(envVars.REDIS_PORT),
+  password: envVars.REDIS_PASSWORD as string,
+  tls: envVars.REDIS_TLS as boolean,
 };
 
 export const Environment = {
