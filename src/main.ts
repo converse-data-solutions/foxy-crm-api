@@ -53,7 +53,7 @@ async function bootstrap() {
   app.useGlobalPipes(new CustomValidationPipe());
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
   app.enableShutdownHooks();
-
-  await app.listen(8000);
+  const port = process.env.PORT || 8000;
+  await app.listen(port);
 }
 bootstrap();
