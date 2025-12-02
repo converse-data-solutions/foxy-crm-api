@@ -1,0 +1,22 @@
+[
+  { "name": "Client Requirement Follow-up Call" },
+  { "name": "Send Website Development Proposal" },
+  { "name": "UI/UX Design Review Meeting" },
+  { "name": "Internal Code Review" },
+  { "name": "Project Demo Preparation" },
+  { "name": "API Documentation Update" },
+  { "name": "Sprint Progress Report Preparation" },
+  { "name": "Product Launch Email Campaign" },
+  { "name": "Development Team Sync Meeting" },
+  { "name": "Web Project Kickoff Meeting" },
+  { "name": "Frontend Bug Fixing Session" },
+  { "name": "Backend Performance Optimization" },
+  { "name": "Database Schema Review" },
+  { "name": "Payment Gateway Testing" },
+  { "name": "Production Deployment Setup" },
+  { "name": "Security Audit & Fixes" },
+  { "name": "Client Feedback Review" },
+  { "name": "SEO Optimization Task" },
+  { "name": "Server Load Testing" },
+  { "name": "Final Delivery Preparation" }
+]

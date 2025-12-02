@@ -18,7 +18,7 @@ export class Deal {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'name', type: 'varchar', length: 30, unique: true })
+  @Column({ name: 'name', type: 'varchar', length: 70, unique: true })
   name: string;
 
   @Column({ name: 'value', type: 'decimal', precision: 8, scale: 2 })

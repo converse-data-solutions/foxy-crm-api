@@ -161,6 +161,7 @@ export class TenantService {
       await queryRunner.release();
     }
   }
+
   async checkTenant(payload: EmailDto) {
     try {
       await this.getTenant(payload.email);

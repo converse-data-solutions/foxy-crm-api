@@ -40,7 +40,7 @@ export class Coreapp1764146513434 implements MigrationInterface {
       `CREATE TYPE "deals_stage_enum" AS ENUM('qualified', 'proposal', 'negotiation', 'accepted', 'declined', 'completed')`,
     );
     await queryRunner.query(
-      `CREATE TABLE "deals" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "name" character varying(30) NOT NULL, "value" numeric(8,2) NOT NULL, "stage" "deals_stage_enum" NOT NULL DEFAULT 'qualified', "expected_close_date" date, "notes" text, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "contact_id" uuid, "created_by" uuid, CONSTRAINT "UQ_e1f47ea0ff1173d9faab2023488" UNIQUE ("name"), CONSTRAINT "CHK_8033fda435366469b2ebec364e" CHECK ("expected_close_date" IS NULL OR "expected_close_date" > CURRENT_DATE), CONSTRAINT "PK_8c66f03b250f613ff8615940b4b" PRIMARY KEY ("id"))`,
+      `CREATE TABLE "deals" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "name" character varying(70) NOT NULL, "value" numeric(8,2) NOT NULL, "stage" "deals_stage_enum" NOT NULL DEFAULT 'qualified', "expected_close_date" date, "notes" text, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "contact_id" uuid, "created_by" uuid, CONSTRAINT "UQ_e1f47ea0ff1173d9faab2023488" UNIQUE ("name"), CONSTRAINT "CHK_8033fda435366469b2ebec364e" CHECK ("expected_close_date" IS NULL OR "expected_close_date" > CURRENT_DATE), CONSTRAINT "PK_8c66f03b250f613ff8615940b4b" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
       `CREATE TYPE "tickets_status_enum" AS ENUM('open', 'in progress', 'resolved', 'closed')`,

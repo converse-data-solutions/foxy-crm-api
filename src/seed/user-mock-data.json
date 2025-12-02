@@ -1,0 +1,65 @@
+[
+  {
+    "name": "Admin User",
+    "email": "admin@company.com",
+    "phone": "9900000001",
+    "password": "admin@123",
+    "role": "admin",
+    "address": "Corporate HQ, Andheri",
+    "city": "Mumbai",
+    "country": "India",
+    "status": true,
+    "emailVerified": true,
+    "otpVerified": true
+  },
+  {
+    "name": "Rahul Sharma",
+    "email": "rahul.sharma@sales.com",
+    "phone": "9876543201",
+    "password": "salerep@123",
+    "role": "salesrep",
+    "city": "Delhi",
+    "country": "India",
+    "status": true
+  },
+  {
+    "name": "Priya Mehta",
+    "email": "priya.mehta@sales.com",
+    "phone": "9876543202",
+    "password": "salerep@123",
+    "role": "salesrep",
+    "city": "Bangalore",
+    "country": "India",
+    "status": true
+  },
+  {
+    "name": "Amit Patel",
+    "email": "amit.patel@sales.com",
+    "phone": "9876543203",
+    "password": "salerep@123",
+    "role": "salesrep",
+    "city": "Ahmedabad",
+    "country": "India",
+    "status": true
+  },
+  {
+    "name": "Sneha Reddy",
+    "email": "sneha.reddy@sales.com",
+    "phone": "9876543204",
+    "password": "salerep@123",
+    "role": "salesrep",
+    "city": "Hyderabad",
+    "country": "India",
+    "status": true
+  },
+  {
+    "name": "Vikram Singh",
+    "email": "vikram.singh@sales.com",
+    "phone": "9876543205",
+    "password": "salerep@123",
+    "role": "salesrep",
+    "city": "Mumbai",
+    "country": "India",
+    "status": true
+  }
+]
