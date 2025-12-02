@@ -49,17 +49,17 @@ async function bootstrap() {
   await dataSource.runMigrations();
   const seederService = app.get(SeedService);
   await seederService.subscriptionSeed();
-  await seederService.runTenantSeed();
-  await seederService.defaultsubscriptionSeed();
-  const tenantDataSource = await seederService.getTenant('admin@tenant1.com');
-  await seederService.userSeed(tenantDataSource);
-  await seederService.leadSeed(tenantDataSource);
-  await seederService.leadActivityAndNoteSeed(tenantDataSource);
-  await seederService.accountSeed(tenantDataSource);
-  await seederService.contactSeed(tenantDataSource);
-  await seederService.dealSeed(tenantDataSource);
-  await seederService.ticketSeed(tenantDataSource);
-  await seederService.taskSeed(tenantDataSource);
+  // await seederService.runTenantSeed();
+  // await seederService.defaultsubscriptionSeed();
+  // const tenantDataSource = await seederService.getTenant('admin@tenant1.com');
+  // await seederService.userSeed(tenantDataSource);
+  // await seederService.leadSeed(tenantDataSource);
+  // await seederService.leadActivityAndNoteSeed(tenantDataSource);
+  // await seederService.accountSeed(tenantDataSource);
+  // await seederService.contactSeed(tenantDataSource);
+  // await seederService.dealSeed(tenantDataSource);
+  // await seederService.ticketSeed(tenantDataSource);
+  // await seederService.taskSeed(tenantDataSource);
 
   app.useGlobalPipes(new CustomValidationPipe());
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
