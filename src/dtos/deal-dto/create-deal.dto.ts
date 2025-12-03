@@ -13,7 +13,7 @@ import { Sanitize } from 'src/common/decorators/sanitize.decorator';
 export class CreateDealDto {
   @ApiProperty({
     description: 'Name of the opportunity',
-    example: 'Acme Corp Website Redesign',
+    example: 'Acme Corp Website design',
   })
   @IsDefined({ message: 'Name field is required' })
   @IsString({ message: 'Name must be string' })

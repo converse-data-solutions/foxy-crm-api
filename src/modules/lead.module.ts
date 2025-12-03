@@ -6,6 +6,8 @@ import { FileProcessor } from 'src/processors/file.processor';
 import { LeadConversionModule } from './lead-conversion.module';
 import { MetricModule } from './metric.module';
 import { EmailModule } from './email.module';
+import { SubscriptionModule } from './subscription.module';
+import { TenantThrottlerGuard } from 'src/guards/tenant-throttler.guard';
 
 @Module({
   imports: [
@@ -13,8 +15,9 @@ import { EmailModule } from './email.module';
     LeadConversionModule,
     MetricModule,
     EmailModule,
+    SubscriptionModule,
   ],
   controllers: [LeadController],
-  providers: [LeadService, FileProcessor],
+  providers: [LeadService, FileProcessor, TenantThrottlerGuard],
 })
 export class LeadModule {}

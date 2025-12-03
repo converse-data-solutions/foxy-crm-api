@@ -21,10 +21,4 @@ export class GetContactDto extends PageDto {
   @IsString()
   @Sanitize()
   phone: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString({ message: 'Account should be string' })
-  @Sanitize()
-  accountName?: string;
 }

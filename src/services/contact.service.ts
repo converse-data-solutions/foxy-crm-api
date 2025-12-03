@@ -73,13 +73,8 @@ export class ContactService {
     };
   }
 
-  async findAll(
-    tenantId: string,
-    user: User,
-    contactQuery: GetContactDto,
-  ): Promise<APIResponse<Contact[]>> {
+  async findAll(tenantId: string, contactQuery: GetContactDto): Promise<APIResponse<Contact[]>> {
     const contactRepo = await getRepo<Contact>(Contact, tenantId);
-    const noteRepo = await getRepo<Note>(Note, tenantId);
     const qb = contactRepo
       .createQueryBuilder('contact')
       .leftJoinAndSelect('contact.accountId', 'account')

@@ -3,6 +3,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
@@ -13,6 +14,7 @@ import { DealStage } from 'src/enums/status.enum';
 import { User } from './user.entity';
 
 @Entity({ name: 'deals' })
+@Index(['stage'])
 @Check(`"expected_close_date" IS NULL OR "expected_close_date" > CURRENT_DATE`)
 export class Deal {
   @PrimaryGeneratedColumn('uuid')
