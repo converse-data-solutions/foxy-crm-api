@@ -7,11 +7,13 @@ import { PlanPricing } from 'src/database/entities/base-app-entities/plan-pricin
 import { Tenant } from 'src/database/entities/base-app-entities/tenant.entity';
 import { CountryService } from 'src/services/country.service';
 import { Subscription } from 'src/database/entities/base-app-entities/subscription.entity';
+import { LoggerModule } from './logger.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Plan, PlanPricing, Tenant, Subscription]),
     StripePaymentModule,
+    LoggerModule,
   ],
   providers: [SeedService, CountryService],
   exports: [SeedService],

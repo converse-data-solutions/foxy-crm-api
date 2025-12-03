@@ -7,6 +7,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { OtpModule } from './otp.module';
 import { CountryModule } from './country.module';
 import { EmailModule } from './email.module';
+import { AuditLogModule } from './audit-log.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { EmailModule } from './email.module';
     forwardRef(() => OtpModule),
     EmailModule,
     CountryModule,
+    AuditLogModule,
   ],
   providers: [TenantService, TenantProcessor],
   exports: [TenantService, TenantProcessor],

@@ -25,6 +25,8 @@ import { paginationParams } from 'src/shared/utils/pagination-params.util';
 import { Environment, SALT_ROUNDS } from 'src/shared/utils/config.util';
 import { PlanPricing } from 'src/database/entities/base-app-entities/plan-pricing.entity';
 import { applyFilters, FiltersMap } from 'src/shared/utils/query-filter.util';
+import { AuditLogService } from './audit-log.service';
+import { Action } from 'src/enums/action.enum';
 
 @Injectable()
 export class UserService {
@@ -35,6 +37,7 @@ export class UserService {
     private readonly subscriptionRepo: Repository<Subscription>,
     @InjectRepository(PlanPricing)
     private readonly planPriceRepo: Repository<PlanPricing>,
+    private readonly auditLogService: AuditLogService,
   ) {}
   async updateUser(
     tenantId: string,
@@ -91,6 +94,13 @@ export class UserService {
       ...userData,
       refreshToken: userData.role ? null : undefined,
     });
+    if (userData.role) {
+      await this.auditLogService.createLog({
+        action: Action.RoleChanged,
+        tenantId,
+        userId: existUser.id,
+      });
+    }
     return {
       success: true,
       statusCode: HttpStatus.OK,
