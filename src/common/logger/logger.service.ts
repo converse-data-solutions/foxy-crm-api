@@ -10,8 +10,8 @@ const fileFormat = winston.format.combine(
 const consoleFormat = winston.format.combine(
   winston.format.colorize({ all: true }),
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-  winston.format.printf(({ level, message, timestamp, requestId }) => {
-    return `[${timestamp}] ${level} ${message} ${requestId ? `requestId=${requestId}` : ''}`;
+  winston.format.printf(({ level, message, timestamp, meta }) => {
+    return `[${timestamp}] ${level} ${message} ${meta ? `- meta=${JSON.stringify(meta)}` : ''}`;
   }),
 );
 
@@ -26,31 +26,35 @@ export const winstonLogger = winston.createLogger({
 
 @Injectable()
 export class LoggerService implements INestLoggerService {
-  log(message: string, meta?: any) {
-    winstonLogger.info(message, meta);
+  private wrapMeta(meta?: Record<string, any>) {
+    return meta ? { meta } : {};
   }
 
-  error(message: string, trace?: string, meta?: any) {
-    winstonLogger.error(`${message} ${trace || ''}`, meta);
+  log(message: string, meta?: Record<string, any>) {
+    winstonLogger.info({ message, ...this.wrapMeta(meta) });
   }
 
-  warn(message: string, meta?: any) {
-    winstonLogger.warn(message, meta);
+  error(message: string, trace?: string, meta?: Record<string, any>) {
+    winstonLogger.error({ message, trace, ...this.wrapMeta(meta) });
   }
 
-  debug(message: string, meta?: any) {
-    winstonLogger.debug(message, meta);
+  warn(message: string, meta?: Record<string, any>) {
+    winstonLogger.warn({ message, ...this.wrapMeta(meta) });
   }
 
-  verbose(message: string, meta?: any) {
-    winstonLogger.verbose(message, meta);
+  debug(message: string, meta?: Record<string, any>) {
+    winstonLogger.debug({ message, ...this.wrapMeta(meta) });
   }
 
-  logSuccess(message: string, meta?: any) {
-    winstonLogger.info(message, meta);
+  verbose(message: string, meta?: Record<string, any>) {
+    winstonLogger.verbose({ message, ...this.wrapMeta(meta) });
   }
 
-  logError(message: string, meta?: any) {
-    winstonLogger.error(message, meta);
+  logSuccess(message: string, meta?: Record<string, any>) {
+    this.log(message, meta);
+  }
+
+  logError(message: string, meta?: Record<string, any>) {
+    this.error(message, undefined, meta);
   }
 }

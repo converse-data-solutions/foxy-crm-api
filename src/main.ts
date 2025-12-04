@@ -11,6 +11,7 @@ import { ClassSerializerInterceptor } from '@nestjs/common';
 import { LoggerService } from './common/logger/logger.service';
 import { requestIdMiddleware } from './common/middleware/request-id.middleware';
 import { CORS_URL } from './shared/utils/config.util';
+import compression from 'compression';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { logger: new LoggerService() });
@@ -21,6 +22,8 @@ async function bootstrap() {
   app.use(cookieParser());
   app.use(helmet());
   app.use(requestIdMiddleware);
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
   app.enableCors({
     origin: CORS_URL,
@@ -49,21 +52,22 @@ async function bootstrap() {
   await dataSource.runMigrations();
   const seederService = app.get(SeedService);
   await seederService.subscriptionSeed();
-  // await seederService.runTenantSeed();
-  // await seederService.defaultsubscriptionSeed();
-  // const tenantDataSource = await seederService.getTenant('admin@tenant1.com');
-  // await seederService.userSeed(tenantDataSource);
-  // await seederService.leadSeed(tenantDataSource);
-  // await seederService.leadActivityAndNoteSeed(tenantDataSource);
-  // await seederService.accountSeed(tenantDataSource);
-  // await seederService.contactSeed(tenantDataSource);
-  // await seederService.dealSeed(tenantDataSource);
-  // await seederService.ticketSeed(tenantDataSource);
-  // await seederService.taskSeed(tenantDataSource);
+  await seederService.runTenantSeed();
+  await seederService.defaultsubscriptionSeed();
+  const tenantDataSource = await seederService.getTenant('admin@tenant1.com');
+  await seederService.userSeed(tenantDataSource);
+  await seederService.leadSeed(tenantDataSource);
+  await seederService.leadActivityAndNoteSeed(tenantDataSource);
+  await seederService.accountSeed(tenantDataSource);
+  await seederService.contactSeed(tenantDataSource);
+  await seederService.dealSeed(tenantDataSource);
+  await seederService.ticketSeed(tenantDataSource);
+  await seederService.taskSeed(tenantDataSource);
 
   app.useGlobalPipes(new CustomValidationPipe());
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
   app.enableShutdownHooks();
+  app.use(compression());
   const port = process.env.PORT || 8000;
   await app.listen(port);
 }

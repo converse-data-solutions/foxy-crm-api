@@ -10,6 +10,7 @@ import {
 import { Subscription } from './subscription.entity';
 import { SubscriptionHistory } from './subscription-history.entity';
 import { Exclude } from 'class-transformer';
+import { TenantStatus } from 'src/enums/status.enum';
 
 @Entity({ name: 'tenants' })
 export class Tenant {
@@ -69,6 +70,14 @@ export class Tenant {
 
   @Column({ name: 'email_verified', type: 'boolean', default: false })
   emailVerified: boolean;
+
+  @Column({
+    name: 'tenant_status',
+    type: 'enum',
+    enum: TenantStatus,
+    default: TenantStatus.Pending,
+  })
+  tenantStatus: TenantStatus;
 
   @OneToOne(() => Subscription, (subscription) => subscription.tenant)
   subscription: Subscription;

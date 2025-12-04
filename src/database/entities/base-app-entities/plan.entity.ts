@@ -18,4 +18,7 @@ export class Plan {
 
   @Column({ name: 'user_count', type: 'enum', enum: UserCount })
   userCount: UserCount;
+
+  @Column({ name: 'api_calls_per_minute', type: 'int', default: 50 })
+  apiCallsPerMinute: number;
 }

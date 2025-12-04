@@ -9,4 +9,5 @@ export interface PlanInterface {
     yearly: number;
   };
   userCount: UserCount;
+  apiCallsPerMinute: number;
 }

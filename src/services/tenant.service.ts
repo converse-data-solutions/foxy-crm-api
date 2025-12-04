@@ -22,6 +22,10 @@ import { CountryService } from './country.service';
 import { SALT_ROUNDS } from 'src/shared/utils/config.util';
 import { EmailService } from './email.service';
 import { EmailDto } from 'src/dtos/otp-dto/otp.dto';
+import { TenantStatus } from 'src/enums/status.enum';
+import { sanitizeSchemaName } from 'src/shared/utils/validation.util';
+import { AuditLogService } from './audit-log.service';
+import { Action } from 'src/enums/action.enum';
 
 @Injectable()
 export class TenantService {
@@ -31,11 +35,11 @@ export class TenantService {
     @Inject(forwardRef(() => OtpService))
     private readonly otpService: OtpService,
     @InjectRepository(Tenant) private readonly tenantRepo: Repository<Tenant>,
+    private readonly auditLogService: AuditLogService,
   ) {}
   async tenantSetup(tenantData: { tenant: Tenant; token?: string }) {
     const { tenant, token } = tenantData;
-    const schema = tenant.schemaName;
-
+    const schema = sanitizeSchemaName(tenant.schemaName);
     const rootDataSource = await getConnection('public');
     const queryRunner = rootDataSource.createQueryRunner();
 
@@ -62,14 +66,23 @@ export class TenantService {
         refreshToken: token,
       });
 
-      await userRepo.save(user);
+      const newUser = await userRepo.save(user);
+      tenant.tenantStatus = TenantStatus.Active;
+
+      await this.tenantRepo.save(tenant);
+      await this.auditLogService.createLog({
+        action: Action.SchemaCreated,
+        tenantId: tenant.schemaName,
+        userId: newUser.id,
+      });
 
       await this.sendEmail(user.name, user.email, true);
     } catch (error) {
+      tenant.tenantStatus = TenantStatus.Failed;
       await queryRunner.rollbackTransaction();
 
       await queryRunner.query(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`);
-
+      await this.tenantRepo.save(tenant);
       await this.sendEmail(tenant.userName, tenant.email, false);
       throw new InternalServerErrorException('Tenant setup failed. Please try again later.');
     } finally {
@@ -94,16 +107,31 @@ export class TenantService {
   async tenantSignup(tenant: TenantSignupDto) {
     const domain = tenant.email.split('@')[1];
 
-    const isTenant = await this.tenantRepo.findOne({
+    let existingTenant = await this.tenantRepo.findOne({
       where: [{ organizationName: tenant.organizationName }, { email: tenant.email }, { domain }],
     });
-    if (isTenant) {
-      if (isTenant.emailVerified) {
+    if (existingTenant) {
+      if (existingTenant.emailVerified && existingTenant.tenantStatus === TenantStatus.Active) {
         throw new ConflictException(
           'An organization or email with this domain is already registered.',
         );
       }
-      await this.otpService.sendOtp(isTenant.email);
+      if (existingTenant.tenantStatus === TenantStatus.Failed) {
+        const { password, country, ...partialTenantDetails } = tenant;
+        const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+        existingTenant.password = hashedPassword;
+
+        if (country) {
+          const tenantCountry = this.countryService.getCountry(country);
+          existingTenant.country = tenantCountry;
+        }
+
+        existingTenant.tenantStatus = TenantStatus.Pending;
+        this.tenantRepo.merge(existingTenant, partialTenantDetails);
+        await this.tenantRepo.save(existingTenant);
+      }
+
+      await this.otpService.sendOtp(existingTenant.email);
       return {
         success: true,
         statusCode: HttpStatus.OK,

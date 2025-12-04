@@ -13,7 +13,7 @@ export class GetDealDto extends PageDto {
   @Sanitize()
   name: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ example: '50000' })
   @IsOptional()
   @IsDecimal(
     { decimal_digits: '0,2' },
@@ -22,7 +22,7 @@ export class GetDealDto extends PageDto {
   @Sanitize()
   maxValue?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ example: '10000' })
   @IsOptional()
   @IsDecimal(
     { decimal_digits: '0,2' },
@@ -34,6 +34,7 @@ export class GetDealDto extends PageDto {
   @ApiPropertyOptional({
     type: String,
     format: 'date',
+    example: '2025-12-03 10:53:00',
   })
   @IsOptional()
   @IsDateString({}, { message: 'fromDate must be a valid date string (YYYY-MM-DD)' })
@@ -42,6 +43,7 @@ export class GetDealDto extends PageDto {
   @ApiPropertyOptional({
     type: String,
     format: 'date',
+    example: '2025-12-05 10:53:00',
   })
   @IsOptional()
   @IsDateString({}, { message: 'toDate must be a valid date string (YYYY-MM-DD)' })

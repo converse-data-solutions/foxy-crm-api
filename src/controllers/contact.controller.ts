@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Headers, Put, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Headers, Put, Query, UseGuards } from '@nestjs/common';
 import { ContactService } from '../services/contact.service';
 import { UpdateContactDto } from 'src/dtos/contact-dto/update-contact.dto';
 import { CreateContactDto } from 'src/dtos/contact-dto/create-contact.dto';
@@ -9,8 +9,10 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { User } from 'src/database/entities/core-app-entities/user.entity';
 import { GetContactDto } from 'src/dtos/contact-dto/get-contact.dto';
 import { CsrfHeader } from 'src/common/decorators/csrf-header.decorator';
+import { TenantThrottlerGuard } from 'src/guards/tenant-throttler.guard';
 
 @Roles(Role.SuperAdmin, Role.Admin, Role.Manager, Role.SalesRep)
+@UseGuards(TenantThrottlerGuard)
 @Controller('contacts')
 export class ContactController {
   constructor(private readonly contactService: ContactService) {}
@@ -30,12 +32,8 @@ export class ContactController {
   @Get()
   @ApiOperation({ summary: 'Get the existing contact' })
   @ApiResponse({ status: 200, description: 'Contact fetched successfully' })
-  findAll(
-    @Headers('x-tenant-id') tenantId: string,
-    @CurrentUser() user: User,
-    @Query() contactQuery: GetContactDto,
-  ) {
-    return this.contactService.findAll(tenantId, user, contactQuery);
+  findAll(@Headers('x-tenant-id') tenantId: string, @Query() contactQuery: GetContactDto) {
+    return this.contactService.findAll(tenantId, contactQuery);
   }
 
   @Put(':id')
