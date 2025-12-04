@@ -4,7 +4,7 @@ import { config as dotenvConfig } from 'dotenv';
 dotenvConfig();
 
 const envSchema = Joi.object({
-  NODE_ENV: Joi.string().valid('dev', 'prod').default('dev'),
+  NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
   DB_HOST: Joi.string().required(),
   DB_PORT: Joi.number().default(5432),
   DB_USER: Joi.string().required(),
@@ -25,12 +25,17 @@ const envSchema = Joi.object({
 
   REDIS_HOST: Joi.string().default('localhost'),
   REDIS_PORT: Joi.number().default(6379),
+  REDIS_PASSWORD: Joi.string().default(''),
+  REDIS_TLS: Joi.boolean().default(true),
 
   PAYMENT_SUCCESS_URL: Joi.string().uri().required(),
   PAYMENT_FAILURE_URL: Joi.string().uri().required(),
 
   STRIPE_SECRET_KEY: Joi.string().required(),
   STRIPE_WEBHOOK_SECRET: Joi.string().required(),
+
+  CSRF_SECRET: Joi.string().required(),
+  CORS_URL: Joi.string().required(),
 })
   .unknown()
   .required();
@@ -68,10 +73,12 @@ export const JWT_CONFIG = {
 export const REDIS_CONFIG = {
   host: envVars.REDIS_HOST as string,
   port: Number(envVars.REDIS_PORT),
+  password: envVars.REDIS_PASSWORD as string,
+  tls: envVars.REDIS_TLS as boolean,
 };
 
 export const Environment = {
-  NODE_ENV: envVars.NODE_ENV as 'dev' | 'prod',
+  NODE_ENV: envVars.NODE_ENV as 'development' | 'production',
 };
 
 export const PAYMENT_URL = {
@@ -83,3 +90,10 @@ export const STRIPE = {
   stripeSecreteKey: envVars.STRIPE_SECRET_KEY as string,
   stripeWebhookSecret: envVars.STRIPE_WEBHOOK_SECRET as string,
 };
+
+export const CSRF_SECRET = envVars.CSRF_SECRET as string;
+
+export const SHORT_LIVED_THROTTLE = { default: { limit: 5, ttl: 60000 } };
+export const MEDIUM_LIVED_THROTTLE = { default: { limit: 3, ttl: 300000 } };
+
+export const CORS_URL = envVars.CORS_URL as string;

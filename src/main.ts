@@ -9,6 +9,8 @@ import * as express from 'express';
 import helmet from 'helmet';
 import { ClassSerializerInterceptor } from '@nestjs/common';
 import { LoggerService } from './common/logger/logger.service';
+import { requestIdMiddleware } from './common/middleware/request-id.middleware';
+import { CORS_URL } from './shared/utils/config.util';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { logger: new LoggerService() });
@@ -18,11 +20,20 @@ async function bootstrap() {
 
   app.use(cookieParser());
   app.use(helmet());
+  app.use(requestIdMiddleware);
 
   app.enableCors({
-    origin: 'http://localhost:3000',
+    origin: CORS_URL,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
+    allowedHeaders: [
+      'Content-Type',
+      'x-tenant-id',
+      'X-Tenant-Id',
+      'X-Csrf-Token',
+      'x-csrf-token',
+      'Authorization',
+    ],
   });
 
   const config = new DocumentBuilder()
@@ -38,10 +49,22 @@ async function bootstrap() {
   await dataSource.runMigrations();
   const seederService = app.get(SeedService);
   await seederService.subscriptionSeed();
+  // await seederService.runTenantSeed();
+  // await seederService.defaultsubscriptionSeed();
+  // const tenantDataSource = await seederService.getTenant('admin@tenant1.com');
+  // await seederService.userSeed(tenantDataSource);
+  // await seederService.leadSeed(tenantDataSource);
+  // await seederService.leadActivityAndNoteSeed(tenantDataSource);
+  // await seederService.accountSeed(tenantDataSource);
+  // await seederService.contactSeed(tenantDataSource);
+  // await seederService.dealSeed(tenantDataSource);
+  // await seederService.ticketSeed(tenantDataSource);
+  // await seederService.taskSeed(tenantDataSource);
 
   app.useGlobalPipes(new CustomValidationPipe());
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
-
-  await app.listen(8000);
+  app.enableShutdownHooks();
+  const port = process.env.PORT || 8000;
+  await app.listen(port);
 }
 bootstrap();

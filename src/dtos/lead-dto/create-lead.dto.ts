@@ -1,12 +1,14 @@
 import { IsDefined, IsEnum, IsOptional, IsString, IsUUID, Length, Matches } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { LeadSource } from 'src/enums/core-app.enum';
+import { Sanitize } from 'src/common/decorators/sanitize.decorator';
 
 export class CreateLeadDto {
   @IsDefined({ message: 'Name is required' })
   @IsString({ message: 'Name must be a string' })
   @ApiProperty({ example: 'sam' })
   @Length(2, 30, { message: 'Name must be between 2 and 30 characters' })
+  @Sanitize()
   name: string;
 
   @IsDefined({ message: 'Email is required' })
@@ -28,7 +30,8 @@ export class CreateLeadDto {
   @IsOptional()
   @IsString({ message: 'Company name must be a string' })
   @ApiPropertyOptional({ example: 'XYZ Tech Corp' })
-  @Length(5, 100, { message: 'Company must be between 5 and 100 characters' })
+  @Length(2, 100, { message: 'Company must be between 2 and 100 characters' })
+  @Sanitize()
   company?: string;
 
   @IsEnum(LeadSource, {

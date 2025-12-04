@@ -1,0 +1,22 @@
+[
+  { "name": "Website Redesign Project", "notes": "UI/UX redesign with modern frameworks." },
+  { "name": "E-commerce Platform Development", "notes": "E-commerce site with cart & admin." },
+  { "name": "Landing Page Optimization", "notes": "Conversion-focused landing page." },
+  { "name": "Web Application Development", "notes": "Custom scalable web application." },
+  { "name": "CMS Integration Project", "notes": "Headless CMS for dynamic content." },
+  { "name": "API Development & Integration", "notes": "REST & third-party API integration." },
+  { "name": "Frontend UI Revamp", "notes": "UI revamp using React & Tailwind." },
+  { "name": "Backend System Upgrade", "notes": "Node.js backend performance upgrade." },
+  { "name": "Progressive Web App Development", "notes": "Offline-enabled mobile web app." },
+  { "name": "Website Performance Optimization", "notes": "Speed optimization with caching & CDN." },
+  { "name": "SEO & Speed Optimization", "notes": "SEO & performance tuning." },
+  { "name": "Admin Dashboard Development", "notes": "Role-based admin dashboard." },
+  { "name": "Payment Gateway Integration", "notes": "Stripe, Razorpay & PayPal integration." },
+  { "name": "User Authentication System", "notes": "Secure login with JWT & OAuth." },
+  { "name": "Multi-Tenant Web Platform", "notes": "SaaS web platform setup." },
+  { "name": "Booking & Reservation System", "notes": "Hotel & appointment booking system." },
+  { "name": "Real-Time Chat Application", "notes": "WebSocket real-time chat system." },
+  { "name": "CRM Web Application Setup", "notes": "CRM solution with leads & deals." },
+  { "name": "Analytics & Reporting Dashboard", "notes": "Charts & reporting for business." },
+  { "name": "Cloud Deployment & DevOps Setup", "notes": "CI/CD, Docker & cloud deployment." }
+]

@@ -1,0 +1,162 @@
+[
+  {
+    "name": "Tesla",
+    "industry": "Automotive",
+    "website": "https://www.tesla.com",
+    "address": "3500 Deer Creek Road",
+    "city": "Berlin",
+    "country": "Germany"
+  },
+  {
+    "name": "Google",
+    "industry": "Technology",
+    "website": "https://www.google.com",
+    "address": "1600 Amphitheatre Parkway",
+    "city": "Toronto",
+    "country": "Canada"
+  },
+  {
+    "name": "Microsoft",
+    "industry": "Software",
+    "website": "https://www.microsoft.com",
+    "address": "1 Microsoft Way",
+    "city": "London",
+    "country": "UK"
+  },
+  {
+    "name": "Amazon",
+    "industry": "E-commerce",
+    "website": "https://www.amazon.com",
+    "address": "410 Terry Avenue",
+    "city": "Sydney",
+    "country": "Australia"
+  },
+  {
+    "name": "Facebook",
+    "industry": "Social Media",
+    "website": "https://www.facebook.com",
+    "address": "1 Hacker Way",
+    "city": "Dublin",
+    "country": "Ireland"
+  },
+  {
+    "name": "Apple",
+    "industry": "Technology",
+    "website": "https://www.apple.com",
+    "address": "1 Apple Park Way",
+    "city": "Paris",
+    "country": "France"
+  },
+  {
+    "name": "Netflix",
+    "industry": "Entertainment",
+    "website": "https://www.netflix.com",
+    "address": "100 Winchester Circle",
+    "city": "Amsterdam",
+    "country": "Netherlands"
+  },
+  {
+    "name": "Adobe",
+    "industry": "Software",
+    "website": "https://www.adobe.com",
+    "address": "345 Park Avenue",
+    "city": "Zurich",
+    "country": "Switzerland"
+  },
+  {
+    "name": "Intel",
+    "industry": "Semiconductors",
+    "website": "https://www.intel.com",
+    "address": "2200 Mission College Blvd",
+    "city": "Stockholm",
+    "country": "Sweden"
+  },
+  {
+    "name": "IBM",
+    "industry": "Technology",
+    "website": "https://www.ibm.com",
+    "address": "1 New Orchard Road",
+    "city": "Barcelona",
+    "country": "Spain"
+  },
+  {
+    "name": "Salesforce",
+    "industry": "Software",
+    "website": "https://www.salesforce.com",
+    "address": "415 Mission Street",
+    "city": "Oslo",
+    "country": "Norway"
+  },
+  {
+    "name": "Uber",
+    "industry": "Transportation",
+    "website": "https://www.uber.com",
+    "address": "1455 Market Street",
+    "city": "Lisbon",
+    "country": "Portugal"
+  },
+  {
+    "name": "Airbnb",
+    "industry": "Hospitality",
+    "website": "https://www.airbnb.com",
+    "address": "888 Brannan Street",
+    "city": "Tokyo",
+    "country": "Japan"
+  },
+  {
+    "name": "Spotify",
+    "industry": "Entertainment",
+    "website": "https://www.spotify.com",
+    "address": "4 World Trade Center",
+    "city": "Seoul",
+    "country": "South Korea"
+  },
+  {
+    "name": "Snapchat",
+    "industry": "Social Media",
+    "website": "https://www.snap.com",
+    "address": "63 Market Street",
+    "city": "Mexico City",
+    "country": "Mexico"
+  },
+  {
+    "name": "Twitter",
+    "industry": "Social Media",
+    "website": "https://www.twitter.com",
+    "address": "1355 Market Street",
+    "city": "Moscow",
+    "country": "Russia"
+  },
+  {
+    "name": "LinkedIn",
+    "industry": "Social Media",
+    "website": "https://www.linkedin.com",
+    "address": "1000 W Maude Ave",
+    "city": "Cape Town",
+    "country": "South Africa"
+  },
+  {
+    "name": "Oracle",
+    "industry": "Software",
+    "website": "https://www.oracle.com",
+    "address": "500 Oracle Parkway",
+    "city": "Dubai",
+    "country": "UAE"
+  },
+  {
+    "name": "Dell",
+    "industry": "Technology",
+    "website": "https://www.dell.com",
+    "address": "1 Dell Way",
+    "city": "Singapore",
+    "country": "Singapore"
+  },
+  {
+    "name": "HP",
+    "industry": "Technology",
+    "website": "https://www.hp.com",
+    "address": "1501 Page Mill Road",
+    "city": "Bangkok",
+    "country": "Thailand"
+  }
+]

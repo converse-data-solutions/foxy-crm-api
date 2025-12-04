@@ -1,0 +1,7 @@
+[
+  { "activityType": "call_made" },
+  { "activityType": "email_sent" },
+  { "activityType": "meeting_scheduled" },
+  { "activityType": "meeting_attended" },
+  { "activityType": "status_changed" }
+]

@@ -21,6 +21,7 @@ import { getRepo } from 'src/shared/database-connection/get-connection';
 import { paginationParams } from 'src/shared/utils/pagination-params.util';
 import { MetricService } from './metric.service';
 import { Not } from 'typeorm';
+import { applyFilters, FiltersMap } from 'src/shared/utils/query-filter.util';
 @Injectable()
 export class TicketService {
   constructor(private readonly metricService: MetricService) {}
@@ -35,23 +36,23 @@ export class TicketService {
     const { dealId, contactId, ...createTicket } = createTicketDto;
     const dealExist = await dealRepo.findOne({ where: { id: dealId } });
     if (!dealExist) {
-      throw new BadRequestException('Invalid deal id or deal not found');
+      throw new BadRequestException('Invalid deal ID. Please provide a valid deal.');
     }
     if (dealExist.stage === DealStage.Declined) {
-      throw new BadRequestException('Cannot raise ticket for unaccepted deal');
+      throw new BadRequestException('Cannot create a ticket for a declined deal.');
     }
-    if (dealExist.stage === DealStage.Accepted) {
-      throw new BadRequestException('Cannot raise ticket for incomplete deal');
+    if (dealExist.stage !== DealStage.Completed) {
+      throw new BadRequestException('Cannot create a ticket for an incomplete deal.');
     }
     const ticketExist = await ticketRepo.findOne({
       where: { title: createTicketDto.title, dealId: { id: dealExist.id } },
     });
     if (ticketExist) {
-      throw new ConflictException('Ticket with this name is already created');
+      throw new ConflictException('A ticket with this title already exists for the selected deal.');
     }
     const contactExist = await contactRepo.findOne({ where: { id: contactId } });
     if (!contactExist && contactId) {
-      throw new BadRequestException('Invalid contact id or contact not found');
+      throw new BadRequestException('Invalid contact ID. Please select a valid contact.');
     }
     const ticket = ticketRepo.create({
       dealId: dealExist,
@@ -77,37 +78,35 @@ export class TicketService {
     const ticketRepo = await getRepo(Ticket, tenantId);
     const qb = ticketRepo
       .createQueryBuilder('ticket')
-      .leftJoin('ticket.dealId', 'deal')
+      .leftJoinAndSelect('ticket.dealId', 'deal')
+      .leftJoinAndSelect('ticket.contactId', 'contact')
       .leftJoin('ticket.createdBy', 'user');
-
     const { limit, page, skip } = paginationParams(ticketQuery.page, ticketQuery.limit);
+    const FILTERS: FiltersMap = {
+      title: { column: 'ticket.title', type: 'ilike' },
+      deal: { column: 'deal.name', type: 'ilike' },
+      resolvedFrom: { column: 'ticket.resolved_at', type: 'gte' },
+      resolvedTo: { column: 'ticket.resolved_at', type: 'lte' },
+    };
+    applyFilters(qb, FILTERS, ticketQuery);
 
-    for (const [key, value] of Object.entries(ticketQuery)) {
-      if (value == null || key === 'page' || key === 'limit') {
-        continue;
-      } else if (key === 'title') {
-        qb.andWhere(`ticket.title ILIKE :title`, { title: `%${value}%` });
-      } else if (key === 'status') {
-        qb.andWhere(`ticket.status =:status`, { status: value });
-      } else if (key === 'deal') {
-        qb.andWhere(`deal.name ILIKE :deal`, { deal: `%${value}%` });
-      } else if (key === 'resolvedFrom') {
-        qb.andWhere(`ticket.resolved_at >=:resolvedFrom`, { resolvedFrom: value });
-      } else if (key === 'resolvedTo') {
-        qb.andWhere(`ticket.resolved_at <=:resolvedTo`, { resolvedTo: value });
-      }
+    if (ticketQuery.sortBy) {
+      qb.orderBy(`ticket.${ticketQuery.sortBy}`, ticketQuery.sortDirection);
     }
-    if (![Role.Admin, Role.Manager].includes(user.role)) {
+    if (![Role.Admin, Role.Manager, Role.SuperAdmin].includes(user.role)) {
       qb.andWhere(`user.id =:id`, { id: user.id });
     }
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
+    const tickets = data.map(({ dealId, contactId, ...ticket }) => {
+      return { ...ticket, dealId: dealId.id, contactId: contactId.id };
+    });
     const pageInfo = { total, limit, page, totalPages: Math.ceil(total / limit) };
     return {
       success: true,
       statusCode: HttpStatus.OK,
       message: 'Ticket details fetched based on filter',
-      data,
+      data: tickets,
       pageInfo,
     };
   }
@@ -123,7 +122,7 @@ export class TicketService {
     const ticketTasks = await taskRepo.find({ where: { entityId: id } });
     const existTicket = await ticketRepo.findOne({ where: { id } });
     if (!existTicket) {
-      throw new BadRequestException('Invalid ticket id or ticket not found');
+      throw new BadRequestException('Invalid ticket ID. Ticket not found.');
     }
 
     if (updateTicketDto.status) {
@@ -133,28 +132,31 @@ export class TicketService {
           ticketTasks.length === 0 &&
           [TicketStatus.Closed, TicketStatus.Resolved].includes(updateTicketDto.status)
         ) {
-          throw new BadRequestException('Cannot close or resolve a ticket without any tasks');
+          throw new BadRequestException(
+            'Cannot close or resolve a ticket with no associated tasks.',
+          );
         }
 
         for (const task of ticketTasks) {
           if (task.status !== TaskStatus.Completed) {
-            throw new BadRequestException('Cannot close or resolve a ticket with pending tasks');
+            throw new BadRequestException('Cannot close or resolve a ticket with pending tasks.');
           }
         }
 
         if (
           user.role !== Role.Admin &&
           user.role !== Role.Manager &&
+          user.role !== Role.SuperAdmin &&
           updateTicketDto.status === TicketStatus.Closed
         ) {
-          throw new UnauthorizedException('Not authorized to close the ticket');
+          throw new UnauthorizedException('You are not authorized to close this ticket.');
         }
 
         if (
           existTicket.status !== TicketStatus.Resolved &&
           updateTicketDto.status === TicketStatus.Closed
         ) {
-          throw new BadRequestException('Cannot close a ticket without resolving it first');
+          throw new BadRequestException('You must resolve a ticket before closing it.');
         }
 
         //  Apply Resolved/Closed update
@@ -168,16 +170,16 @@ export class TicketService {
     }
     if (
       (updateTicketDto.title || updateTicketDto.description) &&
-      ![Role.Admin, Role.Manager].includes(user.role)
+      ![Role.Admin, Role.Manager, Role.SuperAdmin].includes(user.role)
     ) {
-      throw new UnauthorizedException('Not have authorization to update ticket details');
+      throw new UnauthorizedException('You are not authorized to update ticket details.');
     }
     if (updateTicketDto.title) {
       const ticketExist = await ticketRepo.findOne({
         where: { id: Not(existTicket.id), title: updateTicketDto.title },
       });
       if (ticketExist) {
-        throw new ConflictException('Ticket with this name is already exist');
+        throw new ConflictException('A ticket with this title already exists.');
       }
     }
 

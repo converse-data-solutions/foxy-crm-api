@@ -37,11 +37,16 @@ export class TokenService {
       });
       const tenant = await this.tenantService.getTenant(payload.email);
       const userRepo = await getRepo(User, tenant.schemaName);
-      const user = await userRepo.findOne({ where: { email: payload.email } });
-      if (isSocketValidation) {
-        if (!user) {
-          throw new UnauthorizedException('Invalid token');
+      const user = await userRepo.findOne({
+        where: { email: payload.email, status: true, emailVerified: true },
+      });
+
+      if (!user) {
+        const message = 'Access denied. User account inactive or email not verified.';
+        if (isSocketValidation) {
+          throw new WsException(message);
         }
+        throw new UnauthorizedException(message);
       }
       return payload;
     } catch (err) {
@@ -58,12 +63,12 @@ export class TokenService {
     const userRepo = await getRepo(User, tenant.schemaName);
     const user = await userRepo.findOne({ where: { email: payload.email } });
     if (!user || !user.refreshToken) {
-      throw new UnauthorizedException('Invalid token');
+      throw new UnauthorizedException('Invalid or missing refresh token.');
     }
     const isValidToken = await bcrypt.compare(token, user.refreshToken);
 
     if (!isValidToken) {
-      throw new UnauthorizedException('Invalid token');
+      throw new UnauthorizedException('Invalid or expired refresh token.');
     }
     const tokenPayload = {
       email: user.email,

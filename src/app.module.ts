@@ -36,19 +36,22 @@ import { MetricModule } from './modules/metric.module';
 import { EmailModule } from './modules/email.module';
 import { SubscriptionHistoryModule } from './modules/subscription-history.module';
 import { LoggerModule } from './modules/logger.module';
+import { CsrfGuard } from './guards/csrf.guard';
+import { ConnectionCleanupService } from './services/connection-cleanup.service';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: Environment.NODE_ENV !== 'dev' ? '.env.docker' : '.env',
+      ignoreEnvFile: process.env.NODE_ENV === 'production',
+      envFilePath: ['.env', '.env.docker'],
     }),
     ScheduleModule.forRoot(),
     ThrottlerModule.forRoot({
       throttlers: [
         {
           ttl: 60000,
-          limit: 10,
+          limit: 100,
         },
       ],
     }),
@@ -57,8 +60,9 @@ import { LoggerModule } from './modules/logger.module';
       connection: {
         host: REDIS_CONFIG.host,
         port: REDIS_CONFIG.port,
+        password: REDIS_CONFIG.password,
       },
-      defaultJobOptions: { removeOnComplete: true },
+      defaultJobOptions: { removeOnComplete: true, removeOnFail: true },
     }),
     MailerModule.forRoot({
       transport: {
@@ -107,6 +111,7 @@ import { LoggerModule } from './modules/logger.module';
   providers: [
     JwtAuthGuard,
     RolesGuard,
+    CsrfGuard,
     {
       provide: APP_INTERCEPTOR,
       useClass: LoggerInterceptor,
@@ -125,6 +130,7 @@ import { LoggerModule } from './modules/logger.module';
       provide: APP_FILTER,
       useClass: CustomExceptionFilter,
     },
+    ConnectionCleanupService,
   ],
   controllers: [StripePaymentController],
 })

@@ -1,6 +1,7 @@
 import { ApiProperty, OmitType, PickType } from '@nestjs/swagger';
-import { IsDefined, IsString, Length, Matches } from 'class-validator';
+import { IsDefined, IsString, Length } from 'class-validator';
 import { TenantSignupDto } from '../tenant-dto/tenant-signup.dto';
+import { Sanitize } from 'src/common/decorators/sanitize.decorator';
 
 export class SignIn extends PickType(TenantSignupDto, ['email', 'password'] as const) {}
 
@@ -11,7 +12,8 @@ export class UserSignupDto extends OmitType(TenantSignupDto, [
 ]) {
   @IsDefined({ message: 'Name is required' })
   @IsString({ message: 'Name must be a string' })
-  @Length(3, 30, { message: 'Name must be between 3 and 30 characters' })
+  @Length(2, 30, { message: 'Name must be between 2 and 30 characters' })
   @ApiProperty({ example: 'john' })
+  @Sanitize()
   name: string;
 }

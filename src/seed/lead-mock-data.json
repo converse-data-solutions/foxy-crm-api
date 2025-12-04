@@ -1,0 +1,82 @@
+[
+  {
+    "name": "Alice Johnson",
+    "email": "alice.johnson@example.com",
+    "phone": "7012345678",
+    "company": "Tesla Motors",
+    "source": "website",
+    "status": "new"
+  },
+  {
+    "name": "Brian Smith",
+    "email": "brian.smith@example.com",
+    "phone": "7012345679",
+    "company": "Amazon Inc",
+    "source": "website",
+    "status": "new"
+  },
+  {
+    "name": "Catherine Lee",
+    "email": "catherine.lee@example.com",
+    "phone": "7012345680",
+    "company": "Microsoft Corp",
+    "source": "referral",
+    "status": "qualified"
+  },
+  {
+    "name": "Daniel Kim",
+    "email": "daniel.kim@example.com",
+    "phone": "7012345681",
+    "company": "Google LLC",
+    "source": "referral",
+    "status": "qualified"
+  },
+  {
+    "name": "Evelyn Martinez",
+    "email": "evelyn.martinez@example.com",
+    "phone": "7012345682",
+    "company": "Facebook Inc",
+    "source": "website",
+    "status": "disqualified"
+  },
+  {
+    "name": "Frank Thompson",
+    "email": "frank.thompson@example.com",
+    "phone": "7012345683",
+    "company": "Apple Inc",
+    "source": "website",
+    "status": "disqualified"
+  },
+  {
+    "name": "Grace Wilson",
+    "email": "grace.wilson@example.com",
+    "phone": "7012345684",
+    "company": "Dunder Mifflin",
+    "source": "referral",
+    "status": "in progress"
+  },
+  {
+    "name": "Henry Brown",
+    "email": "henry.brown@example.com",
+    "phone": "7012345685",
+    "company": "Dunder Mifflin",
+    "source": "website",
+    "status": "in progress"
+  },
+  {
+    "name": "Isabella Davis",
+    "email": "isabella.davis@example.com",
+    "phone": "7012345686",
+    "company": "Dunder Mifflin",
+    "source": "social media",
+    "status": "converted"
+  },
+  {
+    "name": "Jack Miller",
+    "email": "jack.miller@example.com",
+    "phone": "7012345687",
+    "company": "Dunder Mifflin",
+    "source": "referral",
+    "status": "converted"
+  }
+]

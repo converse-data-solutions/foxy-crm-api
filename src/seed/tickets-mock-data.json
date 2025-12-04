@@ -1,0 +1,28 @@
+[
+  { "title": "Login Issue", "description": "User is unable to login with correct credentials." },
+  { "title": "Payment Error", "description": "Payment is failing during checkout." },
+  { "title": "Feature Request", "description": "User requested dark mode feature." },
+  { "title": "Bug Report", "description": "Dashboard data not loading properly." },
+  { "title": "Account Suspension", "description": "User account was suspended without notice." },
+  { "title": "API Integration", "description": "Third-party API integration not working." },
+  { "title": "Data Migration", "description": "Old system data not migrated correctly." },
+  { "title": "Performance Issue", "description": "Website is slow during peak hours." },
+  { "title": "UI Glitch", "description": "Button alignment broken on mobile." },
+  { "title": "Security Concern", "description": "Suspicious login attempts detected." },
+  { "title": "Notification Failure", "description": "Email notifications not being sent." },
+  { "title": "Password Reset", "description": "Users unable to reset their passwords." },
+  { "title": "Subscription Issue", "description": "Subscription not renewing automatically." },
+  { "title": "Data Export", "description": "CSV export generates incomplete data." },
+  { "title": "Mobile App Crash", "description": "App crashes when opening settings page." },
+  { "title": "Search Bug", "description": "Search results are not showing relevant items." },
+  { "title": "Profile Update", "description": "Users cannot update profile information." },
+  {
+    "title": "Connectivity Issue",
+    "description": "Server connectivity intermittent during peak traffic."
+  },
+  {
+    "title": "Invoice Generation",
+    "description": "Invoices are not generated correctly for some orders."
+  },
+  { "title": "Email Bounce", "description": "Transactional emails bouncing for certain domains." }
+]

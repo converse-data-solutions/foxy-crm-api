@@ -1,4 +1,10 @@
-import { BadRequestException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { APIResponse } from 'src/common/dtos/response.dto';
 import { LeadActivity } from 'src/database/entities/core-app-entities/lead-activity.entity';
 import { Lead } from 'src/database/entities/core-app-entities/lead.entity';
@@ -8,6 +14,7 @@ import { CreateLeadActivityDto } from 'src/dtos/activity-dto/create-lead-activit
 import { Role } from 'src/enums/core-app.enum';
 import { NotesEntityName } from 'src/enums/lead-activity.enum';
 import { LeadStatus } from 'src/enums/status.enum';
+import { ActivityWithNote } from 'src/interfaces/activity-note.interface';
 import { getRepo } from 'src/shared/database-connection/get-connection';
 
 @Injectable()
@@ -21,17 +28,26 @@ export class LeadActivityService {
     const noteRepo = await getRepo(Note, tenantId);
     const leadRepo = await getRepo(Lead, tenantId);
     const lead = await leadRepo.findOne({
-      where: { id: createLeadActivityDto.leadId, assignedTo: { id: user.id } },
+      where: { id: createLeadActivityDto.leadId },
+      relations: { assignedTo: true },
     });
     if (!lead) {
-      throw new NotFoundException('Lead not found or invalid lead ID');
+      throw new NotFoundException('Lead not found or invalid lead ID.');
+    }
+    if (
+      user.role !== Role.Admin &&
+      user.role !== Role.SuperAdmin &&
+      lead.assignedTo?.email !== user.email
+    ) {
+      throw new UnauthorizedException('You are not authorized to create lead activity.');
     }
     if (lead.status === LeadStatus.Converted) {
-      throw new BadRequestException('Not create lead activity after lead is converted');
+      throw new BadRequestException('Cannot create a lead activity after the lead is converted.');
     }
     const { notes, leadId, ...leadActivity } = createLeadActivityDto;
+    let note: Note | null = null;
     if (notes) {
-      await noteRepo.save({
+      note = await noteRepo.save({
         content: notes,
         entityId: lead.id,
         entityName: NotesEntityName.Lead,
@@ -42,6 +58,7 @@ export class LeadActivityService {
       ...leadActivity,
       leadId: lead,
       createdBy: user,
+      noteId: note ? note.id : undefined,
     });
     return {
       success: true,
@@ -53,34 +70,52 @@ export class LeadActivityService {
   async findAllLeadActivities(tenantId: string, user: User, leadId: string): Promise<APIResponse> {
     const leadActivityRepo = await getRepo<LeadActivity>(LeadActivity, tenantId);
     const leadRepo = await getRepo(Lead, tenantId);
-    const lead = await leadRepo.findOne({ where: { id: leadId, assignedTo: { id: user.id } } });
+    let lead: Lead | null;
+    if ([Role.Admin, Role.SuperAdmin, Role.Manager].includes(user.role)) {
+      lead = await leadRepo.findOne({
+        where: { id: leadId },
+      });
+    } else {
+      lead = await leadRepo.findOne({
+        where: { id: leadId, assignedTo: { id: user.id } },
+      });
+    }
     const noteRepo = await getRepo(Note, tenantId);
     const notes = await noteRepo.find({
       where: { entityId: leadId, entityName: NotesEntityName.Lead },
       order: { createdAt: 'DESC' },
     });
     if (!lead) {
-      throw new NotFoundException('Lead not found or invalid lead ID');
+      throw new NotFoundException('Lead not found or invalid lead ID.');
     }
     if (
       lead.assignedTo &&
       lead.assignedTo.id !== user.id &&
       user.role !== Role.Admin &&
-      user.role !== Role.Manager
+      user.role !== Role.Manager &&
+      user.role !== Role.SuperAdmin
     ) {
-      throw new NotFoundException('You do not have permission to view these lead activities');
+      throw new NotFoundException('You do not have permission to view activities for this lead.');
     }
     const leadActivities = await leadActivityRepo.find({
       where: { leadId: { id: leadId } },
     });
     if (leadActivities.length === 0) {
-      throw new NotFoundException('No lead activities found for the given lead ID');
+      throw new NotFoundException('No activities found for this lead.');
     }
+    const result: ActivityWithNote[] = leadActivities.map((activity) => {
+      const note = notes.find((note) => note.id === activity.noteId);
+      return {
+        activity,
+        note: note || null,
+      };
+    });
+
     return {
       success: true,
       statusCode: HttpStatus.OK,
       message: 'Lead activities fetched successfully',
-      data: { leadActivities, notes },
+      data: result,
     };
   }
 }

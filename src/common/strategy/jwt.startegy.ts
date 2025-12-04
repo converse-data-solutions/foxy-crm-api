@@ -24,11 +24,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const tenantHeaders = req?.headers['x-tenant-id'];
     const tenantId = Array.isArray(tenantHeaders) ? tenantHeaders[0] : tenantHeaders;
     if (!tenantId) {
-      throw new BadRequestException('x-tenant-id header is missing');
+      throw new BadRequestException('Missing tenant identifier in headers.');
     }
 
     if (!validate(tenantId) || version(tenantId) !== 4) {
-      throw new BadRequestException('Invalid tenant-id.');
+      throw new BadRequestException('Invalid tenant identifier format.');
+    }
+
+    if (!validate(tenantId) || version(tenantId) !== 4) {
+      throw new BadRequestException('Invalid tenant identifier format.');
     }
     const user = await this.userService.validateUser(
       payload,

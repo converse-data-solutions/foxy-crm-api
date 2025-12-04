@@ -1,7 +1,9 @@
 import { ServiceUnavailableException } from '@nestjs/common';
+import { winstonLogger } from 'src/common/logger/logger.service';
 import { coreDataSource } from 'src/database/datasources/core-app-data-source';
 import { DataSource, DataSourceOptions, EntityTarget, ObjectLiteral, Repository } from 'typeorm';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
+import { log } from 'winston';
 
 interface CachedDataSource {
   dataSource: DataSource;
@@ -11,25 +13,28 @@ interface CachedDataSource {
 
 const IDLE_TIMEOUT_MS = 10 * 60 * 1000;
 const connections: Record<string, CachedDataSource> = {};
+const initializationLocks = new Map<string, Promise<DataSource>>();
 const MAX_CONNECTIONS = 50;
 let cleanupInterval: NodeJS.Timeout | null = null;
 
-export async function getConnection(schemaName: string): Promise<DataSource> {
+export async function getConnection(schemaName: string) {
   const now = Date.now();
 
   const activeConnections = Object.keys(connections).length;
   if (activeConnections >= MAX_CONNECTIONS) {
-    throw new ServiceUnavailableException('Maximum tenant connection limit reached ');
+    throw new ServiceUnavailableException('Maximum tenant connection limit reached');
   }
+
   if (connections[schemaName]?.dataSource.isInitialized) {
     connections[schemaName].lastAccess = now;
     return connections[schemaName].dataSource;
   }
 
-  if (connections[schemaName]?.initializing) {
-    await connections[schemaName].initializing;
+  if (initializationLocks.has(schemaName)) {
+    const existingInit = initializationLocks.get(schemaName)!;
+    const dataSource = await existingInit;
     connections[schemaName].lastAccess = now;
-    return connections[schemaName].dataSource;
+    return dataSource;
   }
 
   const baseOptions = coreDataSource.options as PostgresConnectionOptions;
@@ -41,23 +46,28 @@ export async function getConnection(schemaName: string): Promise<DataSource> {
 
   const dataSource = new DataSource(dynamicOptions);
 
-  connections[schemaName] = {
-    dataSource,
-    lastAccess: now,
-    initializing: dataSource.initialize(),
-  };
+  const initPromise = (async () => {
+    try {
+      await dataSource.initialize();
+      connections[schemaName] = {
+        dataSource,
+        lastAccess: now,
+      };
+      return dataSource;
+    } catch (err) {
+      delete connections[schemaName];
+      throw err;
+    } finally {
+      initializationLocks.delete(schemaName);
+    }
+  })();
 
-  try {
-    await connections[schemaName].initializing;
-    delete connections[schemaName].initializing;
-  } catch (err) {
-    delete connections[schemaName]; // cleanup on failure
-    throw err;
-  }
+  initializationLocks.set(schemaName, initPromise);
+  const result = await initPromise;
 
   if (!cleanupInterval) startCleanupInterval();
 
-  return dataSource;
+  return result;
 }
 
 function startCleanupInterval(): void {
@@ -76,7 +86,11 @@ function startCleanupInterval(): void {
         await connections[schema].dataSource.destroy();
         delete connections[schema];
       } catch (err) {
-        throw new Error(`[TenantDB] Failed to close connection for ${schema}:${err}`);
+        winstonLogger.error(`Failed to clean up connection for schema: ${schema}`);
+        if (process.env.NODE_ENV !== 'production') {
+          winstonLogger.debug(`Cleanup error for ${schema}: ${err.message}`);
+        }
+        delete connections[schema];
       }
     }
 
@@ -86,6 +100,28 @@ function startCleanupInterval(): void {
       cleanupInterval = null;
     }
   }, 60 * 1000);
+}
+
+export async function closeAllConnections(): Promise<void> {
+  let i = 1;
+  for (const [schema, cached] of Object.entries(connections)) {
+    try {
+      if (cached.dataSource.isInitialized) {
+        await cached.dataSource.destroy();
+      }
+    } catch (err) {
+      throw err;
+    } finally {
+      delete connections[schema];
+    }
+  }
+
+  if (cleanupInterval) {
+    clearInterval(cleanupInterval);
+    cleanupInterval = null;
+  }
+
+  initializationLocks.clear();
 }
 
 export async function getRepo<T extends ObjectLiteral>(

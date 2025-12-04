@@ -1,0 +1,16 @@
+import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
+import { Request } from 'express';
+import { csrfUtils } from 'src/shared/utils/csrf.util';
+
+@Injectable()
+export class CsrfGuard implements CanActivate {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const req = context.switchToHttp().getRequest<Request>();
+    const isValid = csrfUtils.validateRequest(req);
+
+    if (!isValid) {
+      throw new ForbiddenException('Invalid or missing CSRF token');
+    }
+    return true;
+  }
+}

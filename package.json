@@ -54,17 +54,20 @@
     "cookie": "^1.0.2",
     "cookie-parser": "^1.4.7",
     "countries-list": "^3.1.1",
+    "csrf-csrf": "^4.0.3",
     "csv-parser": "^3.2.0",
     "dotenv": "^17.2.2",
     "helmet": "^8.1.0",
-    "ioredis": "^5.8.1",
+    "ioredis": "^5.8.2",
     "joi": "^18.0.1",
     "nodemailer": "^7.0.6",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pg": "^8.16.3",
+    "rate-limiter-flexible": "^8.1.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "sanitize-html": "^2.17.0",
     "socket.io": "^4.8.1",
     "stripe": "^18.5.0",
     "swagger-ui-express": "^5.0.1",
@@ -88,6 +91,7 @@
     "@types/multer": "^2.0.0",
     "@types/node": "^22.10.7",
     "@types/nodemailer": "^7.0.1",
+    "@types/sanitize-html": "^2.16.0",
     "@types/stripe": "^8.0.416",
     "@types/supertest": "^6.0.2",
     "@types/swagger-ui-express": "^4.1.8",
@@ -108,6 +112,9 @@
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.20.0"
   },
+  "engines": {
+    "node": "20.19.0"
+  },
   "jest": {
     "moduleFileExtensions": [
       "js",
@@ -120,15 +127,24 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "**/*.service.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "coverageReporters": [
+      "json",
+      "lcov",
+      "text",
+      "clover"
+    ],
+    "collectCoverage": true,
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "^src/(.*)$": "<rootDir>/$1"
+    }
   },
   "lint-staged": {
     "*.{ts,js,json,}": [
-      "prettier --write",
-      "git add"
+      "prettier --write"
     ]
   }
 }

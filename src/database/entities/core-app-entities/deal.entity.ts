@@ -18,7 +18,7 @@ export class Deal {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'name', type: 'varchar', length: 30, unique: true })
+  @Column({ name: 'name', type: 'varchar', length: 70, unique: true })
   name: string;
 
   @Column({ name: 'value', type: 'decimal', precision: 8, scale: 2 })
@@ -34,6 +34,9 @@ export class Deal {
 
   @Column({ name: 'expected_close_date', type: 'date', nullable: true })
   expectedCloseDate?: Date;
+
+  @Column({ nullable: true, type: 'text' })
+  notes?: string;
 
   @ManyToOne(() => Contact)
   @JoinColumn({ name: 'contact_id' })

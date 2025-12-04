@@ -46,11 +46,16 @@ export class OtpService {
       existUser = await repo.findOne({ where: { email } });
     }
     if (!existUser) {
-      throw new BadRequestException('Please provide registered email address');
+      throw new BadRequestException('Please provide a registered email address.');
     }
-    const otp = generateOtp();
+    existUser.otp = undefined;
+    if (existUser instanceof User) {
+      existUser.otpVerified = false;
+    }
+    const rawOtp = generateOtp();
     const expiryAt = new Date(Date.now() + 1.5 * 60 * 1000);
-    existUser.otp = Number(otp);
+    const otp = bcrypt.hashSync(rawOtp, SALT_ROUNDS);
+    existUser.otp = otp;
     existUser.otpExpiryAt = expiryAt;
     await repo.save(existUser);
     const name = existUser instanceof User ? existUser.name : existUser.userName;
@@ -61,7 +66,8 @@ export class OtpService {
       emailType = EmailTemplateType.ForgotPassword;
       subject = 'Your One-Time Password (OTP) for Password Reset';
     }
-    const html = ForgotAndVerifyMail(name, otp, emailType);
+
+    const html = ForgotAndVerifyMail(name, rawOtp, emailType);
     await this.emailService.sendMail({
       to: existUser.email,
       html,
@@ -83,16 +89,16 @@ export class OtpService {
       userExist = await repo.findOne({ where: { email: otpDto.email } });
     }
     if (!userExist) {
-      throw new BadRequestException('Invalid email address or email not found');
+      throw new BadRequestException('Invalid or unregistered email address.');
     }
     if (userExist.otpExpiryAt && userExist.otpExpiryAt < new Date()) {
-      throw new BadRequestException('Otp expired please click resend and verify');
+      throw new BadRequestException('OTP has expired. Please resend and verify again.');
     }
-    if (userExist.otp && userExist.otp !== otpDto.otp) {
-      throw new BadRequestException('Invalid or wrong otp');
+    if (userExist.otp && bcrypt.compareSync(otpDto.otp.toString(), userExist.otp) === false) {
+      throw new BadRequestException('Invalid or incorrect OTP.');
     }
     if (userExist.emailVerified) {
-      throw new BadRequestException('Email is already verified');
+      throw new BadRequestException('Email has already been verified.');
     }
 
     const payload = plainToInstance(JwtPayload, userExist, {
@@ -120,8 +126,7 @@ export class OtpService {
     } else {
       otpFor = 'userSignup';
     }
-
-    const role = userExist instanceof Tenant ? Role.Admin : userExist.role;
+    const role = userExist instanceof Tenant ? Role.SuperAdmin : userExist.role;
     return {
       success: true,
       statusCode: HttpStatus.OK,
@@ -136,13 +141,13 @@ export class OtpService {
     const userRepo = await getRepo(User, tenant.schemaName);
     const userExist = await userRepo.findOne({ where: { email: otpDto.email } });
     if (!userExist) {
-      throw new BadRequestException('Invalid email address or email not found');
+      throw new BadRequestException('Invalid or unregistered email address.');
     }
     if (userExist.otpExpiryAt && userExist.otpExpiryAt < new Date()) {
-      throw new BadRequestException('Otp expired please click resend and verify');
+      throw new BadRequestException('OTP has expired. Please resend and verify again.');
     }
-    if (userExist.otp && userExist.otp !== otpDto.otp) {
-      throw new BadRequestException('Invalid or wrong otp');
+    if (userExist.otp && bcrypt.compareSync(otpDto.otp.toString(), userExist.otp) === false) {
+      throw new BadRequestException('Invalid or incorrect OTP.');
     }
     userExist.otpVerified = true;
     await userRepo.save(userExist);

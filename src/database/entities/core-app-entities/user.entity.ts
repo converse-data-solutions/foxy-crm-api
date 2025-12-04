@@ -48,8 +48,8 @@ export class User {
   statusCause?: StatusCause | null;
 
   @Exclude()
-  @Column({ name: 'otp', type: 'int', nullable: true })
-  otp?: number;
+  @Column({ name: 'otp', type: 'varchar', length: 100, nullable: true })
+  otp?: string;
 
   @Exclude()
   @Column({ name: 'otp_expiry_at', type: 'timestamp', nullable: true })
@@ -66,8 +66,9 @@ export class User {
   @OneToMany(() => Lead, (lead) => lead.assignedTo, { nullable: true })
   leads: Lead[];
 
+  @Exclude()
   @Column({ nullable: true, type: 'text' })
-  refreshToken?: string;
+  refreshToken?: string | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
