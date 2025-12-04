@@ -47,7 +47,7 @@ export class ContactService {
         throw new NotFoundException('Invalid account reference.');
       }
     }
-    if (assignedTo) {
+    if (assignedTo && ![Role.SuperAdmin, Role.Admin, Role.Manager].includes(user.role)) {
       throw new UnauthorizedException('You are not authorized to assign user to contacts.');
     }
     let existingUser: User | null = null;
