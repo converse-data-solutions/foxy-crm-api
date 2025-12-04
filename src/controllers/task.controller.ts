@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Headers, Put, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Headers, Put, Query } from '@nestjs/common';
 import { TaskService } from '../services/task.service';
 import { UpdateTaskDto } from 'src/dtos/task-dto/update-task.dto';
 import { CreateTaskDto } from 'src/dtos/task-dto/create-task.dto';
@@ -9,10 +9,8 @@ import { Roles } from 'src/common/decorators/role.decorator';
 import { Role } from 'src/enums/core-app.enum';
 import { GetTaskDto } from 'src/dtos/task-dto/get-task.dto';
 import { CsrfHeader } from 'src/common/decorators/csrf-header.decorator';
-import { TenantThrottlerGuard } from 'src/guards/tenant-throttler.guard';
 
 @Roles(Role.SuperAdmin, Role.Admin, Role.Manager)
-@UseGuards(TenantThrottlerGuard)
 @Controller('tasks')
 export class TaskController {
   constructor(private readonly taskService: TaskService) {}

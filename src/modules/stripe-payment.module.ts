@@ -14,7 +14,6 @@ import { EmailModule } from './email.module';
 import { SubscriptionHistoryModule } from './subscription-history.module';
 import { PlanPricing } from 'src/database/entities/base-app-entities/plan-pricing.entity';
 import { LoggerModule } from './logger.module';
-import { AuditLogModule } from './audit-log.module';
 
 @Module({
   imports: [
@@ -25,7 +24,6 @@ import { AuditLogModule } from './audit-log.module';
     forwardRef(() => SubscriptionModule),
     SubscriptionHistoryModule,
     LoggerModule,
-    AuditLogModule,
   ],
   controllers: [StripePaymentController],
   providers: [

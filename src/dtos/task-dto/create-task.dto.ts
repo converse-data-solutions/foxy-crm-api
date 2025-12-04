@@ -41,7 +41,7 @@ export class CreateTaskDto {
   @IsEnum(TaskPriority)
   priority?: TaskPriority;
 
-  @ApiProperty({ example: '6e6c5c49-b5c2-46fb-8f7e-23f7a6d2dcd7' })
+  @ApiProperty({})
   @IsDefined({ message: 'Assigned to is required' })
   @IsUUID('4', { message: 'Assigned to should be a UUID' })
   assignedTo: string;

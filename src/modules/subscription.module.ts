@@ -8,7 +8,6 @@ import { TokenModule } from './token.module';
 import { EmailModule } from './email.module';
 import { TenantModule } from './tenant.module';
 import { StripePaymentModule } from './stripe-payment.module';
-import { TenantThrottlerGuard } from 'src/guards/tenant-throttler.guard';
 
 @Module({
   imports: [

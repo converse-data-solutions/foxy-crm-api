@@ -47,7 +47,7 @@ export class ContactService {
         throw new NotFoundException('Invalid account reference.');
       }
     }
-    if (assignedTo && ![Role.SuperAdmin, Role.Admin, Role.Manager].includes(user.role)) {
+    if (assignedTo) {
       throw new UnauthorizedException('You are not authorized to assign user to contacts.');
     }
     let existingUser: User | null = null;
@@ -73,8 +73,13 @@ export class ContactService {
     };
   }
 
-  async findAll(tenantId: string, contactQuery: GetContactDto): Promise<APIResponse<Contact[]>> {
+  async findAll(
+    tenantId: string,
+    user: User,
+    contactQuery: GetContactDto,
+  ): Promise<APIResponse<Contact[]>> {
     const contactRepo = await getRepo<Contact>(Contact, tenantId);
+    const noteRepo = await getRepo<Note>(Note, tenantId);
     const qb = contactRepo
       .createQueryBuilder('contact')
       .leftJoinAndSelect('contact.accountId', 'account')

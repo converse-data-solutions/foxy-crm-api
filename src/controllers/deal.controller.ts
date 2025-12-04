@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Headers, Query, Put, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Headers, Query, Put, Param } from '@nestjs/common';
 import { DealService } from '../services/deal.service';
 import { CreateDealDto } from 'src/dtos/deal-dto/create-deal.dto';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
@@ -9,10 +9,8 @@ import { Role } from 'src/enums/core-app.enum';
 import { UpdateDealDto } from 'src/dtos/deal-dto/update-deal.dto';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CsrfHeader } from 'src/common/decorators/csrf-header.decorator';
-import { TenantThrottlerGuard } from 'src/guards/tenant-throttler.guard';
 
 @Roles(Role.SuperAdmin, Role.Admin, Role.Manager)
-@UseGuards(TenantThrottlerGuard)
 @Controller('deals')
 export class DealController {
   constructor(private readonly dealService: DealService) {}

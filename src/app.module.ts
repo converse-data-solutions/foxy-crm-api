@@ -37,8 +37,7 @@ import { EmailModule } from './modules/email.module';
 import { SubscriptionHistoryModule } from './modules/subscription-history.module';
 import { LoggerModule } from './modules/logger.module';
 import { CsrfGuard } from './guards/csrf.guard';
-import { CleanupModule } from './modules/cleanup.module';
-import { AuditLogModule } from './modules/audit-log.module';
+import { ConnectionCleanupService } from './services/connection-cleanup.service';
 
 @Module({
   imports: [
@@ -52,7 +51,7 @@ import { AuditLogModule } from './modules/audit-log.module';
       throttlers: [
         {
           ttl: 60000,
-          limit: 15,
+          limit: 100,
         },
       ],
     }),
@@ -108,8 +107,6 @@ import { AuditLogModule } from './modules/audit-log.module';
     SubscriptionHistoryModule,
     EventEmitterModule.forRoot(),
     LoggerModule,
-    CleanupModule,
-    AuditLogModule,
   ],
   providers: [
     JwtAuthGuard,
@@ -133,6 +130,7 @@ import { AuditLogModule } from './modules/audit-log.module';
       provide: APP_FILTER,
       useClass: CustomExceptionFilter,
     },
+    ConnectionCleanupService,
   ],
   controllers: [StripePaymentController],
 })

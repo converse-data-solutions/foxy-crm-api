@@ -7,8 +7,7 @@
       "halfyearly": 2599,
       "yearly": 4999
     },
-    "userCount": 10,
-    "apiCallsPerMinute": 5
+    "userCount": 10
   },
   {
     "name": "Professional",
@@ -18,8 +17,7 @@
       "halfyearly": 5199,
       "yearly": 9999
     },
-    "userCount": 20,
-    "apiCallsPerMinute": 200
+    "userCount": 20
   },
   {
     "name": "Enterprise",
@@ -29,7 +27,6 @@
       "halfyearly": 10399,
       "yearly": 19999
     },
-    "userCount": "Infinity",
-    "apiCallsPerMinute": 1000
+    "userCount": "Infinity"
   }
 ]

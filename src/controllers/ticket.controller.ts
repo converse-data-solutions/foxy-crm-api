@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Put, Headers, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Headers, Query } from '@nestjs/common';
 import { TicketService } from '../services/ticket.service';
 import { UpdateTicketDto } from 'src/dtos/ticket-dto/update-ticket.dto';
 import { CreateTicketDto } from 'src/dtos/ticket-dto/create-ticket.dto';
@@ -9,10 +9,8 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { User } from 'src/database/entities/core-app-entities/user.entity';
 import { GetTicketDto } from 'src/dtos/ticket-dto/get-ticket.dto';
 import { CsrfHeader } from 'src/common/decorators/csrf-header.decorator';
-import { TenantThrottlerGuard } from 'src/guards/tenant-throttler.guard';
 
 @Roles(Role.SuperAdmin, Role.Admin, Role.Manager, Role.SalesRep, Role.Support)
-@UseGuards(TenantThrottlerGuard)
 @Controller('tickets')
 export class TicketController {
   constructor(private readonly ticketService: TicketService) {}

@@ -11,7 +11,6 @@ import {
   Query,
   Put,
   Res,
-  UseGuards,
 } from '@nestjs/common';
 import { LeadService } from '../services/lead.service';
 import { CreateLeadDto } from '../dtos/lead-dto/create-lead.dto';
@@ -30,10 +29,8 @@ import { LeadConversionService } from 'src/services/lead-conversion.service';
 import { CsrfHeader } from 'src/common/decorators/csrf-header.decorator';
 import { Response } from 'express';
 import path from 'path';
-import { TenantThrottlerGuard } from 'src/guards/tenant-throttler.guard';
 
 @Roles(Role.SuperAdmin, Role.Admin, Role.Manager)
-@UseGuards(TenantThrottlerGuard)
 @Controller('leads')
 export class LeadController {
   constructor(

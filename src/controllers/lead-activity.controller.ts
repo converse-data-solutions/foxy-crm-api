@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Headers, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Headers, Post, Body } from '@nestjs/common';
 import { LeadActivityService } from '../services/lead-activity.service';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { User } from 'src/database/entities/core-app-entities/user.entity';
@@ -7,10 +7,8 @@ import { Role } from 'src/enums/core-app.enum';
 import { CreateLeadActivityDto } from 'src/dtos/activity-dto/create-lead-activity.dto';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CsrfHeader } from 'src/common/decorators/csrf-header.decorator';
-import { TenantThrottlerGuard } from 'src/guards/tenant-throttler.guard';
 
 @Roles(Role.SuperAdmin, Role.Admin, Role.SalesRep, Role.Manager)
-@UseGuards(TenantThrottlerGuard)
 @Controller('lead/activities')
 export class LeadActivityController {
   constructor(private readonly leadActivityService: LeadActivityService) {}

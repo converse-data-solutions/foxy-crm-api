@@ -5,13 +5,11 @@ import { TaskEventHandler } from 'src/services/task-event-handler.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { entities } from 'src/database/entities/base-app-entities';
 import { EmailModule } from './email.module';
-import { SubscriptionModule } from './subscription.module';
-import { TenantThrottlerGuard } from 'src/guards/tenant-throttler.guard';
 
 @Module({
-  imports: [TypeOrmModule.forFeature(entities), EmailModule, SubscriptionModule],
+  imports: [TypeOrmModule.forFeature(entities), EmailModule],
   controllers: [TaskController],
-  providers: [TaskService, TaskEventHandler, TenantThrottlerGuard],
+  providers: [TaskService, TaskEventHandler],
   exports: [TaskService],
 })
 export class TaskModule {}

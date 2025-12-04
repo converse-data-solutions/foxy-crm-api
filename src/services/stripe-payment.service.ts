@@ -17,10 +17,6 @@ import { Repository } from 'typeorm';
 import { EmailService } from './email.service';
 import { SubscriptionHistoryService } from './subscription-history.service';
 import { PlanPricing } from 'src/database/entities/base-app-entities/plan-pricing.entity';
-import { AuditLogService } from './audit-log.service';
-import { Action } from 'src/enums/action.enum';
-import { getRepo } from 'src/shared/database-connection/get-connection';
-import { User } from 'src/database/entities/core-app-entities/user.entity';
 
 @Injectable()
 export class StripePaymentService {
@@ -33,7 +29,6 @@ export class StripePaymentService {
     private readonly emailService: EmailService,
     private readonly subscriptionHistoryService: SubscriptionHistoryService,
     @InjectQueue('subscription-queue') private readonly subscriptionQueue: Queue,
-    private readonly auditLogService: AuditLogService,
   ) {}
 
   async createCheckoutSession(customerEmail: string, tenantId: string, priceId?: string) {
@@ -101,10 +96,7 @@ export class StripePaymentService {
     const endDate = new Date(stripeSubscription.start_date * 1000);
     const interval_count = stripeSubscription.items.data[0].price.recurring?.interval_count ?? 1;
     const priceId = stripeSubscription.items.data[0].price.id;
-    const planPrice = await this.planPriceRepo.findOne({
-      where: { stripePriceId: priceId },
-      relations: { plan: true },
-    });
+    const planPrice = await this.planPriceRepo.findOne({ where: { stripePriceId: priceId } });
     if (!planPrice) {
       throw new UnprocessableEntityException('Invalid subscription plan');
     }
@@ -158,19 +150,10 @@ export class StripePaymentService {
     if (subscriptionId) {
       const subscription = await this.subscriptionRepo.findOne({
         where: { stripeSubscriptionId: subscriptionId },
-        relations: { tenant: true },
       });
       if (subscription) {
         subscription.status = false;
         await this.subscriptionRepo.save(subscription);
-
-        const userRepo = await getRepo(User, subscription.tenant.schemaName);
-        const user = await userRepo.findOne({ where: { email: subscription.tenant.email } });
-        await this.auditLogService.createLog({
-          action: Action.PaymentFailed,
-          tenantId: subscription.tenant.schemaName,
-          userId: user?.id,
-        });
       }
     }
   }

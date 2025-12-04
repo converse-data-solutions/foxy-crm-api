@@ -2,7 +2,6 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  Index,
   JoinColumn,
   ManyToOne,
   OneToMany,
@@ -17,8 +16,6 @@ import { Contact } from './contact.entity';
 import { LeadActivity } from './lead-activity.entity';
 
 @Entity({ name: 'leads' })
-@Index(['status', 'createdAt'])
-@Index(['assignedTo'])
 export class Lead {
   @PrimaryGeneratedColumn('uuid')
   id: string;

@@ -4,10 +4,7 @@ import { config as dotenvConfig } from 'dotenv';
 dotenvConfig();
 
 const envSchema = Joi.object({
-  NODE_ENV: Joi.string()
-    .valid('development', 'production', 'test')
-    .required()
-    .messages({ 'any.required': 'NODE_ENV must be explicitly set' }),
+  NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
   DB_HOST: Joi.string().required(),
   DB_PORT: Joi.number().default(5432),
   DB_USER: Joi.string().required(),
@@ -15,44 +12,20 @@ const envSchema = Joi.object({
   DB_NAME: Joi.string().default('base-app'),
 
   SMTP_HOST: Joi.string().default('smtp.gmail.com'),
-  SMTP_PORT: Joi.number().when('NODE_ENV', {
-    is: 'production',
-    then: Joi.number().valid(465, 587),
-    otherwise: Joi.number().default(587),
-  }),
-
+  SMTP_PORT: Joi.number().default(587),
   SMTP_USER: Joi.string().required(),
   SMTP_PASS: Joi.string().required(),
 
   SALT: Joi.number().default(12),
 
-  ACCESS_SECRET_KEY: Joi.string()
-    .min(32)
-    .required()
-    .custom((value, helpers) => {
-      if (process.env.NODE_ENV === 'production' && value.length < 64) {
-        return helpers.error('JWT secret key must be at least 64 chars in production');
-      }
-      return value;
-    }),
-
+  ACCESS_SECRET_KEY: Joi.string().required(),
   JWT_ACCESS_EXPIRES_IN: Joi.string().required(),
-  REFRESH_SECRETE_KEY: Joi.string()
-    .min(32)
-    .required()
-    .disallow(Joi.ref('ACCESS_SECRET_KEY'))
-    .messages({ 'any.invalid': 'Refresh secret key must differ from access secret key' }),
-
+  REFRESH_SECRETE_KEY: Joi.string().required(),
   JWT_REFRESH_EXPIRES_IN: Joi.string().required(),
 
   REDIS_HOST: Joi.string().default('localhost'),
   REDIS_PORT: Joi.number().default(6379),
-  REDIS_PASSWORD: Joi.string().when('NODE_ENV', {
-    is: 'production',
-    then: Joi.string().min(12).required(),
-    otherwise: Joi.string().default(''),
-  }),
-
+  REDIS_PASSWORD: Joi.string().default(''),
   REDIS_TLS: Joi.boolean().default(true),
 
   PAYMENT_SUCCESS_URL: Joi.string().uri().required(),
@@ -62,15 +35,7 @@ const envSchema = Joi.object({
   STRIPE_WEBHOOK_SECRET: Joi.string().required(),
 
   CSRF_SECRET: Joi.string().required(),
-  CORS_URL: Joi.string()
-    .uri()
-    .required()
-    .custom((value, helpers) => {
-      if (process.env.NODE_ENV === 'production' && value.includes('localhost')) {
-        return helpers.error('CORS_URL cannot be localhost in production');
-      }
-      return value;
-    }),
+  CORS_URL: Joi.string().required(),
 })
   .unknown()
   .required();

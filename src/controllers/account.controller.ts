@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Headers, Put, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Headers, Put, Query } from '@nestjs/common';
 import { AccountService } from '../services/account.service';
 import { CreateAccountDto } from 'src/dtos/account-dto/create-account.dto';
 import { UpdateAccountDto } from 'src/dtos/account-dto/update-account.dto';
@@ -9,10 +9,8 @@ import { Roles } from 'src/common/decorators/role.decorator';
 import { Role } from 'src/enums/core-app.enum';
 import { GetAccountDto } from 'src/dtos/account-dto/get-account.dto';
 import { CsrfHeader } from 'src/common/decorators/csrf-header.decorator';
-import { TenantThrottlerGuard } from 'src/guards/tenant-throttler.guard';
 
 @Roles(Role.SuperAdmin, Role.Admin, Role.Manager, Role.SalesRep)
-@UseGuards(TenantThrottlerGuard)
 @Controller('accounts')
 export class AccountController {
   constructor(private readonly accountService: AccountService) {}

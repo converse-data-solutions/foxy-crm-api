@@ -8,22 +8,17 @@ import { Subscription } from 'src/database/entities/base-app-entities/subscripti
 import { PlanPricing } from 'src/database/entities/base-app-entities/plan-pricing.entity';
 import { TaskModule } from './task.module';
 import { TokenModule } from './token.module';
-import { SubscriptionModule } from './subscription.module';
-import { TenantThrottlerGuard } from 'src/guards/tenant-throttler.guard';
-import { AuditLogModule } from './audit-log.module';
 
 @Module({
   imports: [
     CountryModule,
     TenantModule,
-    SubscriptionModule,
     TypeOrmModule.forFeature([Subscription, PlanPricing]),
     TaskModule,
     TokenModule,
-    AuditLogModule,
   ],
   controllers: [UserController],
-  providers: [UserService, TenantThrottlerGuard],
+  providers: [UserService],
   exports: [UserService],
 })
 export class UserModule {}

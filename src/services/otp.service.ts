@@ -110,15 +110,13 @@ export class OtpService {
     const hashedToken = await bcrypt.hash(refreshToken, SALT_ROUNDS);
     userExist.emailVerified = true;
 
-    userExist = await repo.save(userExist);
+    await repo.save(userExist);
     let otpFor: OTPFor;
-
     if (userExist instanceof Tenant) {
       const subscription = this.subscriptionRepo.create({
         tenant: userExist,
       });
-      userExist.subscription = await this.subscriptionRepo.save(subscription);
-      await repo.save(userExist);
+      await this.subscriptionRepo.save(subscription);
 
       await this.tenantQueue.add('tenant-setup', {
         tenant: userExist,

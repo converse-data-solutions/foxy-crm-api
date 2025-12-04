@@ -10,9 +10,8 @@ export const dataSource = new DataSource({
   database: DB_CONSTANTS.NAME,
   entities: [__dirname + '/../entities/base-app-entities/*.entity.js'],
   synchronize: false,
-  logging: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error', 'warn'],
+  logging: ['error'],
   migrations: ['dist/migrations/base-app/*.js'],
-  maxQueryExecutionTime: 1000,
   extra: {
     idleTimeoutMillis: 10000,
     max: 5,

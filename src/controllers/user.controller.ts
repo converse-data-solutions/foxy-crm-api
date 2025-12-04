@@ -1,14 +1,4 @@
-import {
-  Body,
-  Controller,
-  Put,
-  Headers,
-  Param,
-  Get,
-  Query,
-  HttpStatus,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Put, Headers, Param, Get, Query, HttpStatus } from '@nestjs/common';
 import { UserService } from '../services/user.service';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { User } from 'src/database/entities/core-app-entities/user.entity';
@@ -19,10 +9,8 @@ import { Role } from 'src/enums/core-app.enum';
 import { GetUserDto } from 'src/dtos/user-dto/get-user.dto';
 import { APIResponse } from 'src/common/dtos/response.dto';
 import { CsrfHeader } from 'src/common/decorators/csrf-header.decorator';
-import { TenantThrottlerGuard } from 'src/guards/tenant-throttler.guard';
 
 @Controller('users')
-@UseGuards(TenantThrottlerGuard)
 export class UserController {
   constructor(private readonly userService: UserService) {}
 

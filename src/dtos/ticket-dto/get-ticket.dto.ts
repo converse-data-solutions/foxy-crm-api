@@ -11,7 +11,6 @@ export class GetTicketDto extends PageDto {
   title: string;
 
   @ApiPropertyOptional({
-    example: 'Acme Corp Website design',
     description: 'Filter tickets by deal name',
   })
   @IsOptional()
@@ -21,14 +20,12 @@ export class GetTicketDto extends PageDto {
 
   @ApiPropertyOptional({
     description: 'Filter tickets resolved from this date (inclusive)',
-    example: '2025-12-03 10:53:00',
   })
   @IsOptional()
   @IsDateString()
   resolvedFrom?: Date;
 
   @ApiPropertyOptional({
-    example: '2025-12-05 10:53:00',
     description: 'Filter tickets resolved up to this date (inclusive)',
   })
   @IsOptional()

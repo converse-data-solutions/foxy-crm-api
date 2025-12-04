@@ -19,7 +19,7 @@ import { GetTaskDto } from 'src/dtos/task-dto/get-task.dto';
 import { UpdateTaskDto } from 'src/dtos/task-dto/update-task.dto';
 import { EntityName, Role, TaskPriority } from 'src/enums/core-app.enum';
 import { DealStage, TicketStatus } from 'src/enums/status.enum';
-import { getConnection, getRepo } from 'src/shared/database-connection/get-connection';
+import { getRepo } from 'src/shared/database-connection/get-connection';
 import { paginationParams } from 'src/shared/utils/pagination-params.util';
 import { taskAssignmentTemplate } from 'src/templates/task-assignment.template';
 import { Repository } from 'typeorm';
@@ -36,70 +36,57 @@ export class TaskService {
     @InjectRepository(Plan)
     private readonly planRepo: Repository<Plan>,
   ) {}
-
   async createTask(
     tenantId: string,
     user: User,
     createTaskDto: CreateTaskDto,
   ): Promise<APIResponse> {
-    const queryRunner = (await getConnection(tenantId)).createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-    try {
-      const taskRepo = queryRunner.manager.getRepository(Task);
-      const userRepo = queryRunner.manager.getRepository(User);
-      const dealRepo = queryRunner.manager.getRepository(Deal);
-      const ticketRepo = queryRunner.manager.getRepository(Ticket);
-      const { assignedTo, entityId, ...createTask } = createTaskDto;
+    const taskRepo = await getRepo(Task, tenantId);
+    const userRepo = await getRepo(User, tenantId);
+    const dealRepo = await getRepo(Deal, tenantId);
+    const ticketRepo = await getRepo(Ticket, tenantId);
+    const { assignedTo, entityId, ...createTask } = createTaskDto;
 
-      const userExist = await userRepo.findOne({ where: { id: assignedTo } });
-      if (!userExist) {
-        throw new BadRequestException('The assigned user ID is invalid.');
-      }
-
-      if (createTaskDto.entityName == EntityName.Deal) {
-        const dealExist = await dealRepo.findOne({ where: { id: entityId } });
-        if (!dealExist) {
-          throw new BadRequestException('Invalid entity id or id not found in deal entity');
-        } else if (dealExist.stage === DealStage.Completed) {
-          throw new BadRequestException('Cannot create a task for a completed deal.');
-        } else if (dealExist.stage != DealStage.Accepted) {
-          throw new BadRequestException('Deal not accepted unable to create task');
-        }
-      } else {
-        const ticketExist = await ticketRepo.findOne({ where: { id: entityId } });
-        if (!ticketExist)
-          throw new BadRequestException('Invalid entity id or id not found in ticket entity');
-
-        if (ticketExist.status == TicketStatus.Closed)
-          throw new BadRequestException('Cannot create task on closed ticket');
-      }
-      const taskExist = await taskRepo.findOne({
-        where: { name: createTaskDto.name, entityId: createTaskDto.entityId },
-      });
-
-      if (taskExist) {
-        throw new ConflictException('Task with this name is already exists');
-      }
-      const newTask: Task = await taskRepo.save({
-        assignedTo: userExist,
-        entityId,
-        ...createTask,
-        createdBy: user,
-      });
-      await queryRunner.commitTransaction();
-      await this.eventEmitter.emitAsync('task-created', { tenantId, task: newTask });
-      return {
-        success: true,
-        statusCode: HttpStatus.CREATED,
-        message: 'Task created successfully ',
-      };
-    } catch (error) {
-      await queryRunner.rollbackTransaction();
-      throw error;
-    } finally {
-      await queryRunner.release();
+    const userExist = await userRepo.findOne({ where: { id: assignedTo } });
+    if (!userExist) {
+      throw new BadRequestException('The assigned user ID is invalid.');
     }
+    if (createTaskDto.entityName == EntityName.Deal) {
+      const dealExist = await dealRepo.findOne({ where: { id: entityId } });
+      if (!dealExist) {
+        throw new BadRequestException('Invalid entity id or id not found in deal entity');
+      } else if (dealExist.stage === DealStage.Completed) {
+        throw new BadRequestException('Cannot create a task for a completed deal.');
+      } else if (dealExist.stage != DealStage.Accepted) {
+        throw new BadRequestException('Deal not accepted unable to create task');
+      }
+    } else {
+      const ticketExist = await ticketRepo.findOne({ where: { id: entityId } });
+      if (!ticketExist) {
+        throw new BadRequestException('Invalid entity id or id not found in ticket entity');
+      } else if (ticketExist.status == TicketStatus.Closed) {
+        throw new BadRequestException('Cannot create task on closed ticket');
+      }
+    }
+    const taskExist = await taskRepo.findOne({
+      where: { name: createTaskDto.name, entityId: createTaskDto.entityId },
+    });
+
+    if (taskExist) {
+      throw new ConflictException('Task with this name is already exists');
+    }
+    const newTask: Task = await taskRepo.save({
+      assignedTo: userExist,
+      entityId,
+      ...createTask,
+      createdBy: user,
+    });
+    await this.eventEmitter.emitAsync('task-created', { tenantId, task: newTask });
+    return {
+      success: true,
+      statusCode: HttpStatus.CREATED,
+      message: 'Task created successfully ',
+    };
   }
 
   async findAllTasks(tenantId: string, user: User, taskQuery: GetTaskDto) {

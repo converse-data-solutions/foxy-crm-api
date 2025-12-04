@@ -17,7 +17,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { join } from 'path';
 import { PlanInterface } from 'src/interfaces/plan.interface';
 import { User } from 'src/database/entities/core-app-entities/user.entity';
-import { EntityName, Role, TaskPriority, TaskType } from 'src/enums/core-app.enum';
+import { EntityName, LeadSource, Role, TaskPriority, TaskType } from 'src/enums/core-app.enum';
 import {
   DealStage,
   LeadStatus,
@@ -40,10 +40,11 @@ import { Deal } from 'src/database/entities/core-app-entities/deal.entity';
 import { Task } from 'src/database/entities/core-app-entities/task.entity';
 import { Ticket } from 'src/database/entities/core-app-entities/ticket.entity';
 import { Subscription } from 'src/database/entities/base-app-entities/subscription.entity';
-import { LoggerService } from 'src/common/logger/logger.service';
 
 @Injectable()
 export class SeedService {
+  private readonly logger = new Logger(SeedService.name);
+
   private planDefinitions: PlanInterface[] = [];
 
   constructor(
@@ -54,7 +55,6 @@ export class SeedService {
     @InjectRepository(Subscription) private readonly subscriptionRepo: Repository<Subscription>,
     private readonly countryService: CountryService,
     private readonly rootDataSource: DataSource,
-    private readonly loggerService: LoggerService,
   ) {}
 
   async subscriptionSeed() {
@@ -83,7 +83,6 @@ export class SeedService {
           planName: planDef.name,
           stripeProductId: stripeProduct.id,
           userCount: planDef.userCount,
-          apiCallsPerMinute: planDef.apiCallsPerMinute,
         });
         await this.planRepo.save(plan);
       } else {
@@ -158,7 +157,7 @@ export class SeedService {
       }
     }
 
-    this.loggerService.log('Subscription plans seeded successfully!');
+    this.logger.log('Subscription plans seeded successfully!');
   }
 
   async runTenantSeed() {
@@ -272,14 +271,14 @@ export class SeedService {
     });
 
     if (!tenant) {
-      this.loggerService.warn('Tenant not found. Run tenant seed first!');
+      console.warn('Tenant not found. Run tenant seed first!');
       return;
     }
 
     const plan = await this.pricingRepo.find();
 
     if (!plan) {
-      this.loggerService.warn('PlanPricing not found. Seed plan first!');
+      console.warn('PlanPricing not found. Seed plan first!');
       return;
     }
 
@@ -296,7 +295,7 @@ export class SeedService {
 
     await this.subscriptionRepo.save(subscription);
 
-    this.loggerService.log('✅ Subscription seeded successfully!');
+    console.log('✅ Subscription seeded successfully!');
   }
 
   async getTenant(email: string): Promise<DataSource> {
@@ -323,7 +322,7 @@ export class SeedService {
       }
 
       const schemaExist = schemas.find((s) => s.schema_name === tenant.schemaName);
-      this.loggerService.log('schemaExist', schemaExist);
+      console.log('schemaExist', schemaExist);
       if (!schemaExist) {
         await this.tenantSetup({ tenant });
 
@@ -345,7 +344,7 @@ export class SeedService {
     const filePath = join(__dirname, '../seed/user-mock-data.json');
 
     if (!fs.existsSync(filePath)) {
-      this.loggerService.warn(`User seed file not found at: ${filePath}`);
+      this.logger.warn(`User seed file not found at: ${filePath}`);
       return;
     }
 
@@ -358,7 +357,7 @@ export class SeedService {
       });
 
       if (existingUser) {
-        this.loggerService.log(`User already exists: ${userData.email}`);
+        this.logger.log(`User already exists: ${userData.email}`);
         continue;
       }
 
@@ -381,10 +380,10 @@ export class SeedService {
       });
 
       await userRepo.save(user);
-      this.loggerService.log(`Seeded user: ${user.email} (${user.role})`);
+      this.logger.log(`Seeded user: ${user.email} (${user.role})`);
     }
 
-    this.loggerService.log('User seeding completed successfully!');
+    this.logger.log('User seeding completed successfully!');
   }
 
   async leadSeed(tenantDataSource: DataSource) {
@@ -394,7 +393,7 @@ export class SeedService {
     const filePath = join(__dirname, '../seed/lead-mock-data.json');
 
     if (!fs.existsSync(filePath)) {
-      this.loggerService.warn(`Lead seed file not found at: ${filePath}`);
+      this.logger.warn(`Lead seed file not found at: ${filePath}`);
       return;
     }
 
@@ -411,7 +410,7 @@ export class SeedService {
       });
 
       if (existingLead) {
-        this.loggerService.log(`Lead already exists: ${leadData.email}`);
+        this.logger.log(`Lead already exists: ${leadData.email}`);
         continue;
       }
 
@@ -430,10 +429,10 @@ export class SeedService {
       } as DeepPartial<Lead>);
 
       await leadRepo.save(lead);
-      this.loggerService.log(`✅ Lead seeded: ${lead.email}`);
+      this.logger.log(`✅ Lead seeded: ${lead.email}`);
     }
 
-    this.loggerService.log('✅ Lead seeding completed successfully!');
+    this.logger.log('✅ Lead seeding completed successfully!');
   }
 
   async leadActivityAndNoteSeed(tenantDataSource: DataSource) {
@@ -446,11 +445,11 @@ export class SeedService {
     const activityFilePath = join(__dirname, '../seed/lead-activity-mock-data.json');
 
     if (!fs.existsSync(noteFilePath)) {
-      this.loggerService.warn(`Note seed file not found at: ${noteFilePath}`);
+      this.logger.warn(`Note seed file not found at: ${noteFilePath}`);
       return;
     }
     if (!fs.existsSync(activityFilePath)) {
-      this.loggerService.warn(`Lead Activity seed file not found at: ${activityFilePath}`);
+      this.logger.warn(`Lead Activity seed file not found at: ${activityFilePath}`);
       return;
     }
 
@@ -462,13 +461,13 @@ export class SeedService {
 
     const leads = await leadRepo.find();
     if (leads.length === 0) {
-      this.loggerService.warn('⚠️ No leads found. Run leadSeed() first.');
+      this.logger.warn('⚠️ No leads found. Run leadSeed() first.');
       return;
     }
 
     const users = await userRepo.find();
     if (users.length === 0) {
-      this.loggerService.warn('⚠️ No users found. Run userSeed() first.');
+      this.logger.warn('⚠️ No users found. Run userSeed() first.');
       return;
     }
 
@@ -483,7 +482,7 @@ export class SeedService {
         });
         const savedNote = await noteRepo.save(note);
         savedNotes.push(savedNote);
-        this.loggerService.log(`✅ Note added for Lead: ${lead.email}`);
+        this.logger.log(`✅ Note added for Lead: ${lead.email}`);
       }
 
       const activityCount = Math.floor(Math.random() * 3) + 3;
@@ -507,13 +506,13 @@ export class SeedService {
         });
 
         await leadActivityRepo.save(leadActivity);
-        this.loggerService.log(
+        this.logger.log(
           `✅ Activity ${leadActivity.activityType} added for Lead: ${lead.email} by User: ${randomUser.name}`,
         );
       }
     }
 
-    this.loggerService.log('✅ Lead Activity and Note seeding completed successfully!');
+    this.logger.log('✅ Lead Activity and Note seeding completed successfully!');
   }
 
   async accountSeed(dataSource: DataSource) {
@@ -526,7 +525,7 @@ export class SeedService {
     const filePath = join(__dirname, '../seed/accounts-mock-data.json');
 
     if (!fs.existsSync(filePath)) {
-      this.loggerService.warn(`Note seed file not found at: ${filePath}`);
+      this.logger.warn(`Note seed file not found at: ${filePath}`);
       return;
     }
 
@@ -538,11 +537,11 @@ export class SeedService {
       try {
         await accountRepo.save(account);
       } catch (error) {
-        this.loggerService.error(`Failed to seed account ${accountData.name}:`, error);
+        console.error(`Failed to seed account ${accountData.name}:`, error);
       }
     }
 
-    this.loggerService.log('All 20 accounts seeded successfully!');
+    console.log('All 20 accounts seeded successfully!');
   }
 
   async contactSeed(dataSource: DataSource) {
@@ -560,13 +559,13 @@ export class SeedService {
     const leads = await leadRepo.find();
 
     if (!accounts.length || !users.length || !leads.length) {
-      this.loggerService.warn('Accounts, users, or leads not found. Seed them first!');
+      console.warn('Accounts, users, or leads not found. Seed them first!');
       return;
     }
 
     const filePath = join(__dirname, '../seed/contacts-mock-data.json');
     if (!fs.existsSync(filePath)) {
-      this.loggerService.warn(`Contact seed file not found at: ${filePath}`);
+      console.warn(`Contact seed file not found at: ${filePath}`);
       return;
     }
 
@@ -592,11 +591,11 @@ export class SeedService {
       try {
         await contactRepo.save(contact);
       } catch (error) {
-        this.loggerService.error(`Failed to seed contact ${contactData.name}:`, error);
+        console.error(`Failed to seed contact ${contactData.name}:`, error);
       }
     }
 
-    this.loggerService.log('All contacts seeded successfully!');
+    console.log('All contacts seeded successfully!');
   }
 
   async dealSeed(dataSource: DataSource) {
@@ -612,13 +611,13 @@ export class SeedService {
     const users = await userRepo.find();
 
     if (!contacts.length || !users.length) {
-      this.loggerService.warn('Contacts or Users not found. Seed them first!');
+      console.warn('Contacts or Users not found. Seed them first!');
       return;
     }
 
     const filePath = join(__dirname, '../seed/deal-mock-data.json');
     if (!fs.existsSync(filePath)) {
-      this.loggerService.warn(`Contact seed file not found at: ${filePath}`);
+      console.warn(`Contact seed file not found at: ${filePath}`);
       return;
     }
 
@@ -645,7 +644,7 @@ export class SeedService {
       await dealRepo.save(deal);
     }
 
-    this.loggerService.log('All deals seeded successfully!');
+    console.log('All deals seeded successfully!');
   }
 
   async ticketSeed(dataSource: DataSource) {
@@ -667,16 +666,14 @@ export class SeedService {
     });
 
     if (!contacts.length || !completedDeals.length || !users.length) {
-      this.loggerService.log(
-        '❌ Skipping Ticket Seed: Missing Contacts, Users, or Completed Deals',
-      );
+      console.log('❌ Skipping Ticket Seed: Missing Contacts, Users, or Completed Deals');
       return;
     }
 
     const filePath = join(__dirname, '../seed/tickets-mock-data.json');
 
     if (!fs.existsSync(filePath)) {
-      this.loggerService.warn(`Ticket seed file not found at: ${filePath}`);
+      console.warn(`Ticket seed file not found at: ${filePath}`);
       return;
     }
 
@@ -703,7 +700,7 @@ export class SeedService {
       await ticketRepo.save(ticket);
     }
 
-    this.loggerService.log('✅ Tickets seeded from JSON for COMPLETED deals!');
+    console.log('✅ Tickets seeded from JSON for COMPLETED deals!');
   }
 
   async taskSeed(dataSource: DataSource) {
@@ -718,7 +715,7 @@ export class SeedService {
 
     const users = await userRepo.find();
     if (!users.length) {
-      this.loggerService.log('❌ No users found. Skipping Task seeding.');
+      console.log('❌ No users found. Skipping Task seeding.');
       return;
     }
 
@@ -726,13 +723,13 @@ export class SeedService {
     const tickets = await ticketRepo.find();
 
     if (!deals.length && !tickets.length) {
-      this.loggerService.log('❌ No deals or tickets found. Skipping Task seeding.');
+      console.log('❌ No deals or tickets found. Skipping Task seeding.');
       return;
     }
 
     const filePath = join(__dirname, '../seed/accounts-mock-data.json');
     if (!fs.existsSync(filePath)) {
-      this.loggerService.warn(`Task seed file not found at: ${filePath}`);
+      console.warn(`Task seed file not found at: ${filePath}`);
       return;
     }
 
@@ -777,9 +774,9 @@ export class SeedService {
       } as DeepPartial<Task>);
 
       await taskRepo.save(task);
-      this.loggerService.log(`✅ Task "${task.name}" assigned to ${entity.name} (${entity.id})`);
+      console.log(`✅ Task "${task.name}" assigned to ${entity.name} (${entity.id})`);
     }
 
-    this.loggerService.log('✅ All tasks seeded successfully for Deals and Tickets!');
+    console.log('✅ All tasks seeded successfully for Deals and Tickets!');
   }
 }

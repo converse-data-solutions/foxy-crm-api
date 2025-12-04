@@ -2,7 +2,6 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
@@ -11,9 +10,9 @@ import {
 import { User } from './user.entity';
 import { EntityName, TaskPriority, TaskType } from 'src/enums/core-app.enum';
 import { TaskStatus } from 'src/enums/status.enum';
+import { Exclude } from 'class-transformer';
 
 @Entity({ name: 'tasks' })
-@Index(['assignedTo'])
 export class Task {
   @PrimaryGeneratedColumn('uuid')
   id: string;

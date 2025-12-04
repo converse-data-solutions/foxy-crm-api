@@ -34,7 +34,7 @@ export class GetUserDto extends PageDto {
   @Sanitize()
   country?: string;
 
-  @ApiPropertyOptional({ description: 'Status of the user', example: true })
+  @ApiPropertyOptional({ description: 'Status of the user' })
   @IsOptional()
   @IsString()
   status?: boolean;

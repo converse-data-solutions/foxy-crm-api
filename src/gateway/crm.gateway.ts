@@ -22,7 +22,6 @@ import { Repository } from 'typeorm';
 import Redis from 'ioredis';
 import { RateLimiterRedis } from 'rate-limiter-flexible';
 import { REDIS_CONFIG } from 'src/shared/utils/config.util';
-import { SocketCleanupService } from 'src/services/socket-cleanup.service';
 
 const redisClient = new Redis({
   host: REDIS_CONFIG.host,
@@ -47,35 +46,12 @@ export class CrmGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
     private readonly metricService: MetricService,
     private readonly userService: UserService,
     private readonly loggerService: LoggerService,
-    private readonly socketCleanup: SocketCleanupService,
     @InjectRepository(Subscription) private readonly subscriptionRepo: Repository<Subscription>,
   ) {}
   afterInit(server: Server) {
     this.server = server;
   }
-
-  private extractToken(socket: Socket) {
-    try {
-      const cookieToken = socket.handshake.headers.cookie
-        ?.split(';')
-        ?.find((c) => c.trim().startsWith('access_token='))
-        ?.split('=')[1];
-      if (!cookieToken) {
-        throw new WsException('Invalid connection');
-      }
-      return cookieToken;
-    } catch (error) {
-      const message = error instanceof WsException ? error.message : 'Unauthorized';
-      socket.emit('error', { message });
-      this.loggerService.logError(
-        `WebSocket connection failed for client ${socket.id}: ${message}`,
-      );
-      socket.disconnect(true);
-      throw new WsException(error);
-    }
-  }
   async handleConnection(client: Socket): Promise<void> {
-    this.socketCleanup.register(client);
     const ip = client.handshake.address;
 
     try {
@@ -115,7 +91,6 @@ export class CrmGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
         client.emit('error', { message: 'Subscription expired' });
         this.loggerService.logError(
           `Subscription expired for ${subscription?.tenant?.schemaName ?? 'unknown user'}`,
-          {},
         );
         client.disconnect(true);
         return;
@@ -158,18 +133,5 @@ export class CrmGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
   async emitMetricUpdate(tenantId: string) {
     const metricData = await this.metricService.getTenantCounts(tenantId);
     this.server.to(tenantId).emit('metricUpdates', metricData);
-  }
-
-  @SubscribeMessage('ping')
-  async handlePing(client: Socket) {
-    const token = this.extractToken(client);
-
-    try {
-      this.tokenService.verifyAccessToken(token);
-      client.emit('pong');
-    } catch (error) {
-      client.emit('token_expired');
-      client.disconnect();
-    }
   }
 }

@@ -1,7 +1,9 @@
+import { ServiceUnavailableException } from '@nestjs/common';
 import { winstonLogger } from 'src/common/logger/logger.service';
 import { coreDataSource } from 'src/database/datasources/core-app-data-source';
 import { DataSource, DataSourceOptions, EntityTarget, ObjectLiteral, Repository } from 'typeorm';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
+import { log } from 'winston';
 
 interface CachedDataSource {
   dataSource: DataSource;
@@ -15,74 +17,12 @@ const initializationLocks = new Map<string, Promise<DataSource>>();
 const MAX_CONNECTIONS = 50;
 let cleanupInterval: NodeJS.Timeout | null = null;
 
-const requestQueue: Array<{
-  schemaName: string;
-  resolve: (ds: DataSource) => void;
-  reject: (err: Error) => void;
-}> = [];
-
-let queueProcessing = false;
-
-async function processQueue() {
-  if (queueProcessing) return;
-  queueProcessing = true;
-
-  while (requestQueue.length > 0 && getActiveConnectionCount() < MAX_CONNECTIONS) {
-    const job = requestQueue.shift();
-    if (!job) continue;
-
-    try {
-      const ds = await createTenantConnection(job.schemaName);
-      job.resolve(ds);
-    } catch (err) {
-      job.reject(err);
-    }
-  }
-
-  queueProcessing = false;
-}
-
-function getActiveConnectionCount() {
-  let active = 0;
-
-  for (const item of Object.values(connections)) {
-    if (item.dataSource.isInitialized) active++;
-  }
-  active += initializationLocks.size;
-  return active;
-}
-
-async function createTenantConnection(schemaName: string): Promise<DataSource> {
-  const now = Date.now();
-
-  const baseOptions = coreDataSource.options as PostgresConnectionOptions;
-  const dynamicOptions: DataSourceOptions = {
-    ...baseOptions,
-    name: schemaName,
-    schema: schemaName,
-  };
-
-  const dataSource = new DataSource(dynamicOptions);
-
-  await dataSource.initialize();
-  connections[schemaName] = {
-    dataSource,
-    lastAccess: now,
-  };
-
-  return dataSource;
-}
-
-export async function getConnection(schemaName: string): Promise<DataSource> {
+export async function getConnection(schemaName: string) {
   const now = Date.now();
 
   const activeConnections = Object.keys(connections).length;
-
   if (activeConnections >= MAX_CONNECTIONS) {
-    return new Promise((resolve, reject) => {
-      requestQueue.push({ schemaName, resolve, reject });
-      processQueue();
-    });
+    throw new ServiceUnavailableException('Maximum tenant connection limit reached');
   }
 
   if (connections[schemaName]?.dataSource.isInitialized) {
@@ -119,7 +59,6 @@ export async function getConnection(schemaName: string): Promise<DataSource> {
       throw err;
     } finally {
       initializationLocks.delete(schemaName);
-      processQueue();
     }
   })();
 

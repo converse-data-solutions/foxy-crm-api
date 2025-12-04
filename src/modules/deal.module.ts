@@ -6,12 +6,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { entities } from 'src/database/entities/base-app-entities';
 import { MetricModule } from './metric.module';
 import { EmailModule } from './email.module';
-import { SubscriptionModule } from './subscription.module';
-import { TenantThrottlerGuard } from 'src/guards/tenant-throttler.guard';
 
 @Module({
-  imports: [TypeOrmModule.forFeature(entities), MetricModule, EmailModule, SubscriptionModule],
+  imports: [TypeOrmModule.forFeature(entities), MetricModule, EmailModule],
   controllers: [DealController],
-  providers: [DealService, DealScheduler, TenantThrottlerGuard],
+  providers: [DealService, DealScheduler],
 })
 export class DealModule {}

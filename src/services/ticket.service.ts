@@ -34,15 +34,9 @@ export class TicketService {
     const dealRepo = await getRepo(Deal, tenantId);
     const contactRepo = await getRepo(Contact, tenantId);
     const { dealId, contactId, ...createTicket } = createTicketDto;
-    const dealExist = await dealRepo.findOne({
-      where: { id: dealId },
-      relations: { contactId: true },
-    });
+    const dealExist = await dealRepo.findOne({ where: { id: dealId } });
     if (!dealExist) {
       throw new BadRequestException('Invalid deal ID. Please provide a valid deal.');
-    }
-    if (dealExist.contactId.id !== contactId) {
-      throw new BadRequestException('The deal is not belongs to the given contact');
     }
     if (dealExist.stage === DealStage.Declined) {
       throw new BadRequestException('Cannot create a ticket for a declined deal.');

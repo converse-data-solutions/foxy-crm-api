@@ -32,9 +32,3 @@ export enum StatusCause {
   Plan_Limit = 'plan limit',
   Admin_Disabled = 'admin disabled',
 }
-
-export enum TenantStatus {
-  Pending = 'pending',
-  Failed = 'failed',
-  Active = 'active',
-}
